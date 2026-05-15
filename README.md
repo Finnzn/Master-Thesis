@@ -1,0 +1,66 @@
+# Master Thesis: Technology Development Uncertainty and Carbon Capture Demand
+
+This repository contains the code, data structure, documentation, and analysis for my master thesis project:
+
+**How uncertainty of technology development shapes carbon capture demand uncertainty**
+
+The thesis is supervised by Nour Boulos and Prof. Dr. Giovanni Sansavini at ETH Zurich.
+
+## Project Overview
+
+Carbon capture and storage (CCS) is considered an important technology for reaching net-zero emissions in Europe. However, the large-scale deployment of CCS is still below political targets. One possible reason is that carbon capture competes with alternative decarbonization technologies that emitting plants can adopt.
+
+This thesis investigates under which conditions carbon capture is the most economically viable option for reducing emissions in different industrial sectors. The focus is on applications such as:
+
+- Cement production
+- Steel and metal manufacturing
+- Chemical production
+- Other energy-intensive industrial processes
+
+The project compares carbon capture technologies with alternative non-capture decarbonization options under techno-economic uncertainty.
+
+## Research Objective
+
+The main objective of this thesis is to evaluate how uncertainty in technology development affects the future demand for carbon capture.
+
+The central research question is:
+
+**Which emitting sectors should implement carbon capture, and which should investigate alternative decarbonization technologies?**
+
+## Methodology
+
+The thesis develops a probabilistic, cost-based evaluation framework for comparing decarbonization technology options across different emitting sectors.
+
+The main methodological steps are:
+
+1. Identify decarbonization technology options for each emitting sector.
+2. Compare carbon capture technologies with alternative non-capture decarbonization technologies.
+3. Develop a cost-based metric to assess the economic viability of each option.
+4. Use Monte Carlo analysis to capture uncertainty in techno-economic parameters.
+5. Evaluate how uncertainty in technology development affects carbon capture demand.
+
+The Monte Carlo analysis may include uncertainty in parameters such as:
+
+- Capital costs
+- Operating costs
+- Energy requirements
+- Energy prices
+- Carbon prices
+- Technology learning and cost evolution
+
+## Repository Structure
+
+```text
+MasterThesis/
+├── src/                  # Main Python source code
+├── notebooks/            # Jupyter notebooks for exploration and analysis
+├── data/                 # Input data and assumptions
+│   ├── raw/              # Raw data, usually not tracked by Git
+│   └── processed/        # Cleaned or processed data
+├── results/              # Simulation results, usually not tracked by Git
+├── figures/              # Plots and figures for reports and presentations
+├── docs/                 # Notes, references, and documentation
+├── tests/                # Optional tests for code validation
+├── README.md             # Project overview
+├── requirements.txt      # Python dependencies
+└── .gitignore            # Files and folders ignored by Git
