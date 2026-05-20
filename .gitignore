@@ -23,3 +23,8 @@ Thumbs.db
 
 # Environment variables / secrets
 .env
+
+# Local Codex / agent instructions
+AGENT.md
+CHANGELOG_CODEX.md
+.codex-skills/
