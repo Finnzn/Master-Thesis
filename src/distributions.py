@@ -8,6 +8,15 @@ import numpy as np
 
 
 @dataclass(frozen=True)
+class FixedParameter:
+    """A deterministic model parameter."""
+
+    value: float
+    unit: str
+    description: str
+
+
+@dataclass(frozen=True)
 class TriangularDistribution:
     """Parameters for a triangular probability distribution."""
 

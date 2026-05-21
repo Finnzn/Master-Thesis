@@ -1,3 +1,41 @@
+## 2026-05-21 15:59 — Split sector parameters and centralize datatypes
+
+### User request
+
+Move `FixedParameter` into the distribution/datatype file and create separate cement and electricity parameter files containing the parameters from the general file that belong to those sectors.
+
+### Files changed (if needed)
+
+- `src/distributions.py` — added `FixedParameter` so fixed and stochastic parameter datatypes are defined in one place.
+- `src/general_parameters.py` — removed the local `FixedParameter` datatype and imports cement/electricity sector parameters from their dedicated modules.
+- `src/cement_parameters.py` — added cement-sector lifetime and retail price fixed parameters.
+- `src/electricity_parameters.py` — added electricity-sector lifetime and retail price fixed parameters.
+
+### What was implemented
+
+- Centralized `FixedParameter`, `TriangularDistribution`, and `UniformDistribution` in `src/distributions.py`.
+- Moved cement-specific fixed parameters into `CEMENT_FIXED_PARAMETERS`.
+- Moved electricity-specific fixed parameters into `ELECTRICITY_FIXED_PARAMETERS`.
+- Kept `GENERAL_FIXED_PARAMETERS` available by importing the sector parameters into `general_parameters.py` for compatibility with existing code.
+- Preserved existing parameter values, including the current `INTEREST_RATE` value in the working tree.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/cement_parameters.py src/electricity_parameters.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'from distributions import FixedParameter, TriangularDistribution, UniformDistribution; from cement_parameters import CEMENT_FIXED_PARAMETERS; from electricity_parameters import ELECTRICITY_FIXED_PARAMETERS; from general_parameters import GENERAL_FIXED_PARAMETERS, GENERAL_DISTRIBUTIONS; print(len(CEMENT_FIXED_PARAMETERS), len(ELECTRICITY_FIXED_PARAMETERS), len(GENERAL_FIXED_PARAMETERS), len(GENERAL_DISTRIBUTIONS))'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No model parameter values, simulation outputs, plots, reports, or PDFs were changed.
+- The change reorganizes where parameter definitions live so sector-specific modules can be extended later.
+
+### Next suggested step
+
+Add sector-specific uncertain parameters to `cement_parameters.py` and `electricity_parameters.py` as the model assumptions are defined.
+
 ## 2026-05-21 11:01 — Add uniform distribution helper
 
 ### User request
