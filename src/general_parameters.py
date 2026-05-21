@@ -59,7 +59,7 @@ CARBON_PRICE_EUR_PER_T = FixedParameter(
 
 # Annual interest rate used for cost annualization and discounting.
 INTEREST_RATE = FixedParameter(
-    value=0.01,
+    value=0.08,
     unit="fraction/year",
     description="Annual interest rate.",
 )

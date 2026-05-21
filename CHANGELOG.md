@@ -1,3 +1,36 @@
+## 2026-05-21 11:01 — Add uniform distribution helper
+
+### User request
+
+Add the same reusable distribution setup for uniform distributions that currently exists for triangular distributions, using only lower and upper bounds.
+
+### Files changed (if needed)
+
+- `src/distributions.py` — added `UniformDistribution` and `sample_uniform`.
+
+### What was implemented
+
+- Added a frozen `UniformDistribution` dataclass with `lower_bound`, `upper_bound`, `unit`, and `description`.
+- Added `sample_uniform`, matching the existing triangular sampling pattern with `size` and optional NumPy random generator support.
+- Left the existing triangular distribution code unchanged.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from distributions import TriangularDistribution, UniformDistribution, sample_triangular, sample_uniform; rng=np.random.default_rng(42); tri=TriangularDistribution(1.0, 2.0, 4.0, "unit", "test"); uni=UniformDistribution(10.0, 20.0, "unit", "test"); print(sample_triangular(tri, 3, rng).shape, sample_uniform(uni, 3, rng).shape)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No model parameters, simulation outputs, plots, reports, or PDFs were changed.
+- The new helper only adds reusable sampling functionality for future parameter definitions.
+
+### Next suggested step
+
+Use `UniformDistribution` in sector-specific parameter modules where only lower and upper uncertainty bounds are available.
+
 ## 2026-05-20 14:00 — Split reusable distribution sampling
 
 ### User request

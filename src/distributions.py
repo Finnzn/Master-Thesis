@@ -18,6 +18,16 @@ class TriangularDistribution:
     description: str
 
 
+@dataclass(frozen=True)
+class UniformDistribution:
+    """Parameters for a uniform probability distribution."""
+
+    lower_bound: float
+    upper_bound: float
+    unit: str
+    description: str
+
+
 def sample_triangular(
     distribution: TriangularDistribution,
     size: int,
@@ -30,5 +40,20 @@ def sample_triangular(
         left=distribution.minimum,
         mode=distribution.mode,
         right=distribution.maximum,
+        size=size,
+    )
+
+
+def sample_uniform(
+    distribution: UniformDistribution,
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> np.ndarray:
+    """Draw samples from a uniform distribution specification."""
+
+    generator = rng if rng is not None else np.random.default_rng()
+    return generator.uniform(
+        low=distribution.lower_bound,
+        high=distribution.upper_bound,
         size=size,
     )
