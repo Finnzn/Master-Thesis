@@ -42,6 +42,14 @@ COAL_PRICE_DISTRIBUTION = TriangularDistribution(
     description="Triangular distribution for coal price.",
 )
 
+ELECTRICITY_PRICE_DISTRIBUTION = TriangularDistribution(
+    minimum=74.8,
+    mode=183.7,
+    maximum=255.2,
+    unit="EUR/MWh",
+    description="Triangular distribution for electricity price.",
+)
+
 GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "carbon_price_eur_per_t": CARBON_PRICE_EUR_PER_T,
     "interest_rate": INTEREST_RATE,
@@ -50,4 +58,5 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
 GENERAL_DISTRIBUTIONS: Mapping[str, TriangularDistribution] = {
     "gas_price_eur_per_mwh": GAS_PRICE_DISTRIBUTION,
     "coal_price_eur_per_mwh": COAL_PRICE_DISTRIBUTION,
+    "electricity_price_eur_per_mwh": ELECTRICITY_PRICE_DISTRIBUTION,
 }

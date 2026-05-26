@@ -16,7 +16,7 @@ LIFETIME_CEMENT_YEARS = FixedParameter(
 
 # Cement retail price placeholder specified for the model setup.
 RETAIL_PRICE_CEMENT_EUR_PER_T = FixedParameter(
-    value=1.0,
+    value=150.0,
     unit="EUR/t",
     description="Retail price of cement used in the cement-sector setup.",
 )

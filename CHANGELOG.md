@@ -1,3 +1,36 @@
+## 2026-05-26 11:24 — Add electricity price distribution
+
+### User request
+
+Add a triangular electricity price distribution to the general parameters, similar to the existing coal and gas distributions, using minimum 74.8 EUR/MWh, maximum 255.2 EUR/MWh, and average 183.7 EUR/MWh.
+
+### Files changed (if needed)
+
+- `src/general_parameters.py` — added the electricity price triangular distribution and included it in `GENERAL_DISTRIBUTIONS`.
+
+### What was implemented
+
+- Added `ELECTRICITY_PRICE_DISTRIBUTION` with minimum 74.8, mode 183.7, and maximum 255.2 EUR/MWh.
+- Registered the distribution under `electricity_price_eur_per_mwh`.
+- Used the provided average value as the triangular distribution mode to match the existing low/mid/high parameter structure.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/general_parameters.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'from general_parameters import ELECTRICITY_PRICE_DISTRIBUTION, GENERAL_DISTRIBUTIONS; print(ELECTRICITY_PRICE_DISTRIBUTION.minimum, ELECTRICITY_PRICE_DISTRIBUTION.mode, ELECTRICITY_PRICE_DISTRIBUTION.maximum, "electricity_price_eur_per_mwh" in GENERAL_DISTRIBUTIONS)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- This changes a shared model input assumption by adding an electricity price uncertainty distribution.
+- No simulation outputs, plots, reports, or PDFs were regenerated.
+
+### Next suggested step
+
+Use `electricity_price_eur_per_mwh` in downstream Monte Carlo sampling wherever electricity price uncertainty should be represented.
+
 ## 2026-05-21 15:59 — Split sector parameters and centralize datatypes
 
 ### User request

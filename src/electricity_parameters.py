@@ -16,7 +16,7 @@ LIFETIME_ELECTRICITY_YEARS = FixedParameter(
 
 # Electricity retail price placeholder specified for the model setup.
 RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
-    value=1.0,
+    value=94.07,
     unit="EUR/MWh",
     description="Retail price of electricity used in the electricity-sector setup.",
 )
