@@ -38,7 +38,7 @@ COAL_PRICE_DISTRIBUTION = TriangularDistribution(
     minimum=8.14,
     mode=12.11,
     maximum=24.17,
-    unit="EUR/MWh",
+    unit="EUR/MWh_th",
     description="Triangular distribution for coal price.",
 )
 

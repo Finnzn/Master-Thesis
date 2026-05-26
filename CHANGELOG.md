@@ -1,3 +1,83 @@
+## 2026-05-26 13:35 — Use fixed retail electricity price in coal NPV
+
+### User request
+
+Change the hard coal electricity NPV simulation so it does not sample electricity price and instead uses the fixed retail electricity price of 94.07 EUR/MWh.
+
+### Files changed (if needed)
+
+- `src/electricity_model.py` — replaced sampled electricity-price revenue with the fixed electricity retail price parameter.
+
+### What was implemented
+
+- Removed electricity price sampling from `simulate_hard_coal_npv`.
+- Used `RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value` for annual revenue.
+- Kept `electricity_price_eur_per_mwh` in the returned simulation result as a constant array so result tables still show the price assumption used in each run.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/electricity_model.py src/electricity_parameters.py src/general_parameters.py src/distributions.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_hard_coal_npv; r=simulate_hard_coal_npv(4, np.random.default_rng(42)); print(r["electricity_price_eur_per_mwh"]); print(r["annual_revenue_eur"]); print(np.allclose(r["annual_revenue_eur"], r["annual_output_mwh"] * 94.07))'`
+- Result:
+  - Passed.
+  - The simulation returned 94.07 EUR/MWh for all checked runs and revenue matched annual output times 94.07.
+
+### Reproducibility notes
+
+- This changes the hard coal NPV revenue assumption from stochastic electricity prices to a fixed retail electricity price.
+- No simulation outputs, plots, reports, or PDFs were generated.
+
+### Next suggested step
+
+Run a larger hard coal NPV sample and inspect how much of the remaining uncertainty comes from CAPEX, OPEX, coal price, fuel consumption, and emissions.
+
+## 2026-05-26 13:33 — Implement hard coal electricity NPV simulation
+
+### User request
+
+Implement the Monte Carlo approach for an electricity-sector NPV distribution, currently only for a hard coal electricity plant, including CAPEX, OPEX, fuel cost, emissions cost, revenue, lifetime, and interest rate.
+
+### Files changed (if needed)
+
+- `src/electricity_model.py` — added reusable NPV helpers and a hard coal Monte Carlo NPV simulation function.
+
+### What was implemented
+
+- Added `calculate_level_cash_flow_present_value_factor` for discounting constant annual cash flows.
+- Added `calculate_npv`, using initial CAPEX and discounted annual net cash flow.
+- Added `simulate_hard_coal_npv`, which samples hard coal technology parameters, coal price, and electricity price in paired Monte Carlo runs.
+- The hard coal annual net cash flow is calculated as:
+  - electricity revenue
+  - fixed OPEX
+  - variable OPEX
+  - coal fuel cost
+  - emissions cost
+- The NPV is calculated as:
+  - negative initial CAPEX plus discounted annual net cash flow over the electricity-sector lifetime.
+- Returned the NPV distribution together with sampled input values, capacity, annual cost components, annual revenue, and annual net cash flow for each run.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/electricity_model.py src/electricity_parameters.py src/general_parameters.py src/distributions.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_hard_coal_npv; result = simulate_hard_coal_npv(5, np.random.default_rng(42)); print(sorted(result.keys())[-3:]); print(result["npv_eur"].shape, round(float(result["capacity_mw"][0]), 6)); print(round(float(result["npv_eur"].mean()), 2))'`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import calculate_level_cash_flow_present_value_factor, calculate_npv; capex=np.array([100.0]); cash=np.array([10.0]); print(round(calculate_level_cash_flow_present_value_factor(2, 0.0), 6), round(float(calculate_npv(capex, cash, 2, 0.0)[0]), 6))'`
+- Result:
+  - Passed.
+  - The hard coal simulation returned an NPV array with the expected shape and the expected normalized capacity of 243.902439 MW.
+  - The zero-discount sanity check returned an NPV of -80.0 for 100 EUR initial CAPEX and two years of 10 EUR annual cash flow.
+
+### Reproducibility notes
+
+- This adds the first executable electricity-sector NPV simulation but does not write simulation results to disk.
+- The simulation currently uses the existing fixed carbon price, fixed interest rate, fixed lifetime, hard coal technology distributions, coal price distribution, and electricity price distribution.
+- Future technologies can be added by extending the same sampled-run structure rather than running separate unrelated Monte Carlo experiments.
+
+### Next suggested step
+
+Create a small script or notebook cell that runs `simulate_hard_coal_npv` for the desired number of runs and plots or summarizes the resulting NPV distribution.
+
 ## 2026-05-26 11:45 — Add hard coal electricity technology distributions
 
 ### User request
