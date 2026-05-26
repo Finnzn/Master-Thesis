@@ -1,3 +1,82 @@
+## 2026-05-26 11:45 — Add hard coal electricity technology distributions
+
+### User request
+
+Confirm whether the 1 TWh/year and 4,100 h/year hard coal capacity calculation is reasonable, then add the provided hard coal CAPEX, OPEX, fuel consumption, and emissions parameters to the electricity parameter file.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added hard coal technology distributions for CAPEX, fixed OPEX, variable OPEX, fuel consumption, and emissions.
+
+### What was implemented
+
+- Added hard coal CAPEX as a uniform distribution because no base value was provided:
+  - 1,700 to 2,300 EUR/kW.
+- Added triangular hard coal distributions where base values were provided:
+  - Fixed OPEX: 29.6 / 37.0 / 48.1 EUR/kW/year.
+  - Variable OPEX excluding fuel/electricity: 4.0 / 5.0 / 6.5 EUR/MWh.
+  - Fuel consumption: 2.44 / 2.56 / 2.70 MWh_th/MWh_e.
+  - Emissions: 0.83 / 0.87 / 0.92 tCO2/MWh_e.
+- Added `ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS` and registered the hard coal stochastic parameters under `hard_coal`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/electricity_parameters.py src/electricity_model.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_parameters import ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS; from distributions import sample_triangular, sample_uniform; d=ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS["hard_coal"]; rng=np.random.default_rng(42); print(d["capex_eur_per_kw"].lower_bound, d["capex_eur_per_kw"].upper_bound, sample_uniform(d["capex_eur_per_kw"], 2, rng).shape, d["fixed_opex_eur_per_kw_year"].mode, sample_triangular(d["fixed_opex_eur_per_kw_year"], 2, rng).shape)'`
+- Result:
+  - Passed.
+  - The smoke test confirmed hard coal CAPEX bounds, fixed OPEX mode, and sampling compatibility.
+
+### Reproducibility notes
+
+- This adds hard coal stochastic technology assumptions to the electricity-sector parameter set.
+- The hard coal capacity normalization remains reasonable: 1 TWh/year equals about 114.2 MW average output, and with 4,100 h/year the required capacity is about 243.9 MW.
+- No simulation outputs, plots, reports, or PDFs were generated.
+
+### Next suggested step
+
+Add a first electricity NPV function that combines normalized capacity, sampled hard coal parameters, coal fuel price, carbon price, electricity revenue, and discounting.
+
+## 2026-05-26 11:42 — Start electricity sector model
+
+### User request
+
+Start the electricity sector setup by adding hard coal parameters from the attached table, adding a configurable electricity output parameter, and creating a model file with the conversion formula between output, FLH, and capacity.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added the normalized annual electricity output parameter and the hard coal full-load-hours parameter.
+- `src/electricity_model.py` — added reusable capacity conversion functions for annual electricity output and full-load hours.
+
+### What was implemented
+
+- Added `ANNUAL_ELECTRICITY_OUTPUT_MWH` with a default value of 1,000,000 MWh/year, equivalent to 1 TWh/year.
+- Added `HARD_COAL_FULL_LOAD_HOURS` with the user-specified value of 4,100 h/year.
+- Added `ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS` with hard coal full-load hours.
+- Added `calculate_capacity_mw`, using `annual_electricity_output_mwh / full_load_hours_per_year`.
+- Added `calculate_capacity_kw`, converting the calculated MW capacity to kW.
+- Did not add CAPEX, OPEX, fuel consumption, or emissions distributions because the numeric values in the attached image were not readable enough to extract without risking invented assumptions.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/electricity_parameters.py src/electricity_model.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'from electricity_parameters import ANNUAL_ELECTRICITY_OUTPUT_MWH, HARD_COAL_FULL_LOAD_HOURS; from electricity_model import calculate_capacity_mw, calculate_capacity_kw; print(round(calculate_capacity_mw(ANNUAL_ELECTRICITY_OUTPUT_MWH.value, HARD_COAL_FULL_LOAD_HOURS.value), 6), round(calculate_capacity_kw(ANNUAL_ELECTRICITY_OUTPUT_MWH.value, HARD_COAL_FULL_LOAD_HOURS.value), 3))'`
+- Result:
+  - Passed.
+  - The default hard coal capacity calculation returned 243.902439 MW, or 243,902.439 kW, for 1 TWh/year and 4,100 h/year.
+
+### Reproducibility notes
+
+- This adds a new electricity-sector normalization assumption: default annual output is 1 TWh/year.
+- No simulation outputs, plots, reports, or PDFs were generated.
+- Hard coal CAPEX, OPEX, fuel consumption, and emissions still need to be added once the source values are provided in readable text form.
+
+### Next suggested step
+
+Paste the hard coal CAPEX, fixed OPEX, variable OPEX, fuel consumption, and emissions ranges so they can be added as triangular or uniform distributions.
+
 ## 2026-05-26 11:24 — Add electricity price distribution
 
 ### User request

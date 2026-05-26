@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Mapping
 
-from distributions import FixedParameter
+from distributions import FixedParameter, TriangularDistribution, UniformDistribution
 
 
 # Economic lifetime for electricity-sector investments.
@@ -21,7 +21,80 @@ RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
     description="Retail price of electricity used in the electricity-sector setup.",
 )
 
+# Normalized annual electricity output used to compare technologies.
+ANNUAL_ELECTRICITY_OUTPUT_MWH = FixedParameter(
+    value=1_000_000.0,
+    unit="MWh/year",
+    description="Annual electricity output target used to normalize electricity technologies.",
+)
+
+# Hard coal full-load hours specified for the electricity-sector setup.
+HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
+    value=4_100.0,
+    unit="h/year",
+    description="Full-load hours for the hard coal technology.",
+)
+
+HARD_COAL_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=1_700.0,
+    upper_bound=2_300.0,
+    unit="EUR/kW",
+    description="Uniform distribution for hard coal CAPEX, not annualized.",
+)
+
+HARD_COAL_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=29.6,
+    mode=37.0,
+    maximum=48.1,
+    unit="EUR/kW/year",
+    description="Triangular distribution for hard coal fixed OPEX.",
+)
+
+HARD_COAL_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=4.0,
+    mode=5.0,
+    maximum=6.5,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for hard coal variable OPEX excluding fuel and electricity.",
+)
+
+HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
+    minimum=2.44,
+    mode=2.56,
+    maximum=2.70,
+    unit="MWh_th/MWh_e",
+    description="Triangular distribution for hard coal fuel consumption.",
+)
+
+HARD_COAL_EMISSIONS_DISTRIBUTION = TriangularDistribution(
+    minimum=0.83,
+    mode=0.87,
+    maximum=0.92,
+    unit="tCO2/MWh_e",
+    description="Triangular distribution for hard coal direct emissions.",
+)
+
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
     "retail_price_electricity_eur_per_mwh": RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
+    "annual_electricity_output_mwh": ANNUAL_ELECTRICITY_OUTPUT_MWH,
+}
+
+ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[str, Mapping[str, FixedParameter]] = {
+    "hard_coal": {
+        "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
+    },
+}
+
+ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
+    str,
+    Mapping[str, TriangularDistribution | UniformDistribution],
+] = {
+    "hard_coal": {
+        "capex_eur_per_kw": HARD_COAL_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": HARD_COAL_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": HARD_COAL_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": HARD_COAL_EMISSIONS_DISTRIBUTION,
+    },
 }
