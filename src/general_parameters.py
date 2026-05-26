@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from typing import Mapping
 
-from distributions import FixedParameter, TriangularDistribution
+from distributions import (
+    FixedParameter,
+    ScaledBetaDistribution,
+    create_scaled_beta_distribution,
+)
 
 # Carbon price placeholder specified for the general model setup.
 CARBON_PRICE_EUR_PER_T = FixedParameter(
@@ -25,29 +29,29 @@ INTEREST_RATE = FixedParameter(
     description="Annual interest rate.",
 )
 
-# Fuel-price distributions extracted from the attached low/mid/high price table.
-GAS_PRICE_DISTRIBUTION = TriangularDistribution(
+# Market-price distributions preserve source-table minimum, maximum, and mean.
+GAS_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     minimum=12.5,
-    mode=39.3,
+    mean=39.3,
     maximum=89.7,
     unit="EUR/MWh",
-    description="Triangular distribution for gas price.",
+    description="Scaled beta distribution for gas price.",
 )
 
-COAL_PRICE_DISTRIBUTION = TriangularDistribution(
+COAL_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     minimum=8.14,
-    mode=12.11,
+    mean=12.11,
     maximum=24.17,
     unit="EUR/MWh_th",
-    description="Triangular distribution for coal price.",
+    description="Scaled beta distribution for coal price.",
 )
 
-ELECTRICITY_PRICE_DISTRIBUTION = TriangularDistribution(
+ELECTRICITY_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     minimum=74.8,
-    mode=183.7,
+    mean=183.7,
     maximum=255.2,
     unit="EUR/MWh",
-    description="Triangular distribution for electricity price.",
+    description="Scaled beta distribution for electricity price.",
 )
 
 GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
@@ -55,7 +59,7 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "interest_rate": INTEREST_RATE,
 }
 
-GENERAL_DISTRIBUTIONS: Mapping[str, TriangularDistribution] = {
+GENERAL_DISTRIBUTIONS: Mapping[str, ScaledBetaDistribution] = {
     "gas_price_eur_per_mwh": GAS_PRICE_DISTRIBUTION,
     "coal_price_eur_per_mwh": COAL_PRICE_DISTRIBUTION,
     "electricity_price_eur_per_mwh": ELECTRICITY_PRICE_DISTRIBUTION,

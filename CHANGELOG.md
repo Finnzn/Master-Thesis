@@ -1,3 +1,98 @@
+## 2026-05-26 17:05 — Clarify scaled beta notebook rerun
+
+### User request
+
+Fix the fuel-price plotting notebook error where an open notebook session still referenced the old triangular plotting function and `.mode` attribute after market prices were changed to scaled beta distributions.
+
+### Files changed (if needed)
+
+- `notebooks/plot_fuel_price_distributions.ipynb` — added a note to restart the kernel and rerun all cells so stale triangular plotting functions are cleared from memory.
+
+### What was implemented
+
+- Confirmed the notebook on disk already uses `sample_scaled_beta`, `scaled_beta_pdf`, and `distribution.mean`.
+- Confirmed there are no remaining references to `triangular_pdf`, `distribution.mode`, `sample_triangular`, `Continuous triangular`, or `Most likely` in the notebook.
+- Added an explicit top-of-notebook note explaining that stale in-memory notebook cells require a kernel restart and full rerun.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m json.tool notebooks/plot_fuel_price_distributions.ipynb`
+  - `rg -n "triangular_pdf|distribution.mode|sample_triangular|Continuous triangular|Most likely" notebooks/plot_fuel_price_distributions.ipynb`
+- Result:
+  - Passed.
+  - Notebook JSON is valid.
+  - The search returned no stale triangular plotting references.
+
+### Reproducibility notes
+
+- No model assumptions, simulation outputs, figures, reports, or PDFs were changed.
+- This only clarifies the notebook rerun procedure after the scaled beta distribution update.
+
+### Next suggested step
+
+Restart the notebook kernel and run all cells in `plot_fuel_price_distributions.ipynb`.
+
+## 2026-05-26 16:16 — Preserve market-price means with scaled beta distributions
+
+### User request
+
+Replace triangular distributions for coal, gas, and electricity market prices with scaled beta distributions because the middle source-table values are arithmetic means, not true modes. Add beta sampling support and update affected notebooks.
+
+### Files changed (if needed)
+
+- `src/distributions.py` — added a scaled beta distribution datatype, constructor, and sampling helper.
+- `src/general_parameters.py` — replaced gas, coal, and electricity price triangular distributions with mean-preserving scaled beta distributions.
+- `src/electricity_model.py` — updated hard coal NPV sampling to use scaled beta sampling for coal price.
+- `notebooks/plot_fuel_price_distributions.ipynb` — updated the fuel-price visualization notebook for scaled beta sampling and PDFs.
+- `notebooks/deterministic_hard_coal_npv.ipynb` — updated deterministic coal price selection to use the market-price mean.
+- `notebooks/plot_hard_coal_npv.ipynb` — cleared stale outputs so the notebook reruns against the updated model assumptions.
+
+### What was implemented
+
+- Added `ScaledBetaDistribution` with minimum, mean, maximum, alpha, beta, unit, and description.
+- Added `create_scaled_beta_distribution`, using:
+  - `mu = (mean - minimum) / (maximum - minimum)`
+  - `k_min = max(1 / mu, 1 / (1 - mu))`
+  - `k = 2 * k_min`
+  - `alpha = mu * k`
+  - `beta = (1 - mu) * k`
+- Added `sample_scaled_beta`, sampling from NumPy beta and scaling samples to the parameter interval.
+- Replaced gas, coal, and electricity market-price distributions with scaled beta distributions preserving their source-table means.
+- Kept hard coal technology parameters as triangular distributions where the provided middle value is a base value.
+- Updated the hard coal NPV simulation so coal price is sampled using the scaled beta helper.
+- Updated notebooks to avoid stale triangular terminology and outputs.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_model.py src/electricity_parameters.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'from general_parameters import GAS_PRICE_DISTRIBUTION, COAL_PRICE_DISTRIBUTION, ELECTRICITY_PRICE_DISTRIBUTION; dists=[GAS_PRICE_DISTRIBUTION, COAL_PRICE_DISTRIBUTION, ELECTRICITY_PRICE_DISTRIBUTION];\nfor d in dists:\n    theoretical=d.minimum+(d.alpha/(d.alpha+d.beta))*(d.maximum-d.minimum)\n    print(d.unit, round(d.alpha, 6), round(d.beta, 6), round(theoretical, 6), d.mean)'`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from distributions import sample_scaled_beta; from general_parameters import COAL_PRICE_DISTRIBUTION; from electricity_model import simulate_hard_coal_npv; rng=np.random.default_rng(42); samples=sample_scaled_beta(COAL_PRICE_DISTRIBUTION, 200000, rng); result=simulate_hard_coal_npv(10, np.random.default_rng(42)); print(round(float(samples.mean()), 3), COAL_PRICE_DISTRIBUTION.mean); print(result["coal_price_eur_per_mwh_th"].shape, result["npv_eur"].shape)'`
+  - `python3 -m json.tool notebooks/plot_fuel_price_distributions.ipynb`
+  - `python3 -m json.tool notebooks/plot_hard_coal_npv.ipynb`
+  - `python3 -m json.tool notebooks/deterministic_hard_coal_npv.ipynb`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'from electricity_model import calculate_capacity_kw, calculate_capacity_mw, calculate_level_cash_flow_present_value_factor; from electricity_parameters import ANNUAL_ELECTRICITY_OUTPUT_MWH, HARD_COAL_CAPEX_DISTRIBUTION, HARD_COAL_EMISSIONS_DISTRIBUTION, HARD_COAL_FIXED_OPEX_DISTRIBUTION, HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION, HARD_COAL_FULL_LOAD_HOURS, HARD_COAL_VARIABLE_OPEX_DISTRIBUTION, LIFETIME_ELECTRICITY_YEARS, RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH; from general_parameters import CARBON_PRICE_EUR_PER_T, COAL_PRICE_DISTRIBUTION, INTEREST_RATE; output=ANNUAL_ELECTRICITY_OUTPUT_MWH.value; flh=HARD_COAL_FULL_LOAD_HOURS.value; cap_kw=calculate_capacity_kw(output, flh); capex=(HARD_COAL_CAPEX_DISTRIBUTION.lower_bound+HARD_COAL_CAPEX_DISTRIBUTION.upper_bound)/2; revenue=output*RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value; fixed=cap_kw*HARD_COAL_FIXED_OPEX_DISTRIBUTION.mode; variable=output*HARD_COAL_VARIABLE_OPEX_DISTRIBUTION.mode; fuel=output*HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION.mode*COAL_PRICE_DISTRIBUTION.mean; emissions=output*HARD_COAL_EMISSIONS_DISTRIBUTION.mode*CARBON_PRICE_EUR_PER_T.value; net=revenue-fixed-variable-fuel-emissions; pvf=calculate_level_cash_flow_present_value_factor(int(LIFETIME_ELECTRICITY_YEARS.value), INTEREST_RATE.value); npv=-cap_kw*capex+net*pvf; print(round(calculate_capacity_mw(output, flh), 6), round(revenue/1e6, 3), round(net/1e6, 3), round(npv/1e6, 3))'`
+- Result:
+  - Passed.
+  - Theoretical scaled beta means match the source-table means exactly for gas, coal, and electricity prices.
+  - A 200,000-sample coal price smoke test returned a sample mean of 12.107 versus the target mean of 12.11.
+  - The hard coal simulation returned the expected coal-price and NPV array shapes.
+  - Notebook JSON validation passed.
+  - The deterministic hard coal NPV check remains 26.442 million EUR.
+- Notes:
+  - `jupyter nbconvert --clear-output --inplace ...` was attempted but `jupyter` was not available on PATH, so notebook outputs were cleared with a small JSON rewrite instead.
+
+### Reproducibility notes
+
+- This changes the market-price uncertainty assumption for gas, coal, and electricity prices.
+- Existing NPV distributions should be regenerated because sampled coal prices now preserve the source-table arithmetic mean rather than the former triangular-mode interpretation.
+- No simulation result files, figures, reports, or PDFs were generated.
+
+### Next suggested step
+
+Rerun the hard coal NPV notebook and compare the new probabilistic mean/median with the deterministic base case.
+
 ## 2026-05-26 13:35 — Use fixed retail electricity price in coal NPV
 
 ### User request

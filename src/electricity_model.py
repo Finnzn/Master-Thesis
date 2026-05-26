@@ -7,8 +7,10 @@ from typing import Mapping
 import numpy as np
 
 from distributions import (
+    ScaledBetaDistribution,
     TriangularDistribution,
     UniformDistribution,
+    sample_scaled_beta,
     sample_triangular,
     sample_uniform,
 )
@@ -84,10 +86,14 @@ def calculate_npv(
 
 
 def _sample_distribution(
-    distribution: TriangularDistribution | UniformDistribution,
+    distribution: (
+        ScaledBetaDistribution | TriangularDistribution | UniformDistribution
+    ),
     size: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
+    if isinstance(distribution, ScaledBetaDistribution):
+        return sample_scaled_beta(distribution=distribution, size=size, rng=rng)
     if isinstance(distribution, TriangularDistribution):
         return sample_triangular(distribution=distribution, size=size, rng=rng)
     if isinstance(distribution, UniformDistribution):
@@ -142,7 +148,7 @@ def simulate_hard_coal_npv(
         size=size,
         rng=generator,
     )
-    coal_price_eur_per_mwh_th = sample_triangular(
+    coal_price_eur_per_mwh_th = sample_scaled_beta(
         distribution=COAL_PRICE_DISTRIBUTION,
         size=size,
         rng=generator,
