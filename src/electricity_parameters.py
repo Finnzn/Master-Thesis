@@ -210,6 +210,49 @@ WIND_OFFSHORE_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
+# Onshore wind technology parameters.
+WIND_ONSHORE_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=1_300.0,
+    upper_bound=1_900.0,
+    unit="EUR/kW",
+    description="Uniform distribution for onshore wind CAPEX, not annualized.",
+)
+
+WIND_ONSHORE_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=25.6,
+    mode=32.0,
+    maximum=41.6,
+    unit="EUR/kW/year",
+    description="Triangular distribution for onshore wind fixed OPEX.",
+)
+
+WIND_ONSHORE_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=5.6,
+    mode=7.0,
+    maximum=9.1,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for onshore wind variable OPEX excluding fuel and electricity.",
+)
+
+WIND_ONSHORE_FUEL_CONSUMPTION = FixedParameter(
+    value=0.0,
+    unit="MWh_th/MWh_e",
+    description="Fuel consumption for onshore wind electricity generation.",
+)
+
+WIND_ONSHORE_EMISSIONS = FixedParameter(
+    value=0.0,
+    unit="tCO2/MWh_e",
+    description="Direct stack emissions for onshore wind electricity generation.",
+)
+
+WIND_ONSHORE_FULL_LOAD_HOURS = FixedParameter(
+    value=2_500.0,
+    unit="h/year",
+    description="Average full-load hours for the onshore wind technology.",
+)
+
+
 # Parameter registries.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
@@ -232,6 +275,9 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     },
     "wind_offshore": {
         "full_load_hours_per_year": WIND_OFFSHORE_FULL_LOAD_HOURS,
+    },
+    "wind_onshore": {
+        "full_load_hours_per_year": WIND_ONSHORE_FULL_LOAD_HOURS,
     },
 }
 
@@ -266,5 +312,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": WIND_OFFSHORE_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": WIND_OFFSHORE_FUEL_CONSUMPTION,
         "emissions_tco2_per_mwh_e": WIND_OFFSHORE_EMISSIONS,
+    },
+    "wind_onshore": {
+        "capex_eur_per_kw": WIND_ONSHORE_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": WIND_ONSHORE_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": WIND_ONSHORE_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": WIND_ONSHORE_FUEL_CONSUMPTION,
+        "emissions_tco2_per_mwh_e": WIND_ONSHORE_EMISSIONS,
     },
 }

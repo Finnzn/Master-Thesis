@@ -1,3 +1,63 @@
+## 2026-06-01 14:01 — Add onshore wind electricity NPV simulation
+
+### User request
+
+Add onshore wind power using the same style as the existing electricity technologies, with average full-load hours.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added onshore wind CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added onshore wind fuel-price mapping, simulation wrapper, and onshore wind to the default multi-technology simulation.
+- `notebooks/deterministic_wind_onshore_npv.ipynb` — added deterministic onshore wind NPV notebook.
+- `notebooks/plot_wind_onshore_npv.ipynb` — added onshore wind Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added onshore wind technology assumptions:
+  - CAPEX: uniform `1,300-1,900 EUR/kW`.
+  - Fixed OPEX: triangular `25.6 / 32 / 41.6 EUR/kW/year`.
+  - Variable OPEX: triangular `5.6 / 7 / 9.1 EUR/MWh_e`.
+  - Fuel consumption: fixed `0 MWh_th/MWh_e`.
+  - Direct stack emissions: fixed `0 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(1,800 + 3,200) / 2 = 2,500 h/year`.
+- Added `simulate_wind_onshore_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `wind_onshore` by default.
+- Used the existing no-fuel price placeholder and technology-specific output key `no_fuel_price_eur_per_mwh_th`.
+- Added deterministic and plotting notebooks for onshore wind using the same structure as the offshore wind notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m json.tool notebooks/deterministic_wind_onshore_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_wind_onshore_npv.ipynb`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py src/cement_parameters.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_wind_onshore_npv, simulate_electricity_technologies_npv; wind=simulate_wind_onshore_npv(5, np.random.default_rng(42)); both=simulate_electricity_technologies_npv(5, rng=np.random.default_rng(42)); print(wind["run_id"].tolist()); print(wind["full_load_hours_per_year"].tolist()); print(wind["fuel_consumption_mwh_th_per_mwh_e"].tolist()); print(wind["no_fuel_price_eur_per_mwh_th"].tolist()); print(wind["emissions_tco2_per_mwh_e"].tolist()); print(round(float(wind["capacity_mw"][0]), 6)); print(both.keys()); print(np.array_equal(both["hard_coal"]["run_id"], both["wind_onshore"]["run_id"]))'`
+  - `for f in notebooks/*.ipynb; do python3 -m json.tool "$f" >/dev/null || exit 1; done; echo all-notebooks-valid`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_electricity_technology_npv, simulate_electricity_technologies_npv; techs = ("hard_coal", "ccgt", "nuclear", "wind_offshore", "wind_onshore");\nfor tech in techs:\n    r = simulate_electricity_technology_npv(tech, 20000, np.random.default_rng(42)); checks = {"capacity": np.allclose(r["capacity_mw"], r["annual_output_mwh"] / r["full_load_hours_per_year"]), "fuel": np.allclose(r["annual_fuel_cost_eur"], r["annual_output_mwh"] * r["fuel_consumption_mwh_th_per_mwh_e"] * r["fuel_price_eur_per_mwh_th"]), "emissions": np.allclose(r["annual_emissions_cost_eur"], r["annual_output_mwh"] * r["emissions_tco2_per_mwh_e"] * r["carbon_price_eur_per_t"]), "npv_per_mwh": np.allclose(r["npv_eur_per_mwh"], r["npv_eur"] / r["lifetime_output_mwh"])}; print(tech, checks, round(float(np.mean(r["npv_eur"])/1e6), 3), round(float(np.mean(r["npv_eur_per_mwh"])), 3))\nboth = simulate_electricity_technologies_npv(100, rng=np.random.default_rng(123)); print(tuple(both.keys())); print(all(np.array_equal(both["hard_coal"]["run_id"], both[t]["run_id"]) for t in techs))'`
+- Result:
+  - Passed.
+  - Onshore wind simulation returned fixed `2,500 h/year`, zero fuel consumption, zero fuel price, and zero direct emissions.
+  - Onshore wind normalized capacity for `1,000,000 MWh/year` is `400 MW`.
+  - Deterministic onshore wind notebook execution returned `152.815628 million EUR` and `6.112625 EUR/MWh` with the current assumptions.
+  - All notebooks are valid JSON.
+  - Capacity, fuel cost, emissions cost, and NPV-per-MWh relationships passed for hard coal, CCGT, nuclear, offshore wind, and onshore wind.
+  - Multi-technology results now include `hard_coal`, `ccgt`, `nuclear`, `wind_offshore`, and `wind_onshore` with aligned run IDs.
+- Notes:
+  - Running the deterministic notebook emitted sandbox-related PyArrow `sysctlbyname` warnings from pandas, but execution completed successfully.
+
+### Reproducibility notes
+
+- This adds onshore wind as a new electricity technology and changes the default multi-technology simulation output by including onshore wind.
+- No generated result files, figures, reports, or PDFs were written.
+- Sanity check flags remain:
+  - Plot notebooks still use `np.random.default_rng()` without a fixed seed, so Monte Carlo summaries are not exactly reproducible.
+  - The model still uses one shared electricity lifetime parameter for all technologies.
+  - The model still uses one fixed electricity retail-price revenue assumption for all technologies, without technology-specific capture prices.
+
+### Next suggested step
+
+Compare offshore and onshore wind results under capture-price or FLH sensitivity assumptions, because fixed output and uniform CAPEX make wind NPV distributions look mechanically uniform.
+
 ## 2026-06-01 13:51 — Add offshore wind electricity NPV simulation
 
 ### User request
