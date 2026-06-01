@@ -253,6 +253,47 @@ WIND_ONSHORE_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
+# PV technology parameters.
+PV_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=700.0,
+    upper_bound=900.0,
+    unit="EUR/kW",
+    description="Uniform distribution for PV CAPEX, not annualized.",
+)
+
+PV_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=10.6,
+    mode=13.3,
+    maximum=17.3,
+    unit="EUR/kW/year",
+    description="Triangular distribution for PV fixed OPEX.",
+)
+
+PV_VARIABLE_OPEX = FixedParameter(
+    value=0.0,
+    unit="EUR/MWh_e",
+    description="Variable OPEX excluding fuel and electricity for PV.",
+)
+
+PV_FUEL_CONSUMPTION = FixedParameter(
+    value=0.0,
+    unit="MWh_th/MWh_e",
+    description="Fuel consumption for PV electricity generation.",
+)
+
+PV_EMISSIONS = FixedParameter(
+    value=0.0,
+    unit="tCO2/MWh_e",
+    description="Direct stack emissions for PV electricity generation.",
+)
+
+PV_FULL_LOAD_HOURS = FixedParameter(
+    value=1_107.5,
+    unit="h/year",
+    description="Average full-load hours for the PV technology.",
+)
+
+
 # Parameter registries.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
@@ -278,6 +319,9 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     },
     "wind_onshore": {
         "full_load_hours_per_year": WIND_ONSHORE_FULL_LOAD_HOURS,
+    },
+    "pv": {
+        "full_load_hours_per_year": PV_FULL_LOAD_HOURS,
     },
 }
 
@@ -319,5 +363,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": WIND_ONSHORE_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": WIND_ONSHORE_FUEL_CONSUMPTION,
         "emissions_tco2_per_mwh_e": WIND_ONSHORE_EMISSIONS,
+    },
+    "pv": {
+        "capex_eur_per_kw": PV_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": PV_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": PV_VARIABLE_OPEX,
+        "fuel_consumption_mwh_th_per_mwh_e": PV_FUEL_CONSUMPTION,
+        "emissions_tco2_per_mwh_e": PV_EMISSIONS,
     },
 }

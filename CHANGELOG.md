@@ -1,3 +1,58 @@
+## 2026-06-01 14:16 — Add PV electricity NPV simulation
+
+### User request
+
+Add PV using the same style as the existing electricity technologies, with average full-load hours.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added PV CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added PV fuel-price mapping, simulation wrapper, and PV to the default multi-technology simulation.
+- `notebooks/deterministic_pv_npv.ipynb` — added deterministic PV NPV notebook.
+- `notebooks/plot_pv_npv.ipynb` — added PV Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added PV technology assumptions:
+  - CAPEX: uniform `700-900 EUR/kW`.
+  - Fixed OPEX: triangular `10.6 / 13.3 / 17.3 EUR/kW/year`.
+  - Variable OPEX: fixed `0 EUR/MWh_e`.
+  - Fuel consumption: fixed `0 MWh_th/MWh_e`.
+  - Direct stack emissions: fixed `0 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(935 + 1,280) / 2 = 1,107.5 h/year`.
+- Added `simulate_pv_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `pv` by default.
+- Used the existing no-fuel price placeholder and technology-specific output key `no_fuel_price_eur_per_mwh_th`.
+- Added deterministic and plotting notebooks for PV using the same structure as the other electricity-technology notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/electricity_parameters.py src/electricity_model.py`
+  - `python3 -m json.tool notebooks/deterministic_pv_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_pv_npv.ipynb`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 - <<'PY' ...`
+- Result:
+  - Passed.
+  - PV simulation returned fixed `1,107.5 h/year`, zero fuel cost, and zero direct emissions cost.
+  - PV normalized capacity for `1,000,000 MWh/year` is `902.935 MW`.
+  - A 10,000-run PV sanity simulation returned mean NPV `149.852 million EUR` and mean normalized NPV `5.994 EUR/MWh` with the current assumptions.
+  - Capacity, fuel cost, emissions cost, lifetime-output, and NPV-per-MWh relationships passed.
+  - Multi-technology results now include `hard_coal`, `ccgt`, `nuclear`, `wind_offshore`, `wind_onshore`, and `pv` with aligned run IDs.
+
+### Reproducibility notes
+
+- This adds PV as a new electricity technology and changes the default multi-technology simulation output by including PV.
+- No generated result files, figures, reports, or PDFs were written.
+- Sanity check flags remain:
+  - Plot notebooks still use `np.random.default_rng()` without a fixed seed, so Monte Carlo summaries are not exactly reproducible.
+  - The model still uses one shared electricity lifetime parameter for all technologies.
+  - The model still uses one fixed electricity retail-price revenue assumption for all technologies, without technology-specific capture prices.
+
+### Next suggested step
+
+Compare PV with wind using technology-specific capture prices or sensitivity cases, because the current fixed-output, fixed-price setup treats every MWh as equally valuable regardless of generation profile.
+
 ## 2026-06-01 14:01 — Add onshore wind electricity NPV simulation
 
 ### User request

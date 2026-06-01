@@ -178,6 +178,7 @@ def simulate_electricity_technology_npv(
         "nuclear": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
         "wind_offshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "wind_onshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
+        "pv": NO_FUEL_PRICE_EUR_PER_MWH_TH,
     }
     fuel_price_key_by_technology = {
         "hard_coal": "coal_price_eur_per_mwh_th",
@@ -185,6 +186,7 @@ def simulate_electricity_technology_npv(
         "nuclear": "uranium_price_eur_per_mwh_th",
         "wind_offshore": "no_fuel_price_eur_per_mwh_th",
         "wind_onshore": "no_fuel_price_eur_per_mwh_th",
+        "pv": "no_fuel_price_eur_per_mwh_th",
     }
     if technology not in fuel_price_distribution_by_technology:
         raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
@@ -319,6 +321,19 @@ def simulate_wind_onshore_npv(
     )
 
 
+def simulate_pv_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for a PV electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="pv",
+        size=size,
+        rng=rng,
+    )
+
+
 def simulate_electricity_technologies_npv(
     size: int,
     technologies: tuple[str, ...] = (
@@ -327,6 +342,7 @@ def simulate_electricity_technologies_npv(
         "nuclear",
         "wind_offshore",
         "wind_onshore",
+        "pv",
     ),
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:
