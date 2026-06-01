@@ -28,13 +28,7 @@ ANNUAL_ELECTRICITY_OUTPUT_MWH = FixedParameter(
     description="Annual electricity output target used to normalize electricity technologies.",
 )
 
-# Hard coal full-load hours specified for the electricity-sector setup.
-HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
-    value=4_100.0,
-    unit="h/year",
-    description="Full-load hours for the hard coal technology.",
-)
-
+# Hard coal technology parameters.
 HARD_COAL_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_700.0,
     upper_bound=2_300.0,
@@ -74,15 +68,76 @@ HARD_COAL_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     description="Triangular distribution for hard coal direct emissions.",
 )
 
+HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
+    value=4_100.0,
+    unit="h/year",
+    description="Full-load hours for the hard coal technology.",
+)
+
+
+# CCGT technology parameters.
+CCGT_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=900.0,
+    upper_bound=1_300.0,
+    unit="EUR/kW",
+    description="Uniform distribution for CCGT CAPEX, not annualized.",
+)
+
+CCGT_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=16.0,
+    mode=20.0,
+    maximum=26.0,
+    unit="EUR/kW/year",
+    description="Triangular distribution for CCGT fixed OPEX.",
+)
+
+CCGT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=4.0,
+    mode=5.0,
+    maximum=6.5,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for CCGT variable OPEX excluding fuel and electricity.",
+)
+
+CCGT_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
+    minimum=1.61,
+    mode=1.66,
+    maximum=1.72,
+    unit="MWh_th/MWh_e",
+    description="Triangular distribution for CCGT fuel consumption.",
+)
+
+CCGT_EMISSIONS_DISTRIBUTION = TriangularDistribution(
+    minimum=0.326,
+    mode=0.337,
+    maximum=0.348,
+    unit="tCO2/MWh_e",
+    description="Triangular distribution for CCGT direct emissions.",
+)
+
+CCGT_FULL_LOAD_HOURS = FixedParameter(
+    value=4_650.0,
+    unit="h/year",
+    description="Average full-load hours for the CCGT technology.",
+)
+
+
+# Parameter registries.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
     "retail_price_electricity_eur_per_mwh": RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
     "annual_electricity_output_mwh": ANNUAL_ELECTRICITY_OUTPUT_MWH,
 }
 
-ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[str, Mapping[str, FixedParameter]] = {
+ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
+    str,
+    Mapping[str, FixedParameter],
+] = {
     "hard_coal": {
         "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
+    },
+    "ccgt": {
+        "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
     },
 }
 
@@ -96,5 +151,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": HARD_COAL_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": HARD_COAL_EMISSIONS_DISTRIBUTION,
+    },
+    "ccgt": {
+        "capex_eur_per_kw": CCGT_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": CCGT_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": CCGT_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": CCGT_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": CCGT_EMISSIONS_DISTRIBUTION,
     },
 }

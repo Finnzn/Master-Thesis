@@ -1,3 +1,89 @@
+## 2026-06-01 10:22 — Use average CCGT full-load hours
+
+### User request
+
+Use the average full-load-hours value for CCGT, as done for hard coal, instead of sampling CCGT full-load hours from a distribution.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — changed CCGT full-load hours from a uniform distribution over `3,000-6,300 h/year` to a fixed average value of `4,650 h/year`.
+
+### What was implemented
+
+- Replaced `CCGT_FULL_LOAD_HOURS_DISTRIBUTION` with `CCGT_FULL_LOAD_HOURS`.
+- Set the fixed CCGT full-load-hours assumption to `(3,000 + 6,300) / 2 = 4,650 h/year`.
+- Updated the electricity technology fixed-parameter mapping so CCGT full-load hours are handled like hard coal full-load hours.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_ccgt_npv, simulate_electricity_technologies_npv; ccgt=simulate_ccgt_npv(5, np.random.default_rng(42)); both=simulate_electricity_technologies_npv(5, rng=np.random.default_rng(42)); print(ccgt["full_load_hours_per_year"].tolist()); print(round(float(ccgt["capacity_mw"][0]), 6)); print(np.array_equal(both["hard_coal"]["run_id"], both["ccgt"]["run_id"]))'`
+- Result:
+  - Passed.
+  - CCGT full-load hours returned `[4650.0, 4650.0, 4650.0, 4650.0, 4650.0]`.
+  - The normalized CCGT capacity for `1,000,000 MWh/year` is `215.053763 MW`.
+  - Multi-technology `run_id` arrays remain aligned.
+
+### Reproducibility notes
+
+- This changes the CCGT capacity and fixed OPEX calculation relative to the immediately previous CCGT implementation because FLH is no longer sampled.
+- No generated result files, figures, reports, or PDFs were changed.
+
+### Next suggested step
+
+Rerun the CCGT and multi-technology summaries so any reported CCGT capacity or NPV values use fixed average full-load hours.
+
+## 2026-06-01 10:20 — Add CCGT electricity NPV simulation
+
+### User request
+
+Add combined-cycle gas turbine (CCGT) as the next electricity technology using the same distribution rules as hard coal: triangular distributions where the source table gives a base value and uniform distributions where no base value is given. Also allow technologies to be sampled over aligned Monte Carlo runs.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added CCGT CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added a generic electricity-technology NPV simulation helper, CCGT simulation wrapper, and multi-technology aligned-run simulation wrapper.
+
+### What was implemented
+
+- Added CCGT technology assumptions:
+  - CAPEX: uniform `900-1,300 EUR/kW`.
+  - Fixed OPEX: triangular `16 / 20 / 26 EUR/kW/year`.
+  - Variable OPEX: triangular `4 / 5 / 6.5 EUR/MWh_e`.
+  - Fuel consumption: triangular `1.61 / 1.66 / 1.72 MWh_th/MWh_e`.
+  - Direct emissions: triangular `0.326 / 0.337 / 0.348 tCO2/MWh_e`.
+  - Full-load hours: uniform `3,000-6,300 h/year` because no base value was provided.
+- Added `simulate_electricity_technology_npv` to share the NPV calculation across electricity technologies.
+- Kept `simulate_hard_coal_npv` as a backwards-compatible wrapper around the generic helper.
+- Added `simulate_ccgt_npv` for CCGT-only simulations.
+- Added `simulate_electricity_technologies_npv`, returning results by technology with the same `run_id` sequence for each technology.
+- Added a generic `fuel_price_eur_per_mwh_th` output and technology-specific fuel-price aliases:
+  - hard coal keeps `coal_price_eur_per_mwh_th`.
+  - CCGT adds `gas_price_eur_per_mwh_th`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_hard_coal_npv, simulate_ccgt_npv, simulate_electricity_technologies_npv; rng=np.random.default_rng(42); hard=simulate_hard_coal_npv(5, rng); ccgt=simulate_ccgt_npv(5, rng); both=simulate_electricity_technologies_npv(5, rng=np.random.default_rng(42)); print(hard["run_id"].tolist(), round(float(hard["capacity_mw"][0]), 6), "coal_price_eur_per_mwh_th" in hard); print(ccgt["run_id"].tolist(), round(float(ccgt["full_load_hours_per_year"].min()), 3), round(float(ccgt["full_load_hours_per_year"].max()), 3), "gas_price_eur_per_mwh_th" in ccgt); print(both.keys()); print(np.array_equal(both["hard_coal"]["run_id"], both["ccgt"]["run_id"]))'`
+- Result:
+  - Passed.
+  - Source files compiled successfully.
+  - Hard coal retained its expected `243.902439 MW` capacity for the fixed `4,100 h/year` assumption.
+  - CCGT sampled full-load hours within the requested range and returned the gas-price alias.
+  - The multi-technology wrapper returned `hard_coal` and `ccgt` results with aligned `run_id` arrays.
+
+### Reproducibility notes
+
+- This adds CCGT as a new electricity-technology option but does not generate result files, figures, reports, or PDFs.
+- Existing hard coal notebooks should continue to run because `simulate_hard_coal_npv` and `coal_price_eur_per_mwh_th` are preserved.
+- The worktree already contained the user change setting the carbon price to `80 EUR/tCO2`; this change was preserved.
+
+### Next suggested step
+
+Run a CCGT notebook or summary script and compare CCGT NPV against hard coal under the same run IDs.
+
 ## 2026-05-26 17:05 — Clarify scaled beta notebook rerun
 
 ### User request

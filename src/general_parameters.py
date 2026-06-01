@@ -17,7 +17,7 @@ from distributions import (
 
 # Carbon price placeholder specified for the general model setup.
 CARBON_PRICE_EUR_PER_T = FixedParameter(
-    value=1.0,
+    value=80.0,
     unit="EUR/tCO2",
     description="Carbon price used in the general setup.",
 )
@@ -34,7 +34,7 @@ GAS_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     minimum=12.5,
     mean=39.3,
     maximum=89.7,
-    unit="EUR/MWh",
+    unit="EUR/MWh_th",
     description="Scaled beta distribution for gas price.",
 )
 

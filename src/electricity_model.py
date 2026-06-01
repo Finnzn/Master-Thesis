@@ -7,6 +7,7 @@ from typing import Mapping
 import numpy as np
 
 from distributions import (
+    FixedParameter,
     ScaledBetaDistribution,
     TriangularDistribution,
     UniformDistribution,
@@ -24,6 +25,7 @@ from electricity_parameters import (
 from general_parameters import (
     CARBON_PRICE_EUR_PER_T,
     COAL_PRICE_DISTRIBUTION,
+    GAS_PRICE_DISTRIBUTION,
     INTEREST_RATE,
 )
 
@@ -102,25 +104,45 @@ def _sample_distribution(
     raise TypeError(f"Unsupported distribution type: {type(distribution)!r}")
 
 
-def simulate_hard_coal_npv(
+def _sample_parameter(
+    parameter: (
+        FixedParameter
+        | ScaledBetaDistribution
+        | TriangularDistribution
+        | UniformDistribution
+    ),
+    size: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    if isinstance(parameter, FixedParameter):
+        return np.full(size, parameter.value)
+
+    return _sample_distribution(distribution=parameter, size=size, rng=rng)
+
+
+def simulate_electricity_technology_npv(
+    technology: str,
     size: int,
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, np.ndarray]:
-    """Run a Monte Carlo NPV simulation for the hard coal electricity plant."""
+    """Run a Monte Carlo NPV simulation for one electricity technology."""
 
     if size <= 0:
         raise ValueError("size must be positive.")
+    if technology not in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
+        raise ValueError(f"Unknown electricity technology: {technology!r}.")
 
     generator = rng if rng is not None else np.random.default_rng()
-    technology_distributions = ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS["hard_coal"]
-    technology_fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS["hard_coal"]
+    technology_distributions = ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology]
+    technology_fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
 
     annual_output_mwh = ANNUAL_ELECTRICITY_OUTPUT_MWH.value
-    full_load_hours = technology_fixed_parameters["full_load_hours_per_year"].value
-    capacity_mw = calculate_capacity_mw(
-        annual_electricity_output_mwh=annual_output_mwh,
-        full_load_hours_per_year=full_load_hours,
+    full_load_hours = _sample_parameter(
+        technology_fixed_parameters["full_load_hours_per_year"],
+        size=size,
+        rng=generator,
     )
+    capacity_mw = annual_output_mwh / full_load_hours
     capacity_kw = capacity_mw * 1_000.0
 
     capex_eur_per_kw = _sample_distribution(
@@ -148,8 +170,19 @@ def simulate_hard_coal_npv(
         size=size,
         rng=generator,
     )
-    coal_price_eur_per_mwh_th = sample_scaled_beta(
-        distribution=COAL_PRICE_DISTRIBUTION,
+    fuel_price_distribution_by_technology = {
+        "hard_coal": COAL_PRICE_DISTRIBUTION,
+        "ccgt": GAS_PRICE_DISTRIBUTION,
+    }
+    fuel_price_key_by_technology = {
+        "hard_coal": "coal_price_eur_per_mwh_th",
+        "ccgt": "gas_price_eur_per_mwh_th",
+    }
+    if technology not in fuel_price_distribution_by_technology:
+        raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
+
+    fuel_price_eur_per_mwh_th = sample_scaled_beta(
+        distribution=fuel_price_distribution_by_technology[technology],
         size=size,
         rng=generator,
     )
@@ -162,7 +195,7 @@ def simulate_hard_coal_npv(
     annual_fuel_cost_eur = (
         annual_output_mwh
         * fuel_consumption_mwh_th_per_mwh_e
-        * coal_price_eur_per_mwh_th
+        * fuel_price_eur_per_mwh_th
     )
     annual_emissions_cost_eur = (
         annual_output_mwh * emissions_tco2_per_mwh_e * CARBON_PRICE_EUR_PER_T.value
@@ -180,18 +213,23 @@ def simulate_hard_coal_npv(
         lifetime_years=int(LIFETIME_ELECTRICITY_YEARS.value),
         discount_rate=INTEREST_RATE.value,
     )
+    lifetime_output_mwh = annual_output_mwh * LIFETIME_ELECTRICITY_YEARS.value
+    npv_eur_per_mwh = npv_eur / lifetime_output_mwh
 
     return {
         "run_id": np.arange(size),
+        "technology": np.full(size, technology),
         "annual_output_mwh": np.full(size, annual_output_mwh),
-        "capacity_mw": np.full(size, capacity_mw),
-        "capacity_kw": np.full(size, capacity_kw),
+        "full_load_hours_per_year": full_load_hours,
+        "capacity_mw": capacity_mw,
+        "capacity_kw": capacity_kw,
         "capex_eur_per_kw": capex_eur_per_kw,
         "fixed_opex_eur_per_kw_year": fixed_opex_eur_per_kw_year,
         "variable_opex_eur_per_mwh": variable_opex_eur_per_mwh,
         "fuel_consumption_mwh_th_per_mwh_e": fuel_consumption_mwh_th_per_mwh_e,
         "emissions_tco2_per_mwh_e": emissions_tco2_per_mwh_e,
-        "coal_price_eur_per_mwh_th": coal_price_eur_per_mwh_th,
+        "fuel_price_eur_per_mwh_th": fuel_price_eur_per_mwh_th,
+        fuel_price_key_by_technology[technology]: fuel_price_eur_per_mwh_th,
         "electricity_price_eur_per_mwh": np.full(size, electricity_price_eur_per_mwh),
         "carbon_price_eur_per_t": np.full(size, CARBON_PRICE_EUR_PER_T.value),
         "initial_capex_eur": initial_capex_eur,
@@ -202,4 +240,54 @@ def simulate_hard_coal_npv(
         "annual_emissions_cost_eur": annual_emissions_cost_eur,
         "annual_net_cash_flow_eur": annual_net_cash_flow_eur,
         "npv_eur": npv_eur,
+        "lifetime_output_mwh": np.full(size, lifetime_output_mwh),
+        "npv_eur_per_mwh": npv_eur_per_mwh,
+        "npv_million_eur_per_mwh": npv_eur_per_mwh / 1_000_000,
+    }
+
+
+def simulate_hard_coal_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for the hard coal electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="hard_coal",
+        size=size,
+        rng=rng,
+    )
+
+
+def simulate_ccgt_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for a CCGT electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="ccgt",
+        size=size,
+        rng=rng,
+    )
+
+
+def simulate_electricity_technologies_npv(
+    size: int,
+    technologies: tuple[str, ...] = ("hard_coal", "ccgt"),
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, Mapping[str, np.ndarray]]:
+    """Run NPV simulations for multiple technologies with aligned run IDs."""
+
+    if size <= 0:
+        raise ValueError("size must be positive.")
+
+    generator = rng if rng is not None else np.random.default_rng()
+    return {
+        technology: simulate_electricity_technology_npv(
+            technology=technology,
+            size=size,
+            rng=generator,
+        )
+        for technology in technologies
     }
