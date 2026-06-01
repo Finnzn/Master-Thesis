@@ -1,3 +1,62 @@
+## 2026-06-01 14:43 — Add CCGT with CCS electricity NPV simulation
+
+### User request
+
+Add CCGT+CCS using the same style as the existing electricity technologies, with average full-load hours, then run a full sanity and logic check across the documents and code.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added CCGT+CCS CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added CCGT+CCS gas-price mapping, simulation wrapper, and CCGT+CCS to the default multi-technology simulation.
+- `notebooks/deterministic_ccgt_ccs_npv.ipynb` — added deterministic CCGT+CCS NPV notebook.
+- `notebooks/plot_ccgt_ccs_npv.ipynb` — added CCGT+CCS Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added CCGT+CCS technology assumptions:
+  - CAPEX: uniform `1,487-2,557 EUR/kW`.
+  - Fixed OPEX: triangular `32.0 / 42.0 / 60.2 EUR/kW/year`.
+  - Variable OPEX: triangular `4.5 / 6.73 / 7.6 EUR/MWh_e`.
+  - Fuel consumption: uniform `1.90-1.94 MWh_th/MWh_e`.
+  - Residual direct emissions: uniform `0.0058-0.039 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(3,000 + 6,300) / 2 = 4,650 h/year`.
+- Added `simulate_ccgt_ccs_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `ccgt_ccs` by default.
+- Used the existing gas-price distribution and output key `gas_price_eur_per_mwh_th`.
+- Added deterministic and plotting notebooks for CCGT+CCS using the same structure as the other electricity-technology notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py src/cement_parameters.py`
+  - `python3 -m json.tool notebooks/deterministic_ccgt_ccs_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_ccgt_ccs_npv.ipynb`
+  - `for f in notebooks/*.ipynb; do python3 -m json.tool "$f" >/dev/null || exit 1; done; echo all-notebooks-valid`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 - <<'PY' ...`
+- Result:
+  - Passed.
+  - All notebooks are valid JSON.
+  - The deterministic CCGT+CCS notebook executed and returned NPV `-423.526 million EUR`, or `-16.941 EUR/MWh`, with the current assumptions.
+  - A 20,000-run CCGT+CCS sanity simulation returned mean NPV `-422.443 million EUR`, or `-16.898 EUR/MWh`.
+  - Capacity, CAPEX, fixed OPEX, variable OPEX, fuel cost, emissions cost, annual net cash flow, lifetime-output, and NPV-per-MWh relationships passed for all electricity technologies.
+  - Multi-technology results now include `hard_coal`, `ccgt`, `ccgt_ccs`, `nuclear`, `wind_offshore`, `wind_onshore`, `pv`, and `biogas` with aligned run IDs.
+
+### Reproducibility notes
+
+- This adds CCGT+CCS as a new electricity technology and changes the default multi-technology simulation output by including CCGT+CCS.
+- No generated result files, figures, reports, or PDFs were written.
+- Sanity check flags:
+  - Plot notebooks still use `np.random.default_rng()` without a fixed seed, so Monte Carlo summaries are not exactly reproducible.
+  - The model still uses one shared electricity lifetime parameter for all technologies.
+  - The model still uses one fixed electricity retail-price revenue assumption for all technologies, without technology-specific capture prices.
+  - `ELECTRICITY_PRICE_DISTRIBUTION` remains defined but unused by the electricity NPV model.
+  - CCGT+CCS uses residual direct emissions only; separate CO2 capture rate, captured CO2 mass flow, transport, storage, and CCS chain costs are not explicitly modeled unless already embedded in the user-provided CAPEX/OPEX values.
+  - `npv_million_eur_per_mwh` remains a very small unit; `EUR/MWh` or `MEUR/TWh` may be easier to interpret.
+
+### Next suggested step
+
+Decide whether CCS transport and storage costs should be modeled explicitly or treated as already included in the CCGT+CCS CAPEX/OPEX assumptions.
+
 ## 2026-06-01 14:31 — Rename fuel-price distribution keys to thermal units
 
 ### User request

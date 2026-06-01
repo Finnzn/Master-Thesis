@@ -122,6 +122,51 @@ CCGT_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
+# CCGT with CCS technology parameters.
+CCGT_CCS_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=1_487.0,
+    upper_bound=2_557.0,
+    unit="EUR/kW",
+    description="Uniform distribution for CCGT with CCS CAPEX, not annualized.",
+)
+
+CCGT_CCS_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=32.0,
+    mode=42.0,
+    maximum=60.2,
+    unit="EUR/kW/year",
+    description="Triangular distribution for CCGT with CCS fixed OPEX.",
+)
+
+CCGT_CCS_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=4.5,
+    mode=6.73,
+    maximum=7.6,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for CCGT with CCS variable OPEX excluding fuel and electricity.",
+)
+
+CCGT_CCS_FUEL_CONSUMPTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=1.90,
+    upper_bound=1.94,
+    unit="MWh_th/MWh_e",
+    description="Uniform distribution for CCGT with CCS fuel consumption.",
+)
+
+CCGT_CCS_EMISSIONS_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0058,
+    upper_bound=0.039,
+    unit="tCO2/MWh_e",
+    description="Uniform distribution for CCGT with CCS residual direct emissions.",
+)
+
+CCGT_CCS_FULL_LOAD_HOURS = FixedParameter(
+    value=4_650.0,
+    unit="h/year",
+    description="Average full-load hours for the CCGT with CCS technology.",
+)
+
+
 # Nuclear technology parameters.
 NUCLEAR_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=6_000.0,
@@ -355,6 +400,9 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     "ccgt": {
         "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
     },
+    "ccgt_ccs": {
+        "full_load_hours_per_year": CCGT_CCS_FULL_LOAD_HOURS,
+    },
     "nuclear": {
         "full_load_hours_per_year": NUCLEAR_FULL_LOAD_HOURS,
     },
@@ -389,6 +437,13 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": CCGT_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": CCGT_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": CCGT_EMISSIONS_DISTRIBUTION,
+    },
+    "ccgt_ccs": {
+        "capex_eur_per_kw": CCGT_CCS_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": CCGT_CCS_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": CCGT_CCS_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": CCGT_CCS_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": CCGT_CCS_EMISSIONS_DISTRIBUTION,
     },
     "nuclear": {
         "capex_eur_per_kw": NUCLEAR_CAPEX_DISTRIBUTION,
