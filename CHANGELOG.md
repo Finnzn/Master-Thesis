@@ -1,3 +1,100 @@
+## 2026-06-01 14:31 — Rename fuel-price distribution keys to thermal units
+
+### User request
+
+Change `gas_price_eur_per_mwh` and `coal_price_eur_per_mwh` to include `_th` at the end.
+
+### Files changed (if needed)
+
+- `src/general_parameters.py` — renamed general fuel-price distribution keys to `gas_price_eur_per_mwh_th` and `coal_price_eur_per_mwh_th`.
+
+### What was implemented
+
+- Updated `GENERAL_DISTRIBUTIONS` keys:
+  - `gas_price_eur_per_mwh` -> `gas_price_eur_per_mwh_th`.
+  - `coal_price_eur_per_mwh` -> `coal_price_eur_per_mwh_th`.
+- Kept the underlying gas and coal distribution values unchanged.
+
+### Verification (if needed)
+
+- Commands run:
+  - `rg -n '"(gas|coal)_price_eur_per_mwh"|\[("|\\x27)(gas|coal)_price_eur_per_mwh("|\\x27)\]' src notebooks docs data results figures tests README.md AGENT.md 2>/dev/null`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/general_parameters.py src/electricity_model.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 - <<'PY' ...`
+- Result:
+  - Passed.
+  - The active project files no longer contain exact `gas_price_eur_per_mwh` or `coal_price_eur_per_mwh` keys without `_th`.
+  - `GENERAL_DISTRIBUTIONS` now contains `gas_price_eur_per_mwh_th` and `coal_price_eur_per_mwh_th`.
+
+### Reproducibility notes
+
+- This is a naming/unit-clarity change only.
+- No parameter values, model equations, simulation outputs, figures, reports, or PDFs were changed.
+- Older historical changelog entries were left unchanged according to the repository rule that previous changelog entries must not be rewritten.
+
+### Next suggested step
+
+Use the `_th` suffix consistently for any future thermal fuel-price parameter names.
+
+## 2026-06-01 14:24 — Add biogas electricity NPV simulation
+
+### User request
+
+Add biogas using the same style as the existing electricity technologies, with average full-load hours and a fixed biogas fuel cost of `87.5 EUR/MWh_th`.
+
+### Files changed (if needed)
+
+- `src/general_parameters.py` — added fixed biogas fuel-price parameter.
+- `src/electricity_parameters.py` — added biogas CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added biogas fuel-price mapping, simulation wrapper, and biogas to the default multi-technology simulation.
+- `notebooks/deterministic_biogas_npv.ipynb` — added deterministic biogas NPV notebook.
+- `notebooks/plot_biogas_npv.ipynb` — added biogas Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added fixed biogas fuel price:
+  - Biogas price: `87.5 EUR/MWh_th`.
+- Added biogas technology assumptions:
+  - CAPEX: uniform `2,894-5,788 EUR/kW`.
+  - Fixed OPEX: uniform `92.6-301.0 EUR/kW/year`.
+  - Variable OPEX: triangular `3.2 / 4.0 / 5.2 EUR/MWh_e`.
+  - Fuel consumption: triangular `2.38 / 2.50 / 2.70 MWh_th/MWh_e`.
+  - Fossil direct emissions: fixed `0 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(4,300 + 6,300) / 2 = 5,300 h/year`.
+- Added `simulate_biogas_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `biogas` by default.
+- Added deterministic and plotting notebooks for biogas using the same structure as the other electricity-technology notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/general_parameters.py src/electricity_parameters.py src/electricity_model.py`
+  - `python3 -m json.tool notebooks/deterministic_biogas_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_biogas_npv.ipynb`
+  - `for f in notebooks/*.ipynb; do python3 -m json.tool "$f" >/dev/null || exit 1; done; echo all-notebooks-valid`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 - <<'PY' ...`
+- Result:
+  - Passed.
+  - Biogas simulation returned fixed `5,300 h/year`, fixed fuel price `87.5 EUR/MWh_th`, and zero fossil direct emissions.
+  - Biogas normalized capacity for `1,000,000 MWh/year` is `188.679 MW`.
+  - A 10,000-run biogas sanity simulation returned mean NPV `-2,615.424 million EUR` and mean normalized NPV `-104.617 EUR/MWh` with the current assumptions.
+  - Capacity, fuel cost, emissions cost, lifetime-output, and NPV-per-MWh relationships passed.
+  - Multi-technology results now include `hard_coal`, `ccgt`, `nuclear`, `wind_offshore`, `wind_onshore`, `pv`, and `biogas` with aligned run IDs.
+
+### Reproducibility notes
+
+- This adds biogas as a new electricity technology and changes the default multi-technology simulation output by including biogas.
+- No generated result files, figures, reports, or PDFs were written.
+- Sanity check flags remain:
+  - Plot notebooks still use `np.random.default_rng()` without a fixed seed, so Monte Carlo summaries are not exactly reproducible.
+  - The model still uses one shared electricity lifetime parameter for all technologies.
+  - The model still uses one fixed electricity retail-price revenue assumption for all technologies, without technology-specific capture prices.
+  - Biogenic emissions are represented as zero fossil direct emissions only; separate biogenic carbon tracking is not yet modeled.
+
+### Next suggested step
+
+Decide whether biogenic emissions or biomass supply constraints should be represented explicitly before comparing biogas directly against fossil and renewable technologies.
+
 ## 2026-06-01 14:16 — Add PV electricity NPV simulation
 
 ### User request

@@ -35,6 +35,12 @@ NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
     description="Nuclear fuel price for uranium.",
 )
 
+BIOGAS_PRICE_EUR_PER_MWH_TH = FixedParameter(
+    value=87.5,
+    unit="EUR/MWh_th",
+    description="Biogas fuel price.",
+)
+
 NO_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
     value=0.0,
     unit="EUR/MWh_th",
@@ -70,11 +76,12 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "carbon_price_eur_per_t": CARBON_PRICE_EUR_PER_T,
     "interest_rate": INTEREST_RATE,
     "nuclear_fuel_price_eur_per_mwh_th": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
+    "biogas_price_eur_per_mwh_th": BIOGAS_PRICE_EUR_PER_MWH_TH,
     "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,
 }
 
 GENERAL_DISTRIBUTIONS: Mapping[str, ScaledBetaDistribution] = {
-    "gas_price_eur_per_mwh": GAS_PRICE_DISTRIBUTION,
-    "coal_price_eur_per_mwh": COAL_PRICE_DISTRIBUTION,
+    "gas_price_eur_per_mwh_th": GAS_PRICE_DISTRIBUTION,
+    "coal_price_eur_per_mwh_th": COAL_PRICE_DISTRIBUTION,
     "electricity_price_eur_per_mwh": ELECTRICITY_PRICE_DISTRIBUTION,
 }

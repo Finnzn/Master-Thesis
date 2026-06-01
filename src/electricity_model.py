@@ -23,6 +23,7 @@ from electricity_parameters import (
     RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
+    BIOGAS_PRICE_EUR_PER_MWH_TH,
     CARBON_PRICE_EUR_PER_T,
     COAL_PRICE_DISTRIBUTION,
     GAS_PRICE_DISTRIBUTION,
@@ -179,6 +180,7 @@ def simulate_electricity_technology_npv(
         "wind_offshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "wind_onshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "pv": NO_FUEL_PRICE_EUR_PER_MWH_TH,
+        "biogas": BIOGAS_PRICE_EUR_PER_MWH_TH,
     }
     fuel_price_key_by_technology = {
         "hard_coal": "coal_price_eur_per_mwh_th",
@@ -187,6 +189,7 @@ def simulate_electricity_technology_npv(
         "wind_offshore": "no_fuel_price_eur_per_mwh_th",
         "wind_onshore": "no_fuel_price_eur_per_mwh_th",
         "pv": "no_fuel_price_eur_per_mwh_th",
+        "biogas": "biogas_price_eur_per_mwh_th",
     }
     if technology not in fuel_price_distribution_by_technology:
         raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
@@ -334,6 +337,19 @@ def simulate_pv_npv(
     )
 
 
+def simulate_biogas_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for a biogas electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="biogas",
+        size=size,
+        rng=rng,
+    )
+
+
 def simulate_electricity_technologies_npv(
     size: int,
     technologies: tuple[str, ...] = (
@@ -343,6 +359,7 @@ def simulate_electricity_technologies_npv(
         "wind_offshore",
         "wind_onshore",
         "pv",
+        "biogas",
     ),
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:

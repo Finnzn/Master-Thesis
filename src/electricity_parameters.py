@@ -294,6 +294,50 @@ PV_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
+# Biogas technology parameters.
+BIOGAS_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=2_894.0,
+    upper_bound=5_788.0,
+    unit="EUR/kW",
+    description="Uniform distribution for biogas CAPEX, not annualized.",
+)
+
+BIOGAS_FIXED_OPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=92.6,
+    upper_bound=301.0,
+    unit="EUR/kW/year",
+    description="Uniform distribution for biogas fixed OPEX.",
+)
+
+BIOGAS_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=3.2,
+    mode=4.0,
+    maximum=5.2,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for biogas variable OPEX excluding fuel and electricity.",
+)
+
+BIOGAS_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
+    minimum=2.38,
+    mode=2.50,
+    maximum=2.70,
+    unit="MWh_th/MWh_e",
+    description="Triangular distribution for biogas fuel consumption.",
+)
+
+BIOGAS_EMISSIONS = FixedParameter(
+    value=0.0,
+    unit="tCO2/MWh_e",
+    description="Fossil direct emissions for biogas electricity generation.",
+)
+
+BIOGAS_FULL_LOAD_HOURS = FixedParameter(
+    value=5_300.0,
+    unit="h/year",
+    description="Average full-load hours for the biogas technology.",
+)
+
+
 # Parameter registries.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
@@ -322,6 +366,9 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     },
     "pv": {
         "full_load_hours_per_year": PV_FULL_LOAD_HOURS,
+    },
+    "biogas": {
+        "full_load_hours_per_year": BIOGAS_FULL_LOAD_HOURS,
     },
 }
 
@@ -370,5 +417,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": PV_VARIABLE_OPEX,
         "fuel_consumption_mwh_th_per_mwh_e": PV_FUEL_CONSUMPTION,
         "emissions_tco2_per_mwh_e": PV_EMISSIONS,
+    },
+    "biogas": {
+        "capex_eur_per_kw": BIOGAS_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": BIOGAS_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": BIOGAS_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": BIOGAS_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": BIOGAS_EMISSIONS,
     },
 }
