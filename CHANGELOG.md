@@ -1,3 +1,64 @@
+## 2026-06-01 13:51 — Add offshore wind electricity NPV simulation
+
+### User request
+
+Add offshore wind power using the same approach as the existing electricity technologies: average full-load hours, technology parameter distributions, matching notebooks, and a full sanity/logic check afterward.
+
+### Files changed (if needed)
+
+- `src/general_parameters.py` — added a fixed zero fuel-price placeholder for non-fuel electricity technologies.
+- `src/electricity_parameters.py` — added offshore wind CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added offshore wind fuel-price mapping, simulation wrapper, and offshore wind to the default multi-technology simulation.
+- `notebooks/deterministic_wind_offshore_npv.ipynb` — added deterministic offshore wind NPV notebook.
+- `notebooks/plot_wind_offshore_npv.ipynb` — added offshore wind Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added `NO_FUEL_PRICE_EUR_PER_MWH_TH` as a fixed zero fuel-price placeholder.
+- Added offshore wind technology assumptions:
+  - CAPEX: uniform `2,200-3,400 EUR/kW`.
+  - Fixed OPEX: triangular `31.2 / 39 / 50.7 EUR/kW/year`.
+  - Variable OPEX: triangular `6.4 / 8 / 10.4 EUR/MWh_e`.
+  - Fuel consumption: fixed `0 MWh_th/MWh_e`.
+  - Direct stack emissions: fixed `0 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(3,200 + 4,500) / 2 = 3,850 h/year`.
+- Added `simulate_wind_offshore_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `wind_offshore` by default.
+- Added technology-specific no-fuel output as `no_fuel_price_eur_per_mwh_th`.
+- Added deterministic and plotting notebooks for offshore wind using the same structure as the existing electricity-technology notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m json.tool notebooks/deterministic_wind_offshore_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_wind_offshore_npv.ipynb`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py src/cement_parameters.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_wind_offshore_npv, simulate_electricity_technologies_npv; wind=simulate_wind_offshore_npv(5, np.random.default_rng(42)); both=simulate_electricity_technologies_npv(5, rng=np.random.default_rng(42)); print(wind["run_id"].tolist()); print(wind["full_load_hours_per_year"].tolist()); print(wind["fuel_consumption_mwh_th_per_mwh_e"].tolist()); print(wind["no_fuel_price_eur_per_mwh_th"].tolist()); print(wind["emissions_tco2_per_mwh_e"].tolist()); print(round(float(wind["capacity_mw"][0]), 6)); print(both.keys()); print(np.array_equal(both["hard_coal"]["run_id"], both["wind_offshore"]["run_id"]))'`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_wind_offshore_npv; r = simulate_wind_offshore_npv(10000, np.random.default_rng(42)); print(np.allclose(r["annual_fuel_cost_eur"], 0.0)); print(np.allclose(r["annual_emissions_cost_eur"], 0.0)); print(np.allclose(r["npv_eur_per_mwh"], r["npv_eur"] / r["lifetime_output_mwh"]))'`
+  - `for f in notebooks/*.ipynb; do python3 -m json.tool "$f" >/dev/null || exit 1; done; echo all-notebooks-valid`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_electricity_technology_npv, simulate_electricity_technologies_npv; techs = ("hard_coal", "ccgt", "nuclear", "wind_offshore");\nfor tech in techs:\n    r = simulate_electricity_technology_npv(tech, 20000, np.random.default_rng(42)); print(tech, np.allclose(r["capacity_mw"], r["annual_output_mwh"] / r["full_load_hours_per_year"]), np.allclose(r["annual_fuel_cost_eur"], r["annual_output_mwh"] * r["fuel_consumption_mwh_th_per_mwh_e"] * r["fuel_price_eur_per_mwh_th"]), np.allclose(r["annual_emissions_cost_eur"], r["annual_output_mwh"] * r["emissions_tco2_per_mwh_e"] * r["carbon_price_eur_per_t"]), np.allclose(r["npv_eur_per_mwh"], r["npv_eur"] / r["lifetime_output_mwh"]))\nboth = simulate_electricity_technologies_npv(100, rng=np.random.default_rng(123)); print(tuple(both.keys())); print(all(np.array_equal(both["hard_coal"]["run_id"], both[t]["run_id"]) for t in techs))'`
+- Result:
+  - Passed.
+  - Offshore wind simulation returned fixed `3,850 h/year`, zero fuel consumption, zero fuel price, and zero direct emissions.
+  - Offshore wind normalized capacity for `1,000,000 MWh/year` is `259.740260 MW`.
+  - Deterministic offshore wind notebook execution returned `83.371163 million EUR` and `3.334847 EUR/MWh` with the current assumptions.
+  - All notebooks are valid JSON.
+  - Capacity, fuel cost, emissions cost, and NPV-per-MWh relationships passed for hard coal, CCGT, nuclear, and offshore wind.
+  - Multi-technology results now include `hard_coal`, `ccgt`, `nuclear`, and `wind_offshore` with aligned run IDs.
+
+### Reproducibility notes
+
+- This adds offshore wind as a new electricity technology and changes the default multi-technology simulation output by including offshore wind.
+- No generated result files, figures, reports, or PDFs were written.
+- Sanity check flags:
+  - Plot notebooks still use `np.random.default_rng()` without a fixed seed, so Monte Carlo summaries are not exactly reproducible.
+  - The model still uses one shared electricity lifetime parameter for all technologies.
+  - The model still uses one fixed electricity retail-price revenue assumption for all technologies, without technology-specific capture prices.
+
+### Next suggested step
+
+Decide whether electricity lifetimes, discount rates, and revenue prices should become technology-specific before using the NPV distributions as final thesis results.
+
 ## 2026-06-01 11:07 — Add nuclear electricity NPV simulation
 
 ### User request

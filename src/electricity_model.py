@@ -27,6 +27,7 @@ from general_parameters import (
     COAL_PRICE_DISTRIBUTION,
     GAS_PRICE_DISTRIBUTION,
     INTEREST_RATE,
+    NO_FUEL_PRICE_EUR_PER_MWH_TH,
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
 
@@ -175,11 +176,13 @@ def simulate_electricity_technology_npv(
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "ccgt": GAS_PRICE_DISTRIBUTION,
         "nuclear": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
+        "wind_offshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
     }
     fuel_price_key_by_technology = {
         "hard_coal": "coal_price_eur_per_mwh_th",
         "ccgt": "gas_price_eur_per_mwh_th",
         "nuclear": "uranium_price_eur_per_mwh_th",
+        "wind_offshore": "no_fuel_price_eur_per_mwh_th",
     }
     if technology not in fuel_price_distribution_by_technology:
         raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
@@ -288,9 +291,27 @@ def simulate_nuclear_npv(
     )
 
 
+def simulate_wind_offshore_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for an offshore wind electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="wind_offshore",
+        size=size,
+        rng=rng,
+    )
+
+
 def simulate_electricity_technologies_npv(
     size: int,
-    technologies: tuple[str, ...] = ("hard_coal", "ccgt", "nuclear"),
+    technologies: tuple[str, ...] = (
+        "hard_coal",
+        "ccgt",
+        "nuclear",
+        "wind_offshore",
+    ),
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:
     """Run NPV simulations for multiple technologies with aligned run IDs."""

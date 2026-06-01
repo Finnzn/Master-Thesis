@@ -35,6 +35,12 @@ NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
     description="Nuclear fuel price for uranium.",
 )
 
+NO_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
+    value=0.0,
+    unit="EUR/MWh_th",
+    description="Fuel price placeholder for non-fuel electricity technologies.",
+)
+
 # Market-price distributions preserve source-table minimum, maximum, and mean.
 GAS_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     minimum=12.5,
@@ -64,6 +70,7 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "carbon_price_eur_per_t": CARBON_PRICE_EUR_PER_T,
     "interest_rate": INTEREST_RATE,
     "nuclear_fuel_price_eur_per_mwh_th": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
+    "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,
 }
 
 GENERAL_DISTRIBUTIONS: Mapping[str, ScaledBetaDistribution] = {
