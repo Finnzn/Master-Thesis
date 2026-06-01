@@ -1,3 +1,61 @@
+## 2026-06-01 11:07 — Add nuclear electricity NPV simulation
+
+### User request
+
+Add nuclear as the next electricity technology using the same approach as hard coal and CCGT. Use average full-load hours and add a fixed nuclear fuel (uranium) cost of `8 EUR/MWh_th` to the general parameters.
+
+### Files changed (if needed)
+
+- `src/general_parameters.py` — added fixed nuclear fuel price for uranium.
+- `src/electricity_parameters.py` — added nuclear CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added nuclear fuel-price mapping, support for fixed technology parameters in sampled inputs, a nuclear simulation wrapper, and nuclear in the default multi-technology simulation.
+- `notebooks/deterministic_nuclear_npv.ipynb` — added deterministic nuclear NPV notebook.
+- `notebooks/plot_nuclear_npv.ipynb` — added nuclear Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added `NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH` as a fixed parameter with value `8 EUR/MWh_th`.
+- Added nuclear technology assumptions:
+  - CAPEX: uniform `6,000-16,000 EUR/kW`.
+  - Fixed OPEX: triangular `80 / 100 / 130 EUR/kW/year`.
+  - Variable OPEX: triangular `5.6 / 7 / 9.1 EUR/MWh_e`.
+  - Fuel consumption: triangular `2.70 / 2.85 / 3.03 MWh_th/MWh_e`.
+  - Direct stack emissions: fixed `0 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(4,300 + 6,300) / 2 = 5,300 h/year`.
+- Updated the electricity model to sample fixed parameters and stochastic distributions through the same helper.
+- Added `simulate_nuclear_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `nuclear` by default alongside `hard_coal` and `ccgt`.
+- Added technology-specific nuclear fuel output as `uranium_price_eur_per_mwh_th`.
+- Added deterministic and plotting notebooks for nuclear using the same structure as the existing electricity-technology notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m json.tool notebooks/deterministic_nuclear_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_nuclear_npv.ipynb`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_nuclear_npv, simulate_electricity_technologies_npv; nuclear=simulate_nuclear_npv(5, np.random.default_rng(42)); both=simulate_electricity_technologies_npv(5, rng=np.random.default_rng(42)); print(nuclear["run_id"].tolist()); print(nuclear["full_load_hours_per_year"].tolist()); print(nuclear["uranium_price_eur_per_mwh_th"].tolist()); print(nuclear["emissions_tco2_per_mwh_e"].tolist()); print(round(float(nuclear["capacity_mw"][0]), 6)); print(both.keys()); print(np.array_equal(both["hard_coal"]["run_id"], both["nuclear"]["run_id"]))'`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -c 'import numpy as np; from electricity_model import simulate_nuclear_npv; r = simulate_nuclear_npv(10000, np.random.default_rng(42)); print(np.allclose(r["annual_fuel_cost_eur"], r["annual_output_mwh"] * r["fuel_consumption_mwh_th_per_mwh_e"] * r["fuel_price_eur_per_mwh_th"])); print(np.allclose(r["annual_emissions_cost_eur"], 0.0)); print(np.allclose(r["npv_eur_per_mwh"], r["npv_eur"] / r["lifetime_output_mwh"]))'`
+- Result:
+  - Passed.
+  - Nuclear simulation returned fixed `5,300 h/year`, fixed uranium price `8 EUR/MWh_th`, and fixed direct emissions of `0`.
+  - Nuclear normalized capacity for `1,000,000 MWh/year` is `188.679245 MW`.
+  - Multi-technology results now include `hard_coal`, `ccgt`, and `nuclear` with aligned run IDs.
+  - Nuclear fuel cost, emissions cost, and NPV-per-MWh relationships passed the arithmetic checks.
+  - Deterministic nuclear notebook execution returned `-1,590.814704 million EUR` and `-63.632588 EUR/MWh` with the current `80 EUR/tCO2` and `94.07 EUR/MWh` assumptions.
+- Notes:
+  - Running the deterministic notebook emitted sandbox-related PyArrow `sysctlbyname` warnings from pandas, but execution completed successfully.
+
+### Reproducibility notes
+
+- This adds nuclear as a new electricity technology and changes the default multi-technology simulation output by including nuclear.
+- No generated result files, figures, reports, or PDFs were written.
+- Existing hard coal and CCGT interfaces are preserved.
+
+### Next suggested step
+
+Run the nuclear plotting notebook and compare nuclear, CCGT, and hard coal under the aligned multi-technology runs.
+
 ## 2026-06-01 10:22 — Use average CCGT full-load hours
 
 ### User request

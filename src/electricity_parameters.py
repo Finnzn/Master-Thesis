@@ -122,6 +122,51 @@ CCGT_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
+# Nuclear technology parameters.
+NUCLEAR_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=6_000.0,
+    upper_bound=16_000.0,
+    unit="EUR/kW",
+    description="Uniform distribution for nuclear CAPEX, not annualized.",
+)
+
+NUCLEAR_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=80.0,
+    mode=100.0,
+    maximum=130.0,
+    unit="EUR/kW/year",
+    description="Triangular distribution for nuclear fixed OPEX.",
+)
+
+NUCLEAR_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=5.6,
+    mode=7.0,
+    maximum=9.1,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for nuclear variable OPEX excluding fuel and electricity.",
+)
+
+NUCLEAR_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
+    minimum=2.70,
+    mode=2.85,
+    maximum=3.03,
+    unit="MWh_th/MWh_e",
+    description="Triangular distribution for nuclear fuel consumption.",
+)
+
+NUCLEAR_EMISSIONS = FixedParameter(
+    value=0.0,
+    unit="tCO2/MWh_e",
+    description="Direct stack emissions for nuclear electricity generation.",
+)
+
+NUCLEAR_FULL_LOAD_HOURS = FixedParameter(
+    value=5_300.0,
+    unit="h/year",
+    description="Average full-load hours for the nuclear technology.",
+)
+
+
 # Parameter registries.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
@@ -139,11 +184,14 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     "ccgt": {
         "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
     },
+    "nuclear": {
+        "full_load_hours_per_year": NUCLEAR_FULL_LOAD_HOURS,
+    },
 }
 
 ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
     str,
-    Mapping[str, TriangularDistribution | UniformDistribution],
+    Mapping[str, FixedParameter | TriangularDistribution | UniformDistribution],
 ] = {
     "hard_coal": {
         "capex_eur_per_kw": HARD_COAL_CAPEX_DISTRIBUTION,
@@ -158,5 +206,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": CCGT_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": CCGT_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": CCGT_EMISSIONS_DISTRIBUTION,
+    },
+    "nuclear": {
+        "capex_eur_per_kw": NUCLEAR_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": NUCLEAR_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": NUCLEAR_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": NUCLEAR_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": NUCLEAR_EMISSIONS,
     },
 }

@@ -27,6 +27,7 @@ from general_parameters import (
     COAL_PRICE_DISTRIBUTION,
     GAS_PRICE_DISTRIBUTION,
     INTEREST_RATE,
+    NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
 
 
@@ -145,27 +146,27 @@ def simulate_electricity_technology_npv(
     capacity_mw = annual_output_mwh / full_load_hours
     capacity_kw = capacity_mw * 1_000.0
 
-    capex_eur_per_kw = _sample_distribution(
+    capex_eur_per_kw = _sample_parameter(
         technology_distributions["capex_eur_per_kw"],
         size=size,
         rng=generator,
     )
-    fixed_opex_eur_per_kw_year = _sample_distribution(
+    fixed_opex_eur_per_kw_year = _sample_parameter(
         technology_distributions["fixed_opex_eur_per_kw_year"],
         size=size,
         rng=generator,
     )
-    variable_opex_eur_per_mwh = _sample_distribution(
+    variable_opex_eur_per_mwh = _sample_parameter(
         technology_distributions["variable_opex_eur_per_mwh"],
         size=size,
         rng=generator,
     )
-    fuel_consumption_mwh_th_per_mwh_e = _sample_distribution(
+    fuel_consumption_mwh_th_per_mwh_e = _sample_parameter(
         technology_distributions["fuel_consumption_mwh_th_per_mwh_e"],
         size=size,
         rng=generator,
     )
-    emissions_tco2_per_mwh_e = _sample_distribution(
+    emissions_tco2_per_mwh_e = _sample_parameter(
         technology_distributions["emissions_tco2_per_mwh_e"],
         size=size,
         rng=generator,
@@ -173,16 +174,18 @@ def simulate_electricity_technology_npv(
     fuel_price_distribution_by_technology = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "ccgt": GAS_PRICE_DISTRIBUTION,
+        "nuclear": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
     }
     fuel_price_key_by_technology = {
         "hard_coal": "coal_price_eur_per_mwh_th",
         "ccgt": "gas_price_eur_per_mwh_th",
+        "nuclear": "uranium_price_eur_per_mwh_th",
     }
     if technology not in fuel_price_distribution_by_technology:
         raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
 
-    fuel_price_eur_per_mwh_th = sample_scaled_beta(
-        distribution=fuel_price_distribution_by_technology[technology],
+    fuel_price_eur_per_mwh_th = _sample_parameter(
+        parameter=fuel_price_distribution_by_technology[technology],
         size=size,
         rng=generator,
     )
@@ -272,9 +275,22 @@ def simulate_ccgt_npv(
     )
 
 
+def simulate_nuclear_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for a nuclear electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="nuclear",
+        size=size,
+        rng=rng,
+    )
+
+
 def simulate_electricity_technologies_npv(
     size: int,
-    technologies: tuple[str, ...] = ("hard_coal", "ccgt"),
+    technologies: tuple[str, ...] = ("hard_coal", "ccgt", "nuclear"),
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:
     """Run NPV simulations for multiple technologies with aligned run IDs."""
