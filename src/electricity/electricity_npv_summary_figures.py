@@ -459,7 +459,7 @@ def save_electricity_npv_figures(
 
 
 def _project_root() -> Path:
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parents[2]
 
 
 def parse_args() -> argparse.Namespace:

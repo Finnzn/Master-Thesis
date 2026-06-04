@@ -1335,6 +1335,46 @@ Add an NPV-based technology ranking feature to the existing Monte Carlo model, r
 ### Next suggested step
 
 Apply the same reusable ranking helpers when cement, aluminium, steel, or other sector Monte Carlo result mappings are added.
+
+## 2026-06-04 15:23 — Fix electricity summary default output root
+
+### User request
+
+Fix the NPV summary output paths so generated figures and CSV files are stored in the repository-level `figures/` and `data/` folders instead of folders inside `src/`.
+
+### Files changed (if needed)
+
+- `src/electricity/electricity_npv_summary_figures.py` — corrected project-root detection for default output paths.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Changed `_project_root()` to resolve to the repository root from `src/electricity/electricity_npv_summary_figures.py`.
+- The default CLI output directories now resolve to:
+  - `figures/`
+  - `data/raw/`
+  - `data/processed/`
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/electricity/electricity_npv_summary_figures.py`
+  - `env PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `ls -d figures data data/raw data/processed`
+- Result:
+  - Passed.
+- Notes:
+  - `_project_root()` now prints `/Users/finn/Desktop/MasterThesis`.
+  - The import check printed Matplotlib/font-cache warnings because `MPLCONFIGDIR` was not set for that command, but the path verification completed successfully.
+
+### Reproducibility notes
+
+- No scientific assumptions, parameter values, formulas, or generated thesis results were changed by this code fix.
+- Existing generated files under `src/data/` were not deleted or moved.
+
+### Next suggested step
+
+Clean up any accidentally generated `src/data/` or `src/figures/` outputs after deciding whether those files should be kept, moved, or removed.
 ## 2026-06-04 13:54 — Fix notebook imports and split generic NPV finance
 
 ### User request
