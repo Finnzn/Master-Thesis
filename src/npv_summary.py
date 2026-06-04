@@ -144,7 +144,11 @@ def npv_ranking_dataframe(
         method="min",
         ascending=False,
     )
-    return ranking[["simulation_id", "sector", "technology", "npv", "rank"]]
+    return (
+        ranking[["simulation_id", "sector", "technology", "npv", "rank"]]
+        .sort_values(["sector", "simulation_id", "rank", "technology"])
+        .reset_index(drop=True)
+    )
 
 
 def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
