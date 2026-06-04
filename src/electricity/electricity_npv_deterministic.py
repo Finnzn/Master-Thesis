@@ -7,8 +7,8 @@ from typing import Mapping
 import numpy as np
 
 from distributions import FixedParameter, ScaledBetaDistribution
-from electricity_capacity_calculation import calculate_capacity_kw
-from electricity_parameters import (
+from electricity.electricity_capacity_calculation import calculate_capacity_kw
+from electricity.electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,

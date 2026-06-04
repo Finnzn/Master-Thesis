@@ -1,3 +1,56 @@
+## 2026-06-04 14:31 — Move electricity source modules into package folder
+
+### User request
+
+Create a new `src/electricity/` folder and move all electricity-related source code there, while keeping general files and the cement parameter file at the first level of `src/`. Update code and notebook paths/imports accordingly.
+
+### Files changed (if needed)
+
+- `src/electricity/` — added the electricity source package.
+- `src/electricity/__init__.py` — added package initialization.
+- `src/electricity/electricity_capacity_calculation.py` — moved from `src/electricity_capacity_calculation.py`.
+- `src/electricity/electricity_parameters.py` — moved from `src/electricity_parameters.py`.
+- `src/electricity/electricity_npv_monte_carlo.py` — moved from `src/electricity_npv_monte_carlo.py` and updated package imports.
+- `src/electricity/electricity_npv_deterministic.py` — moved from `src/electricity_npv_deterministic.py` and updated package imports.
+- `src/electricity/electricity_npv_summary_figures.py` — moved from `src/electricity_npv_summary_figures.py` and updated package imports.
+- `notebooks/electricity/*.ipynb` — updated electricity Monte Carlo and deterministic imports to use the new `electricity.` package path.
+
+### What was implemented
+
+- Grouped all electricity-specific reusable source files under `src/electricity/`.
+- Left shared/general modules at first-level `src/`, including `distributions.py`, `general_parameters.py`, `npv_finance.py`, `npv_summary.py`, `npv_summary_plots.py`, and `cement_parameters.py`.
+- Updated source imports from top-level electricity modules to explicit package imports, such as `electricity.electricity_npv_monte_carlo`.
+- Updated electricity notebooks to import simulation and deterministic functions from the new package path.
+- The summary CLI is now run as:
+  - `PYTHONPATH=src python -m electricity.electricity_npv_summary_figures ...`
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py src/distributions.py src/general_parameters.py src/npv_finance.py src/npv_summary.py src/npv_summary_plots.py src/electricity/__init__.py src/electricity/electricity_capacity_calculation.py src/electricity/electricity_parameters.py src/electricity/electricity_npv_monte_carlo.py src/electricity/electricity_npv_deterministic.py src/electricity/electricity_npv_summary_figures.py`
+  - `python3 -m json.tool notebooks/electricity/plot_pv_npv.ipynb`
+  - `python3 -m json.tool notebooks/electricity/deterministic_pv_npv.ipynb`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from electricity.electricity_npv_monte_carlo import simulate_pv_npv; from electricity.electricity_npv_deterministic import calculate_deterministic_electricity_result; print(simulate_pv_npv(size=3)["technology"].tolist()); print(round(float(calculate_deterministic_electricity_result("pv")["npv_eur"][0]), 2))'`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind all --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-figures-electricity-package --raw-data-dir /private/tmp/mt-data-electricity-package/raw --processed-data-dir /private/tmp/mt-data-electricity-package/processed`
+  - `rg -n "from electricity_npv_|import electricity_npv_|from electricity_parameters|import electricity_parameters|from electricity_capacity_calculation|import electricity_capacity_calculation|-m electricity_npv_summary_figures|src/electricity_npv_|src/electricity_parameters|src/electricity_capacity" src notebooks README.md docs -g "*.py" -g "*.ipynb" -g "*.md" -S`
+- Result:
+  - Passed with the thesis conda environment.
+  - Representative notebooks remain valid JSON.
+  - Runtime import smoke test returned PV simulation output and deterministic PV NPV.
+  - The new package CLI generated test figures and CSVs in `/private/tmp`.
+  - No stale top-level electricity import/module-path references remain in live source, notebooks, README, or docs.
+- Notes:
+  - Plain `python3` in this shell resolves to Python 3.9 and cannot run the project's newer type syntax in `npv_summary.py`; runtime verification used `/opt/anaconda3/envs/master-thesis/bin/python`.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, data, thesis outputs, or generated repository figures were changed.
+- Existing commands that used `python -m electricity_npv_summary_figures` should now use `python -m electricity.electricity_npv_summary_figures`.
+
+### Next suggested step
+
+Update any external run scripts or personal notes outside this repository that still call the old top-level electricity module names.
+
 ## 2026-06-04 09:55 — Add reusable NPV technology summary figure generator
 
 ### User request

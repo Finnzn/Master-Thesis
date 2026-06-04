@@ -7,12 +7,12 @@ from datetime import date
 from pathlib import Path
 from typing import Mapping
 
-from electricity_npv_deterministic import (
+from electricity.electricity_npv_deterministic import (
     calculate_deterministic_electricity_npv_eur,
     calculate_deterministic_electricity_result,
     calculate_deterministic_electricity_results,
 )
-from electricity_npv_monte_carlo import (
+from electricity.electricity_npv_monte_carlo import (
     DEFAULT_RANDOM_SEED,
     DEFAULT_SAMPLE_SIZE,
     simulate_electricity_results,
