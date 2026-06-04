@@ -15,7 +15,7 @@ def dated_figure_path(
     run_date: date | None = None,
     extension: str = "png",
 ) -> Path:
-    """Build a dated figure path such as YYYY-MM-DD-Mean_NPV_Technology.png."""
+    """Build a dated figure path such as YYYY-MM-DD-Mean_NPV_Electricity.png."""
 
     figure_date = run_date or date.today()
     suffix = extension.lstrip(".")

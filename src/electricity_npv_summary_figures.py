@@ -1,4 +1,4 @@
-"""Generate electricity-sector NPV comparison figures."""
+"""Generate electricity-sector NPV comparison figures and CSV outputs."""
 
 from __future__ import annotations
 
@@ -9,12 +9,7 @@ from typing import Mapping
 
 import numpy as np
 
-from distributions import (
-    FixedParameter,
-    ScaledBetaDistribution,
-    TriangularDistribution,
-    UniformDistribution,
-)
+from distributions import FixedParameter, ScaledBetaDistribution
 from electricity_model import (
     calculate_capacity_kw,
     calculate_npv,
@@ -36,6 +31,13 @@ from general_parameters import (
     NO_FUEL_PRICE_EUR_PER_MWH_TH,
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
+from npv_summary import (
+    dated_csv_path,
+    deterministic_npv_million_eur,
+    mean_npv_million_eur,
+    representative_value,
+    save_results_csv,
+)
 from npv_summary_plots import dated_figure_path, plot_mean_npv_technology_bars
 
 
@@ -54,27 +56,38 @@ ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
     "biogas": "Biogas",
 }
 
+ELECTRICITY_RAW_INPUT_COLUMNS = (
+    "run_id",
+    "technology",
+    "annual_output_mwh",
+    "full_load_hours_per_year",
+    "capex_eur_per_kw",
+    "fixed_opex_eur_per_kw_year",
+    "variable_opex_eur_per_mwh",
+    "fuel_consumption_mwh_th_per_mwh_e",
+    "emissions_tco2_per_mwh_e",
+    "fuel_price_eur_per_mwh_th",
+    "electricity_price_eur_per_mwh",
+    "carbon_price_eur_per_t",
+)
 
-def representative_value(
-    parameter: (
-        FixedParameter
-        | ScaledBetaDistribution
-        | TriangularDistribution
-        | UniformDistribution
-    ),
-) -> float:
-    """Return the deterministic value used for a parameter specification."""
-
-    if isinstance(parameter, FixedParameter):
-        return parameter.value
-    if isinstance(parameter, ScaledBetaDistribution):
-        return parameter.mean
-    if isinstance(parameter, TriangularDistribution):
-        return parameter.mode
-    if isinstance(parameter, UniformDistribution):
-        return (parameter.lower_bound + parameter.upper_bound) / 2
-
-    raise TypeError(f"Unsupported parameter type: {type(parameter)!r}")
+ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
+    "run_id",
+    "technology",
+    "capacity_mw",
+    "capacity_kw",
+    "initial_capex_eur",
+    "annual_revenue_eur",
+    "annual_fixed_opex_eur",
+    "annual_variable_opex_eur",
+    "annual_fuel_cost_eur",
+    "annual_emissions_cost_eur",
+    "annual_net_cash_flow_eur",
+    "npv_eur",
+    "lifetime_output_mwh",
+    "npv_eur_per_mwh",
+    "npv_million_eur_per_mwh",
+)
 
 
 def electricity_fuel_price_parameter(
@@ -99,8 +112,10 @@ def electricity_fuel_price_parameter(
     return fuel_price_by_technology[technology]
 
 
-def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
-    """Calculate deterministic electricity NPV from representative values."""
+def calculate_deterministic_electricity_result(
+    technology: str,
+) -> Mapping[str, object]:
+    """Calculate deterministic electricity inputs and outputs for one technology."""
 
     if technology not in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
         raise ValueError(f"Unknown electricity technology: {technology!r}.")
@@ -155,8 +170,7 @@ def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
         - annual_fuel_cost_eur
         - annual_emissions_cost_eur
     )
-
-    return float(
+    npv_eur = float(
         calculate_npv(
             initial_capex_eur=np.array([initial_capex_eur]),
             annual_net_cash_flow_eur=np.array([annual_net_cash_flow_eur]),
@@ -164,6 +178,77 @@ def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
             discount_rate=INTEREST_RATE.value,
         )[0]
     )
+    lifetime_output_mwh = annual_output_mwh * LIFETIME_ELECTRICITY_YEARS.value
+    npv_eur_per_mwh = npv_eur / lifetime_output_mwh
+
+    return {
+        "run_id": [0],
+        "technology": [technology],
+        "annual_output_mwh": [annual_output_mwh],
+        "full_load_hours_per_year": [full_load_hours],
+        "capex_eur_per_kw": [capex_eur_per_kw],
+        "fixed_opex_eur_per_kw_year": [fixed_opex_eur_per_kw_year],
+        "variable_opex_eur_per_mwh": [variable_opex_eur_per_mwh],
+        "fuel_consumption_mwh_th_per_mwh_e": [
+            fuel_consumption_mwh_th_per_mwh_e
+        ],
+        "emissions_tco2_per_mwh_e": [emissions_tco2_per_mwh_e],
+        "fuel_price_eur_per_mwh_th": [fuel_price_eur_per_mwh_th],
+        "electricity_price_eur_per_mwh": [
+            RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
+        ],
+        "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
+        "capacity_mw": [capacity_kw / 1_000.0],
+        "capacity_kw": [capacity_kw],
+        "initial_capex_eur": [initial_capex_eur],
+        "annual_revenue_eur": [annual_revenue_eur],
+        "annual_fixed_opex_eur": [annual_fixed_opex_eur],
+        "annual_variable_opex_eur": [annual_variable_opex_eur],
+        "annual_fuel_cost_eur": [annual_fuel_cost_eur],
+        "annual_emissions_cost_eur": [annual_emissions_cost_eur],
+        "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
+        "npv_eur": [npv_eur],
+        "lifetime_output_mwh": [lifetime_output_mwh],
+        "npv_eur_per_mwh": [npv_eur_per_mwh],
+        "npv_million_eur_per_mwh": [npv_eur_per_mwh / 1_000_000],
+    }
+
+
+def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
+    """Calculate deterministic electricity NPV from representative values."""
+
+    return float(calculate_deterministic_electricity_result(technology)["npv_eur"][0])
+
+
+def simulate_electricity_results(
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    random_seed: int = DEFAULT_RANDOM_SEED,
+    technologies: tuple[str, ...] | None = None,
+) -> dict[str, Mapping[str, object]]:
+    """Run electricity simulations for all selected technologies."""
+
+    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
+    rng = np.random.default_rng(random_seed)
+    return {
+        technology: simulate_electricity_technology_npv(
+            technology=technology,
+            size=sample_size,
+            rng=rng,
+        )
+        for technology in selected_technologies
+    }
+
+
+def calculate_deterministic_electricity_results(
+    technologies: tuple[str, ...] | None = None,
+) -> dict[str, Mapping[str, object]]:
+    """Calculate deterministic electricity results for all selected technologies."""
+
+    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
+    return {
+        technology: calculate_deterministic_electricity_result(technology)
+        for technology in selected_technologies
+    }
 
 
 def calculate_mean_electricity_npv_million_eur(
@@ -173,19 +258,14 @@ def calculate_mean_electricity_npv_million_eur(
 ) -> dict[str, float]:
     """Calculate mean simulated NPV by electricity technology in million EUR."""
 
-    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
-    rng = np.random.default_rng(random_seed)
-    values: dict[str, float] = {}
-    for technology in selected_technologies:
-        simulation = simulate_electricity_technology_npv(
-            technology=technology,
-            size=sample_size,
-            rng=rng,
-        )
-        label = ELECTRICITY_TECHNOLOGY_LABELS.get(technology, technology)
-        values[label] = float(np.mean(simulation["npv_eur"]) / 1_000_000)
-
-    return values
+    return mean_npv_million_eur(
+        results_by_item=simulate_electricity_results(
+            sample_size=sample_size,
+            random_seed=random_seed,
+            technologies=technologies,
+        ),
+        labels=ELECTRICITY_TECHNOLOGY_LABELS,
+    )
 
 
 def calculate_deterministic_electricity_npv_million_eur(
@@ -193,13 +273,12 @@ def calculate_deterministic_electricity_npv_million_eur(
 ) -> dict[str, float]:
     """Calculate deterministic NPV by electricity technology in million EUR."""
 
-    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
-    return {
-        ELECTRICITY_TECHNOLOGY_LABELS.get(technology, technology): (
-            calculate_deterministic_electricity_npv_eur(technology) / 1_000_000
-        )
-        for technology in selected_technologies
-    }
+    return deterministic_npv_million_eur(
+        results_by_item=calculate_deterministic_electricity_results(
+            technologies=technologies
+        ),
+        labels=ELECTRICITY_TECHNOLOGY_LABELS,
+    )
 
 
 def save_electricity_mean_npv_figure(
@@ -247,6 +326,136 @@ def save_electricity_deterministic_npv_figure(
     )
 
 
+def save_electricity_mean_npv_outputs(
+    figure_dir: Path,
+    raw_data_dir: Path,
+    processed_data_dir: Path,
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    random_seed: int = DEFAULT_RANDOM_SEED,
+    run_date: date | None = None,
+    sector_name: str = "Electricity",
+) -> tuple[Path, Path, Path]:
+    """Save mean NPV figure plus raw-input and processed-output CSVs."""
+
+    output_date = run_date or date.today()
+    stem = f"Mean_NPV_{sector_name}"
+    results = simulate_electricity_results(
+        sample_size=sample_size,
+        random_seed=random_seed,
+    )
+    values = mean_npv_million_eur(
+        results_by_item=results,
+        labels=ELECTRICITY_TECHNOLOGY_LABELS,
+    )
+    figure_path = plot_mean_npv_technology_bars(
+        values_million_eur=values,
+        output_path=dated_figure_path(
+            output_dir=figure_dir,
+            stem=stem,
+            run_date=output_date,
+        ),
+        title="Mean NPV (MEUR)",
+    )
+    raw_csv_path = save_results_csv(
+        results_by_item=results,
+        columns=ELECTRICITY_RAW_INPUT_COLUMNS,
+        output_path=dated_csv_path(
+            output_dir=raw_data_dir,
+            stem=f"{stem}_raw_inputs",
+            run_date=output_date,
+        ),
+    )
+    processed_csv_path = save_results_csv(
+        results_by_item=results,
+        columns=ELECTRICITY_PROCESSED_OUTPUT_COLUMNS,
+        output_path=dated_csv_path(
+            output_dir=processed_data_dir,
+            stem=f"{stem}_processed_outputs",
+            run_date=output_date,
+        ),
+    )
+
+    return figure_path, raw_csv_path, processed_csv_path
+
+
+def save_electricity_deterministic_npv_outputs(
+    figure_dir: Path,
+    raw_data_dir: Path,
+    processed_data_dir: Path,
+    run_date: date | None = None,
+    sector_name: str = "Electricity",
+) -> tuple[Path, Path, Path]:
+    """Save deterministic NPV figure plus raw-input and processed-output CSVs."""
+
+    output_date = run_date or date.today()
+    stem = f"Deterministic_NPV_{sector_name}"
+    results = calculate_deterministic_electricity_results()
+    values = deterministic_npv_million_eur(
+        results_by_item=results,
+        labels=ELECTRICITY_TECHNOLOGY_LABELS,
+    )
+    figure_path = plot_mean_npv_technology_bars(
+        values_million_eur=values,
+        output_path=dated_figure_path(
+            output_dir=figure_dir,
+            stem=stem,
+            run_date=output_date,
+        ),
+        title="Deterministic NPV (MEUR)",
+    )
+    raw_csv_path = save_results_csv(
+        results_by_item=results,
+        columns=ELECTRICITY_RAW_INPUT_COLUMNS,
+        output_path=dated_csv_path(
+            output_dir=raw_data_dir,
+            stem=f"{stem}_raw_inputs",
+            run_date=output_date,
+        ),
+    )
+    processed_csv_path = save_results_csv(
+        results_by_item=results,
+        columns=ELECTRICITY_PROCESSED_OUTPUT_COLUMNS,
+        output_path=dated_csv_path(
+            output_dir=processed_data_dir,
+            stem=f"{stem}_processed_outputs",
+            run_date=output_date,
+        ),
+    )
+
+    return figure_path, raw_csv_path, processed_csv_path
+
+
+def save_electricity_npv_outputs(
+    figure_dir: Path,
+    raw_data_dir: Path,
+    processed_data_dir: Path,
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    random_seed: int = DEFAULT_RANDOM_SEED,
+    run_date: date | None = None,
+    sector_name: str = "Electricity",
+) -> tuple[Path, ...]:
+    """Save simulated mean and deterministic electricity NPV outputs."""
+
+    return (
+        *save_electricity_mean_npv_outputs(
+            figure_dir=figure_dir,
+            raw_data_dir=raw_data_dir,
+            processed_data_dir=processed_data_dir,
+            sample_size=sample_size,
+            random_seed=random_seed,
+            run_date=run_date,
+            sector_name=sector_name,
+        ),
+        *save_electricity_deterministic_npv_outputs(
+            figure_dir=figure_dir,
+            raw_data_dir=raw_data_dir,
+            processed_data_dir=processed_data_dir,
+            run_date=run_date,
+            sector_name=sector_name,
+        ),
+    )
+
+
 def save_electricity_npv_figures(
     output_dir: Path,
     sample_size: int = DEFAULT_SAMPLE_SIZE,
@@ -287,6 +496,18 @@ def parse_args() -> argparse.Namespace:
         help="Directory where figures are saved.",
     )
     parser.add_argument(
+        "--raw-data-dir",
+        type=Path,
+        default=_project_root() / "data" / "raw",
+        help="Directory where raw sampled/model inputs are saved.",
+    )
+    parser.add_argument(
+        "--processed-data-dir",
+        type=Path,
+        default=_project_root() / "data" / "processed",
+        help="Directory where derived costs, revenues, and NPVs are saved.",
+    )
+    parser.add_argument(
         "--sample-size",
         type=int,
         default=DEFAULT_SAMPLE_SIZE,
@@ -309,6 +530,11 @@ def parse_args() -> argparse.Namespace:
         default="Electricity",
         help="Sector name used in the output file name.",
     )
+    parser.add_argument(
+        "--no-data",
+        action="store_true",
+        help="Only save figures; skip raw-input and processed-output CSV files.",
+    )
     return parser.parse_args()
 
 
@@ -317,28 +543,54 @@ def main() -> None:
     if args.sample_size <= 0:
         raise ValueError("--sample-size must be positive.")
 
-    if args.kind == "all":
-        output_paths = save_electricity_npv_figures(
-            output_dir=args.output_dir,
+    if args.no_data:
+        if args.kind == "all":
+            output_paths = save_electricity_npv_figures(
+                output_dir=args.output_dir,
+                sample_size=args.sample_size,
+                random_seed=args.random_seed,
+                sector_name=args.sector_name,
+            )
+        elif args.kind == "mean":
+            output_paths = (
+                save_electricity_mean_npv_figure(
+                    output_dir=args.output_dir,
+                    sample_size=args.sample_size,
+                    random_seed=args.random_seed,
+                    sector_name=args.sector_name,
+                ),
+            )
+        else:
+            output_paths = (
+                save_electricity_deterministic_npv_figure(
+                    output_dir=args.output_dir,
+                    sector_name=args.sector_name,
+                ),
+            )
+    elif args.kind == "all":
+        output_paths = save_electricity_npv_outputs(
+            figure_dir=args.output_dir,
+            raw_data_dir=args.raw_data_dir,
+            processed_data_dir=args.processed_data_dir,
             sample_size=args.sample_size,
             random_seed=args.random_seed,
             sector_name=args.sector_name,
         )
     elif args.kind == "mean":
-        output_paths = (
-            save_electricity_mean_npv_figure(
-                output_dir=args.output_dir,
-                sample_size=args.sample_size,
-                random_seed=args.random_seed,
-                sector_name=args.sector_name,
-            ),
+        output_paths = save_electricity_mean_npv_outputs(
+            figure_dir=args.output_dir,
+            raw_data_dir=args.raw_data_dir,
+            processed_data_dir=args.processed_data_dir,
+            sample_size=args.sample_size,
+            random_seed=args.random_seed,
+            sector_name=args.sector_name,
         )
     else:
-        output_paths = (
-            save_electricity_deterministic_npv_figure(
-                output_dir=args.output_dir,
-                sector_name=args.sector_name,
-            ),
+        output_paths = save_electricity_deterministic_npv_outputs(
+            figure_dir=args.output_dir,
+            raw_data_dir=args.raw_data_dir,
+            processed_data_dir=args.processed_data_dir,
+            sector_name=args.sector_name,
         )
 
     for output_path in output_paths:

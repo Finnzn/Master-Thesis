@@ -1054,3 +1054,46 @@ Create a reusable general parameter setup file for the Monte Carlo simulation, i
 ### Next suggested step
 
 Create the first sector-specific parameter module and import the shared general parameters from `src/general_parameters.py`.
+## 2026-06-04 10:27 — Refactor NPV summary outputs
+
+### User request
+
+Review whether the electricity NPV summary figure code can be split into reusable sector-agnostic parts and whether raw/processed data should be saved as CSV files.
+
+### Files changed (if needed)
+
+- `src/npv_summary.py` — added reusable helpers for representative deterministic values, NPV summary aggregation, dated CSV paths, and CSV export.
+- `src/electricity_npv_summary_figures.py` — refactored the electricity summary script to use reusable summary/export helpers and to save raw-input and processed-output CSV files.
+- `src/npv_summary_plots.py` — updated the dated figure path docstring to reflect sector-based filenames.
+
+### What was implemented
+
+- Split sector-independent summary logic out of the electricity plotting script.
+- Kept electricity-specific logic in the electricity adapter: technology labels, fuel-price mapping, deterministic electricity calculation, and raw/processed column definitions.
+- Added CSV exports alongside figure generation:
+  - Raw-input CSVs go to `data/raw/` by default.
+  - Processed-output CSVs go to `data/processed/` by default.
+- Added `--raw-data-dir`, `--processed-data-dir`, and `--no-data` CLI options.
+- Kept the existing figure-only helper functions available for cases where only plots are needed.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary.py src/npv_summary_plots.py src/electricity_npv_summary_figures.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity_npv_summary_figures --kind all --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-figures --raw-data-dir /private/tmp/mt-data/raw --processed-data-dir /private/tmp/mt-data/processed`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+- Result:
+  - Passed.
+- Notes:
+  - The refactor preserved the previous mean and deterministic NPV values for the electricity summary.
+  - The small-sample export check produced 45 simulation rows and 9 deterministic rows for each raw/processed split.
+
+### Reproducibility notes
+
+- Running `python -m electricity_npv_summary_figures` now saves figures plus CSV data by default.
+- Use `--no-data` to reproduce the earlier figure-only behavior.
+- No scientific assumptions or parameter values were changed.
+
+### Next suggested step
+
+When the cement model is added, reuse `src/npv_summary.py` for summary aggregation and CSV export, and only define cement-specific model calculations and column sets.
