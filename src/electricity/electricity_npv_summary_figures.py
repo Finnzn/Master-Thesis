@@ -21,9 +21,16 @@ from npv_summary import (
     dated_csv_path,
     deterministic_npv_million_eur,
     mean_npv_million_eur,
+    npv_ranking_dataframe,
+    save_dataframe_csv,
     save_results_csv,
+    summarize_npv_rankings,
 )
-from npv_summary_plots import dated_figure_path, plot_mean_npv_technology_bars
+from npv_summary_plots import (
+    dated_figure_path,
+    plot_average_rank_bars,
+    plot_mean_npv_technology_bars,
+)
 
 
 ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
@@ -155,8 +162,11 @@ def save_electricity_mean_npv_outputs(
     random_seed: int = DEFAULT_RANDOM_SEED,
     run_date: date | None = None,
     sector_name: str = "Electricity",
-) -> tuple[Path, Path, Path]:
-    """Save mean NPV figure plus raw-input and processed-output CSVs."""
+    save_ranking_outputs: bool = True,
+    save_ranking_csv: bool = True,
+    save_ranking_plots: bool = True,
+) -> tuple[Path, ...]:
+    """Save mean NPV figure plus raw-input, processed-output, and ranking outputs."""
 
     output_date = run_date or date.today()
     stem = f"Mean_NPV_{sector_name}"
@@ -196,7 +206,147 @@ def save_electricity_mean_npv_outputs(
         ),
     )
 
-    return figure_path, raw_csv_path, processed_csv_path
+    output_paths: list[Path] = [figure_path, raw_csv_path, processed_csv_path]
+    if save_ranking_outputs:
+        ranking, ranking_summary = calculate_electricity_npv_rankings_from_results(
+            results=results,
+            sector_name=sector_name,
+        )
+        output_paths.extend(
+            save_electricity_npv_ranking_outputs(
+                ranking=ranking,
+                ranking_summary=ranking_summary,
+                figure_dir=figure_dir,
+                processed_data_dir=processed_data_dir,
+                run_date=output_date,
+                sector_name=sector_name,
+                save_ranking_csv=save_ranking_csv,
+                save_ranking_plots=save_ranking_plots,
+            )
+        )
+
+    return tuple(output_paths)
+
+
+def calculate_electricity_npv_rankings_from_results(
+    results: Mapping[str, Mapping[str, object]],
+    sector_name: str = "Electricity",
+):
+    """Calculate detailed and summary NPV rank tables from electricity results."""
+
+    ranking = npv_ranking_dataframe(
+        results_by_item=results,
+        sector=sector_name,
+    )
+    ranking_summary = summarize_npv_rankings(ranking)
+    return ranking, ranking_summary
+
+
+def calculate_electricity_npv_rankings(
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    random_seed: int = DEFAULT_RANDOM_SEED,
+    technologies: tuple[str, ...] | None = None,
+    sector_name: str = "Electricity",
+):
+    """Run electricity Monte Carlo simulations and return NPV ranking tables."""
+
+    results = simulate_electricity_results(
+        sample_size=sample_size,
+        random_seed=random_seed,
+        technologies=technologies,
+    )
+    return calculate_electricity_npv_rankings_from_results(
+        results=results,
+        sector_name=sector_name,
+    )
+
+
+def save_electricity_npv_ranking_outputs(
+    ranking,
+    ranking_summary,
+    figure_dir: Path,
+    processed_data_dir: Path,
+    run_date: date | None = None,
+    sector_name: str = "Electricity",
+    save_ranking_csv: bool = True,
+    save_ranking_plots: bool = True,
+) -> tuple[Path, ...]:
+    """Save electricity NPV ranking CSVs and/or plots."""
+
+    output_date = run_date or date.today()
+    output_paths: list[Path] = []
+    if save_ranking_csv:
+        output_paths.append(
+            save_dataframe_csv(
+                dataframe=ranking,
+                output_path=dated_csv_path(
+                    output_dir=processed_data_dir,
+                    stem=f"NPV_Ranking_{sector_name}_detailed",
+                    run_date=output_date,
+                ),
+            )
+        )
+        output_paths.append(
+            save_dataframe_csv(
+                dataframe=ranking_summary,
+                output_path=dated_csv_path(
+                    output_dir=processed_data_dir,
+                    stem=f"NPV_Ranking_{sector_name}_summary",
+                    run_date=output_date,
+                ),
+            )
+        )
+    if save_ranking_plots:
+        output_paths.append(
+            plot_average_rank_bars(
+                ranking_summary=ranking_summary,
+                output_path=dated_figure_path(
+                    output_dir=figure_dir,
+                    stem=f"Average_NPV_Rank_{sector_name}",
+                    run_date=output_date,
+                ),
+                title="Average NPV Rank",
+            )
+        )
+
+    return tuple(output_paths)
+
+
+def generate_electricity_npv_rankings(
+    figure_dir: Path | None = None,
+    processed_data_dir: Path | None = None,
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    random_seed: int = DEFAULT_RANDOM_SEED,
+    technologies: tuple[str, ...] | None = None,
+    run_date: date | None = None,
+    sector_name: str = "Electricity",
+    save_ranking_outputs: bool = True,
+    save_ranking_csv: bool = True,
+    save_ranking_plots: bool = True,
+):
+    """Return electricity NPV ranking DataFrames and optionally save outputs."""
+
+    ranking, ranking_summary = calculate_electricity_npv_rankings(
+        sample_size=sample_size,
+        random_seed=random_seed,
+        technologies=technologies,
+        sector_name=sector_name,
+    )
+    output_paths: tuple[Path, ...] = ()
+    if save_ranking_outputs and (save_ranking_csv or save_ranking_plots):
+        root = _project_root()
+        output_paths = save_electricity_npv_ranking_outputs(
+            ranking=ranking,
+            ranking_summary=ranking_summary,
+            figure_dir=figure_dir or root / "figures",
+            processed_data_dir=processed_data_dir or root / "data" / "processed",
+            run_date=run_date,
+            sector_name=sector_name,
+            save_ranking_csv=save_ranking_csv,
+            save_ranking_plots=save_ranking_plots,
+        )
+
+    return ranking, ranking_summary, output_paths
 
 
 def save_electricity_deterministic_npv_outputs(
@@ -254,6 +404,9 @@ def save_electricity_npv_outputs(
     random_seed: int = DEFAULT_RANDOM_SEED,
     run_date: date | None = None,
     sector_name: str = "Electricity",
+    save_ranking_outputs: bool = True,
+    save_ranking_csv: bool = True,
+    save_ranking_plots: bool = True,
 ) -> tuple[Path, ...]:
     """Save simulated mean and deterministic electricity NPV outputs."""
 
@@ -266,6 +419,9 @@ def save_electricity_npv_outputs(
             random_seed=random_seed,
             run_date=run_date,
             sector_name=sector_name,
+            save_ranking_outputs=save_ranking_outputs,
+            save_ranking_csv=save_ranking_csv,
+            save_ranking_plots=save_ranking_plots,
         ),
         *save_electricity_deterministic_npv_outputs(
             figure_dir=figure_dir,
@@ -356,6 +512,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Only save figures; skip raw-input and processed-output CSV files.",
     )
+    parser.add_argument(
+        "--ranking-output",
+        choices=("csv", "plots", "both", "none"),
+        default="both",
+        help="Which Monte Carlo NPV ranking outputs to save.",
+    )
     return parser.parse_args()
 
 
@@ -363,6 +525,10 @@ def main() -> None:
     args = parse_args()
     if args.sample_size <= 0:
         raise ValueError("--sample-size must be positive.")
+
+    save_ranking_outputs = args.ranking_output != "none"
+    save_ranking_csv = args.ranking_output in ("csv", "both") and not args.no_data
+    save_ranking_plots = args.ranking_output in ("plots", "both")
 
     if args.no_data:
         if args.kind == "all":
@@ -388,6 +554,25 @@ def main() -> None:
                     sector_name=args.sector_name,
                 ),
             )
+
+        if args.kind in ("all", "mean") and save_ranking_outputs:
+            ranking, ranking_summary = calculate_electricity_npv_rankings(
+                sample_size=args.sample_size,
+                random_seed=args.random_seed,
+                sector_name=args.sector_name,
+            )
+            output_paths = (
+                *output_paths,
+                *save_electricity_npv_ranking_outputs(
+                    ranking=ranking,
+                    ranking_summary=ranking_summary,
+                    figure_dir=args.output_dir,
+                    processed_data_dir=args.processed_data_dir,
+                    sector_name=args.sector_name,
+                    save_ranking_csv=save_ranking_csv,
+                    save_ranking_plots=save_ranking_plots,
+                ),
+            )
     elif args.kind == "all":
         output_paths = save_electricity_npv_outputs(
             figure_dir=args.output_dir,
@@ -396,6 +581,9 @@ def main() -> None:
             sample_size=args.sample_size,
             random_seed=args.random_seed,
             sector_name=args.sector_name,
+            save_ranking_outputs=save_ranking_outputs,
+            save_ranking_csv=save_ranking_csv,
+            save_ranking_plots=save_ranking_plots,
         )
     elif args.kind == "mean":
         output_paths = save_electricity_mean_npv_outputs(
@@ -405,6 +593,9 @@ def main() -> None:
             sample_size=args.sample_size,
             random_seed=args.random_seed,
             sector_name=args.sector_name,
+            save_ranking_outputs=save_ranking_outputs,
+            save_ranking_csv=save_ranking_csv,
+            save_ranking_plots=save_ranking_plots,
         )
     else:
         output_paths = save_electricity_deterministic_npv_outputs(

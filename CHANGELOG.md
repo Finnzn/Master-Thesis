@@ -1286,6 +1286,55 @@ Change the deterministic electricity notebooks so they use the shared source cod
 ### Next suggested step
 
 Use the same source-driven notebook style for any future deterministic sector notebooks.
+
+## 2026-06-04 15:03 — Add Monte Carlo NPV ranking outputs
+
+### User request
+
+Add an NPV-based technology ranking feature to the existing Monte Carlo model, reusing current source structure, output folders, data handling, and plotting style.
+
+### Files changed (if needed)
+
+- `src/npv_summary.py` — added reusable sector-agnostic NPV ranking, ranking summary, and DataFrame CSV export helpers.
+- `src/npv_summary_plots.py` — added an average-rank bar plot helper using the existing Matplotlib output style.
+- `src/electricity/electricity_npv_summary_figures.py` — wired electricity Monte Carlo results into the ranking helpers and added flexible ranking CSV/plot output controls.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Created detailed ranking tables with `simulation_id`, `sector`, `technology`, `npv`, and `rank`.
+- Ranked technologies within each simulation using pandas `rank(method="min", ascending=False)`, so highest NPV receives rank 1 and ties receive the same minimum rank.
+- Created per-sector/per-technology ranking summaries with average rank, median rank, rank standard deviation, probability of rank 1, probability of top 3, and simulation count.
+- Kept the ranking helpers sector-agnostic by accepting result mappings and sector names rather than hard-coding technology names.
+- Added `generate_electricity_npv_rankings(...)` for DataFrame-first usage with `save_ranking_outputs`, `save_ranking_csv`, and `save_ranking_plots` switches.
+- Added `--ranking-output {csv,plots,both,none}` to the electricity summary CLI.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary.py src/npv_summary_plots.py src/electricity/electricity_npv_summary_figures.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-ranking-figures-both --raw-data-dir /private/tmp/mt-ranking-data-both/raw --processed-data-dir /private/tmp/mt-ranking-data-both/processed --ranking-output both`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-ranking-figures-csv --raw-data-dir /private/tmp/mt-ranking-data-csv/raw --processed-data-dir /private/tmp/mt-ranking-data-csv/processed --ranking-output csv`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-ranking-figures-plots --raw-data-dir /private/tmp/mt-ranking-data-plots/raw --processed-data-dir /private/tmp/mt-ranking-data-plots/processed --ranking-output plots`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-ranking-figures-none --raw-data-dir /private/tmp/mt-ranking-data-none/raw --processed-data-dir /private/tmp/mt-ranking-data-none/processed --ranking-output none`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-ranking-figures-nodata --raw-data-dir /private/tmp/mt-ranking-data-nodata/raw --processed-data-dir /private/tmp/mt-ranking-data-nodata/processed --no-data --ranking-output plots`
+- Result:
+  - Passed.
+- Notes:
+  - DataFrame-only ranking returned the expected detailed and summary columns.
+  - CSV-only, plot-only, both, none, and no-data plot modes worked with a five-simulation smoke test.
+  - Matplotlib printed macOS static font registry messages during plot smoke tests, but output generation succeeded.
+
+### Reproducibility notes
+
+- No scientific assumptions, parameter values, NPV formulas, or random sampling logic were changed.
+- Smoke-test outputs were written only to `/private/tmp/...`.
+- To generate ranking outputs in the project folders, run the electricity summary script with `--ranking-output both`, `csv`, `plots`, or `none`.
+
+### Next suggested step
+
+Apply the same reusable ranking helpers when cement, aluminium, steel, or other sector Monte Carlo result mappings are added.
 ## 2026-06-04 13:54 — Fix notebook imports and split generic NPV finance
 
 ### User request

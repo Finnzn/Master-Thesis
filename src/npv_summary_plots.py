@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Mapping
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def dated_figure_path(
@@ -87,6 +88,86 @@ def plot_mean_npv_technology_bars(
             )
 
     ax.tick_params(axis="x", bottom=False, labelbottom=False)
+    ax.tick_params(axis="y", left=False)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    fig.patch.set_facecolor("white")
+    fig.patch.set_edgecolor("#d0d0d0")
+    fig.patch.set_linewidth(1.0)
+    ax.set_facecolor("white")
+    fig.tight_layout(pad=1.2)
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+
+    return output_path
+
+
+def plot_average_rank_bars(
+    ranking_summary: pd.DataFrame,
+    output_path: Path,
+    title: str = "Average NPV Rank",
+) -> Path:
+    """Save a horizontal average-rank comparison chart."""
+
+    required_columns = {
+        "technology",
+        "average_rank",
+        "probability_rank_1",
+        "probability_top_3",
+    }
+    missing_columns = sorted(required_columns - set(ranking_summary.columns))
+    if missing_columns:
+        raise KeyError(f"ranking_summary is missing columns: {missing_columns}")
+    if ranking_summary.empty:
+        raise ValueError("ranking_summary must contain at least one row.")
+
+    sorted_summary = ranking_summary.sort_values(
+        ["average_rank", "technology"],
+    )
+    labels = sorted_summary["technology"].astype(str).tolist()
+    average_ranks = sorted_summary["average_rank"].astype(float).tolist()
+    probability_rank_1 = sorted_summary["probability_rank_1"].astype(float).tolist()
+    probability_top_3 = sorted_summary["probability_top_3"].astype(float).tolist()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    figure_height = max(4.6, 0.52 * len(labels) + 1.5)
+    fig, ax = plt.subplots(figsize=(7.5, figure_height), dpi=160)
+    y_positions = range(len(labels))
+    colors = [
+        "#4EA72E" if probability > 0 else "#8c8c8c"
+        for probability in probability_rank_1
+    ]
+    ax.barh(y_positions, average_ranks, color=colors, height=0.38)
+
+    ax.set_yticks(list(y_positions))
+    ax.set_yticklabels(labels, fontsize=9, color="#5a5a5a")
+    ax.invert_yaxis()
+    ax.set_title(title, fontsize=15, color="#555555", pad=14)
+    ax.set_xlabel("Rank (1 = highest NPV)", fontsize=9, color="#5a5a5a")
+
+    max_rank = max(average_ranks)
+    ax.set_xlim(0, max_rank + max(0.5, 0.14 * max_rank))
+
+    for y_position, rank, rank_1, top_3 in zip(
+        y_positions,
+        average_ranks,
+        probability_rank_1,
+        probability_top_3,
+    ):
+        label = f"{rank:.2f} | P1 {rank_1:.1%} | Top3 {top_3:.1%}"
+        ax.text(
+            rank + max(0.06, 0.025 * max_rank),
+            y_position,
+            label,
+            va="center",
+            ha="left",
+            fontsize=8.5,
+            color="#333333",
+        )
+
+    ax.tick_params(axis="x", colors="#7a7a7a", labelsize=8)
     ax.tick_params(axis="y", left=False)
     for spine in ax.spines.values():
         spine.set_visible(False)
