@@ -79,6 +79,16 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
 )
 
 
+def _with_electricity_display_labels(ranking_summary):
+    """Return a ranking summary copy with human-readable technology labels."""
+
+    return ranking_summary.assign(
+        display_label=ranking_summary["technology"].map(
+            ELECTRICITY_TECHNOLOGY_LABELS
+        ).fillna(ranking_summary["technology"])
+    )
+
+
 def calculate_mean_electricity_npv_million_eur(
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
@@ -299,13 +309,13 @@ def save_electricity_npv_ranking_outputs(
     if save_ranking_plots:
         output_paths.append(
             plot_average_rank_bars(
-                ranking_summary=ranking_summary,
+                ranking_summary=_with_electricity_display_labels(ranking_summary),
                 output_path=dated_figure_path(
                     output_dir=figure_dir,
                     stem=f"Average_NPV_Rank_{sector_name}",
                     run_date=output_date,
                 ),
-                title="Average NPV Rank",
+                title="Monte Carlo NPV Ranking",
             )
         )
 

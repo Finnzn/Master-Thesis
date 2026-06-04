@@ -1,3 +1,52 @@
+## 2026-06-04 16:39 — Rework electricity NPV rank figure and rank-count summary
+
+### User request
+
+Use the thesis workflow skill and improve the rank graph so all technologies use the same colour, labels clearly explain the ranking numbers, and the outputs show how often each technology reached ranks 1 through 9.
+
+### Files changed (if needed)
+
+- `src/npv_summary.py` — added per-rank count columns to the NPV ranking summary output.
+- `src/npv_summary_plots.py` — redesigned the average-rank figure with one consistent bar colour, clearer labels, explanatory notes, and a rank-count heatmap.
+- `src/electricity/electricity_npv_summary_figures.py` — passed human-readable electricity technology labels into the rank figure while keeping CSV technology codes unchanged.
+- `figures/2026-06-04-Average_NPV_Rank_Electricity.png` — regenerated the electricity rank figure.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Kept the ranking logic unchanged: ranks are still calculated within each Monte Carlo simulation by NPV, with rank 1 meaning highest NPV.
+- Added `rank_1_count` through `rank_9_count` columns to the ranking summary table.
+- Reworked the rank graph into two coordinated panels:
+  - Average rank bars, all using the same blue colour.
+  - A same-palette count matrix showing how many simulations each technology reached each rank.
+- Replaced terse labels like `P1` and `Top3` with explicit labels such as `rank 1` and `top 3`.
+- Added an explanatory note to the figure with the ranking definition and sample size.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary.py src/npv_summary_plots.py src/electricity/electricity_npv_summary_figures.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --ranking-output both`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from pathlib import Path; import pandas as pd; from electricity.electricity_npv_summary_figures import ELECTRICITY_TECHNOLOGY_LABELS; from npv_summary_plots import plot_average_rank_bars; summary=pd.read_csv("data/processed/2026-06-04-NPV_Ranking_Electricity_summary.csv"); summary=summary.assign(display_label=summary["technology"].map(ELECTRICITY_TECHNOLOGY_LABELS).fillna(summary["technology"])); print(plot_average_rank_bars(summary, Path("figures/2026-06-04-Average_NPV_Rank_Electricity.png"), title="Monte Carlo NPV Ranking"))'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'import pandas as pd; p="data/processed/2026-06-04-NPV_Ranking_Electricity_summary.csv"; df=pd.read_csv(p); cols=[c for c in df.columns if c.startswith("rank_") and c.endswith("_count")]; ok=(df[cols].sum(axis=1)==df["n_simulations"]).all(); print("counts sum to n_simulations", bool(ok))'`
+- Result:
+  - Passed.
+  - The regenerated summary CSV contains rank-count columns from `rank_1_count` to `rank_9_count`.
+  - The rank-count columns sum to `n_simulations` for every technology.
+  - The updated figure was visually inspected and no longer uses mixed technology colours.
+- Notes:
+  - The full regeneration command produced the expected Matplotlib/macOS font setup messages. A redraw from the regenerated summary CSV was used for the final rank PNG and completed without the earlier layout warning.
+
+### Reproducibility notes
+
+- No model assumptions, parameters, random seed, ranking method, or NPV calculations were changed.
+- The rank figure and processed ranking summary were regenerated for the 100,000-simulation electricity run with the default seed `42`.
+- `data/processed/2026-06-04-NPV_Ranking_Electricity_summary.csv` and related generated data outputs are present locally but are not tracked by git; the tracked regenerated output is `figures/2026-06-04-Average_NPV_Rank_Electricity.png`.
+
+### Next suggested step
+
+Use the rank-count summary table in the thesis text to explain whether a technology is consistently strong or only occasionally reaches a high rank.
+
 ## 2026-06-04 14:31 — Move electricity source modules into package folder
 
 ### User request

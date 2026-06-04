@@ -173,6 +173,18 @@ def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
             ]
         )
 
+    rank_count_columns = {
+        rank: f"rank_{rank}_count"
+        for rank in sorted(ranking["rank"].astype(int).unique())
+    }
+    rank_counts = (
+        ranking.assign(rank_number=ranking["rank"].astype(int))
+        .groupby(["sector", "technology", "rank_number"])
+        .size()
+        .unstack(fill_value=0)
+        .rename(columns=rank_count_columns)
+        .reset_index()
+    )
     summary = (
         ranking.assign(
             is_rank_1=ranking["rank"].eq(1),
@@ -190,7 +202,7 @@ def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
         .sort_values(["sector", "average_rank", "technology"])
         .reset_index(drop=True)
     )
-    return summary
+    return summary.merge(rank_counts, on=["sector", "technology"], how="left")
 
 
 def save_results_csv(
