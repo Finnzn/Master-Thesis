@@ -175,6 +175,7 @@ def simulate_electricity_technology_npv(
     )
     fuel_price_distribution_by_technology = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
+        "hard_coal_ccs": COAL_PRICE_DISTRIBUTION,
         "ccgt": GAS_PRICE_DISTRIBUTION,
         "ccgt_ccs": GAS_PRICE_DISTRIBUTION,
         "nuclear": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
@@ -185,6 +186,7 @@ def simulate_electricity_technology_npv(
     }
     fuel_price_key_by_technology = {
         "hard_coal": "coal_price_eur_per_mwh_th",
+        "hard_coal_ccs": "coal_price_eur_per_mwh_th",
         "ccgt": "gas_price_eur_per_mwh_th",
         "ccgt_ccs": "gas_price_eur_per_mwh_th",
         "nuclear": "uranium_price_eur_per_mwh_th",
@@ -269,6 +271,19 @@ def simulate_hard_coal_npv(
 
     return simulate_electricity_technology_npv(
         technology="hard_coal",
+        size=size,
+        rng=rng,
+    )
+
+
+def simulate_hard_coal_ccs_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for a hard coal with CCS electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="hard_coal_ccs",
         size=size,
         rng=rng,
     )
@@ -369,6 +384,7 @@ def simulate_electricity_technologies_npv(
     size: int,
     technologies: tuple[str, ...] = (
         "hard_coal",
+        "hard_coal_ccs",
         "ccgt",
         "ccgt_ccs",
         "nuclear",

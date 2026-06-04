@@ -1,3 +1,61 @@
+## 2026-06-04 09:09 — Add hard coal with CCS electricity NPV simulation
+
+### User request
+
+Add hard coal+CCS using the same style as the existing electricity technologies, with average full-load hours.
+
+### Files changed (if needed)
+
+- `src/electricity_parameters.py` — added hard coal+CCS CAPEX, fixed OPEX, variable OPEX, fuel-consumption, emissions, and full-load-hour assumptions.
+- `src/electricity_model.py` — added hard coal+CCS coal-price mapping, simulation wrapper, and hard coal+CCS to the default multi-technology simulation.
+- `notebooks/deterministic_hard_coal_ccs_npv.ipynb` — added deterministic hard coal+CCS NPV notebook.
+- `notebooks/plot_hard_coal_ccs_npv.ipynb` — added hard coal+CCS Monte Carlo plotting notebook.
+
+### What was implemented
+
+- Added hard coal+CCS technology assumptions:
+  - CAPEX: uniform `3,021-5,131 EUR/kW`.
+  - Fixed OPEX: triangular `61.3 / 82.2 / 115.9 EUR/kW/year`.
+  - Variable OPEX: triangular `8.0 / 10.73 / 15.1 EUR/MWh_e`.
+  - Fuel consumption: uniform `3.08-3.24 MWh_th/MWh_e`.
+  - Residual direct emissions: uniform `0.010-0.110 tCO2/MWh_e`.
+  - Full-load hours: fixed average `(3,000 + 5,200) / 2 = 4,100 h/year`.
+- Added `simulate_hard_coal_ccs_npv`.
+- Updated `simulate_electricity_technologies_npv` to include `hard_coal_ccs` by default.
+- Used the existing coal-price distribution and output key `coal_price_eur_per_mwh_th`.
+- Added deterministic and plotting notebooks for hard coal+CCS using the same structure as the other electricity-technology notebooks.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py src/cement_parameters.py`
+  - `python3 -m json.tool notebooks/deterministic_hard_coal_ccs_npv.ipynb`
+  - `python3 -m json.tool notebooks/plot_hard_coal_ccs_npv.ipynb`
+  - `for f in notebooks/*.ipynb; do python3 -m json.tool "$f" >/dev/null || exit 1; done; echo all-notebooks-valid`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 - <<'PY' ...`
+- Result:
+  - Passed.
+  - All notebooks are valid JSON.
+  - The deterministic hard coal+CCS notebook executed and returned NPV `-778.264 million EUR`, or `-31.131 EUR/MWh`, with the current assumptions.
+  - A 20,000-run hard coal+CCS sanity simulation returned mean NPV `-794.153 million EUR`, or `-31.766 EUR/MWh`.
+  - Capacity, CAPEX, fixed OPEX, variable OPEX, fuel cost, emissions cost, annual net cash flow, lifetime-output, and NPV-per-MWh relationships passed for all electricity technologies.
+  - Multi-technology results now include `hard_coal`, `hard_coal_ccs`, `ccgt`, `ccgt_ccs`, `nuclear`, `wind_offshore`, `wind_onshore`, `pv`, and `biogas` with aligned run IDs.
+
+### Reproducibility notes
+
+- This adds hard coal+CCS as a new electricity technology and changes the default multi-technology simulation output by including hard coal+CCS.
+- No generated result files, figures, reports, or PDFs were written.
+- Sanity check flags remain:
+  - Plot notebooks still use `np.random.default_rng()` without a fixed seed, so Monte Carlo summaries are not exactly reproducible.
+  - The model still uses one shared electricity lifetime parameter for all technologies.
+  - The model still uses one fixed electricity retail-price revenue assumption for all technologies, without technology-specific capture prices.
+  - `ELECTRICITY_PRICE_DISTRIBUTION` remains defined but unused by the electricity NPV model.
+  - Hard coal+CCS uses residual direct emissions only; separate CO2 capture rate, captured CO2 mass flow, transport, storage, and CCS chain costs are not explicitly modeled unless already embedded in the user-provided CAPEX/OPEX values.
+
+### Next suggested step
+
+Compare hard coal+CCS and CCGT+CCS with explicit CCS transport and storage cost assumptions if those costs are not already embedded in the provided CAPEX/OPEX values.
+
 ## 2026-06-01 14:43 — Add CCGT with CCS electricity NPV simulation
 
 ### User request

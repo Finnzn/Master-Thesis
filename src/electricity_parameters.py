@@ -75,6 +75,51 @@ HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
+# Hard coal with CCS technology parameters.
+HARD_COAL_CCS_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=3_021.0,
+    upper_bound=5_131.0,
+    unit="EUR/kW",
+    description="Uniform distribution for hard coal with CCS CAPEX, not annualized.",
+)
+
+HARD_COAL_CCS_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=61.3,
+    mode=82.2,
+    maximum=115.9,
+    unit="EUR/kW/year",
+    description="Triangular distribution for hard coal with CCS fixed OPEX.",
+)
+
+HARD_COAL_CCS_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=8.0,
+    mode=10.73,
+    maximum=15.1,
+    unit="EUR/MWh_e",
+    description="Triangular distribution for hard coal with CCS variable OPEX excluding fuel and electricity.",
+)
+
+HARD_COAL_CCS_FUEL_CONSUMPTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=3.08,
+    upper_bound=3.24,
+    unit="MWh_th/MWh_e",
+    description="Uniform distribution for hard coal with CCS fuel consumption.",
+)
+
+HARD_COAL_CCS_EMISSIONS_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.010,
+    upper_bound=0.110,
+    unit="tCO2/MWh_e",
+    description="Uniform distribution for hard coal with CCS residual direct emissions.",
+)
+
+HARD_COAL_CCS_FULL_LOAD_HOURS = FixedParameter(
+    value=4_100.0,
+    unit="h/year",
+    description="Average full-load hours for the hard coal with CCS technology.",
+)
+
+
 # CCGT technology parameters.
 CCGT_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=900.0,
@@ -397,6 +442,9 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     "hard_coal": {
         "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
     },
+    "hard_coal_ccs": {
+        "full_load_hours_per_year": HARD_COAL_CCS_FULL_LOAD_HOURS,
+    },
     "ccgt": {
         "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
     },
@@ -430,6 +478,13 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": HARD_COAL_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": HARD_COAL_EMISSIONS_DISTRIBUTION,
+    },
+    "hard_coal_ccs": {
+        "capex_eur_per_kw": HARD_COAL_CCS_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": HARD_COAL_CCS_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": HARD_COAL_CCS_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": HARD_COAL_CCS_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": HARD_COAL_CCS_EMISSIONS_DISTRIBUTION,
     },
     "ccgt": {
         "capex_eur_per_kw": CCGT_CAPEX_DISTRIBUTION,
