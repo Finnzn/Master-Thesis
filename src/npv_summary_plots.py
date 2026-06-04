@@ -196,6 +196,7 @@ def plot_average_rank_bars(
     ranking_summary: pd.DataFrame,
     output_path: Path,
     title: str = "Monte Carlo NPV Ranking",
+    random_seed: int | None = None,
 ) -> Path:
     """Save an average-rank chart with rank-frequency counts."""
 
@@ -339,7 +340,8 @@ def plot_average_rank_bars(
         (
             f"Ranks are calculated within each Monte Carlo simulation by NPV "
             f"(rank 1 = highest NPV, rank {int(max_rank)} = lowest NPV). "
-            f"Sample size: {n_simulations:,} simulations."
+            f"Sample size: {n_simulations:,} simulations"
+            f"{f'; random seed: {random_seed}' if random_seed is not None else ''}."
         ),
         fontsize=8.5,
         color="#5a5a5a",

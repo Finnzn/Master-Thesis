@@ -278,6 +278,7 @@ def save_electricity_mean_npv_outputs(
                 processed_data_dir=processed_data_dir,
                 run_date=output_date,
                 sector_name=sector_name,
+                random_seed=random_seed,
                 save_ranking_csv=save_ranking_csv,
                 save_ranking_plots=save_ranking_plots,
             )
@@ -327,6 +328,7 @@ def save_electricity_npv_ranking_outputs(
     processed_data_dir: Path,
     run_date: date | None = None,
     sector_name: str = "Electricity",
+    random_seed: int | None = None,
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
 ) -> tuple[Path, ...]:
@@ -365,6 +367,7 @@ def save_electricity_npv_ranking_outputs(
                     run_date=output_date,
                 ),
                 title="Monte Carlo NPV Ranking",
+                random_seed=random_seed,
             )
         )
 
@@ -403,6 +406,7 @@ def generate_electricity_npv_rankings(
             processed_data_dir=processed_data_dir or root / "data" / "processed",
             run_date=run_date,
             sector_name=sector_name,
+            random_seed=random_seed,
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
         )
@@ -635,6 +639,7 @@ def main() -> None:
                     raw_data_dir=args.raw_data_dir,
                     processed_data_dir=args.processed_data_dir,
                     sector_name=args.sector_name,
+                    random_seed=args.random_seed,
                     save_ranking_csv=save_ranking_csv,
                     save_ranking_plots=save_ranking_plots,
                 ),

@@ -1,3 +1,41 @@
+## 2026-06-04 17:27 — Add random seed note to ranking plot
+
+### User request
+
+Add the random seed to the Monte Carlo NPV ranking plot, like the mean NPV plot already does.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added an optional `random_seed` argument to the ranking plot helper and included it in the explanatory note.
+- `src/electricity/electricity_npv_summary_figures.py` — passed the configured random seed through to the ranking plot helper.
+- `figures/2026-06-04-Average_NPV_Rank_Electricity.png` — regenerated the ranking figure with the seed note.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Updated the bottom note of the ranking figure to include the random seed when one is provided.
+- Threaded `random_seed` through the electricity ranking-output generation paths, including CLI generation and programmatic generation.
+- Kept the ranking calculation and summary values unchanged.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary_plots.py src/electricity/electricity_npv_summary_figures.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --no-data --ranking-output plots`
+- Result:
+  - Passed.
+  - The regenerated ranking plot was visually inspected and now includes `random seed: 42` in the bottom explanatory note.
+
+### Reproducibility notes
+
+- No model assumptions, parameters, sample size, ranking logic, or NPV calculations were changed.
+- The regenerated ranking figure uses the default 100,000-simulation electricity run with seed `42`.
+- The command used `--no-data`, so no CSV outputs were regenerated.
+
+### Next suggested step
+
+Send the second requested change so it can be handled in the same focused way.
+
 ## 2026-06-04 17:16 — Reuse notebook-style uncertainty plot for mean NPV outputs
 
 ### User request
