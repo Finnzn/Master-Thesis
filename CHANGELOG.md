@@ -1,3 +1,55 @@
+## 2026-06-04 09:55 — Add reusable NPV technology summary figure generator
+
+### User request
+
+Create non-notebook code that generates and saves technology NPV comparison figures like the provided example, including one simulated mean-NPV version and one deterministic version, with reusable code that can later support sectors beyond electricity if possible.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added sector-agnostic NPV bar-chart plotting helper and dated figure-path helper.
+- `src/electricity_npv_summary_figures.py` — added electricity-sector simulated mean and deterministic NPV summary calculations, figure-saving functions, and command-line entry point.
+- `figures/2026-06-04-Mean_NPV_Technology.png` — generated simulated mean NPV comparison figure.
+- `figures/2026-06-04-Deterministic_NPV_Technology.png` — generated deterministic NPV comparison figure.
+
+### What was implemented
+
+- Added a reusable plotting function that accepts any mapping of display label to NPV value in million EUR.
+- Added electricity-sector wrapper functions:
+  - `calculate_mean_electricity_npv_million_eur`
+  - `calculate_deterministic_electricity_npv_million_eur`
+  - `save_electricity_mean_npv_figure`
+  - `save_electricity_deterministic_npv_figure`
+  - `save_electricity_npv_figures`
+- Added a command-line interface:
+  - `PYTHONPATH=src python3 -m electricity_npv_summary_figures --kind all --sample-size 100000 --random-seed 42`
+- Added a Matplotlib-based plotting path with a Pillow fallback so PNG figures can still be generated in environments where Matplotlib is not installed.
+- Saved figures to `figures/` using the requested date-stamped names:
+  - `YYYY-MM-DD-Mean_NPV_Technology.png`
+  - `YYYY-MM-DD-Deterministic_NPV_Technology.png`
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/npv_summary_plots.py src/electricity_npv_summary_figures.py src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py src/cement_parameters.py`
+  - `env PYTHONPATH=src python3 - <<'PY' ...`
+  - `env PYTHONPATH=src python3 -m electricity_npv_summary_figures --kind all --sample-size 100000 --random-seed 42`
+  - `env PYTHONPATH=src python3 -m electricity_npv_summary_figures --kind deterministic --output-dir /private/tmp/masterthesis_figures_test`
+- Result:
+  - Passed.
+  - Both requested figure files were generated in `figures/`.
+  - The deterministic-only command-line path generated a test figure in `/private/tmp/masterthesis_figures_test`.
+  - The generated figures were visually inspected and match the requested positive/negative bar-chart style.
+
+### Reproducibility notes
+
+- The simulated mean-NPV figure uses a fixed default seed of `42` and default sample size of `100,000`, both configurable through CLI arguments.
+- The plotting helper is sector-agnostic; future cement or other sector models can reuse `plot_mean_npv_technology_bars` once they provide technology labels and NPV values in million EUR.
+- No model assumptions or parameter values were changed.
+
+### Next suggested step
+
+When cement NPV model outputs exist, add a small cement-sector wrapper that feeds cement technology NPVs into the same `npv_summary_plots.py` helper.
+
 ## 2026-06-04 09:20 — Review electricity NPV model assumptions and logic
 
 ### User request
