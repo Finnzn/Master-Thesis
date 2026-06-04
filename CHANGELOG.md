@@ -1,3 +1,41 @@
+## 2026-06-04 09:20 — Review electricity NPV model assumptions and logic
+
+### User request
+
+Review the code in depth, checking assumptions, calculations, units, and whether it is plausible that only PV and wind have positive mean NPV under the current assumptions.
+
+### Files changed (if needed)
+
+- `CHANGELOG.md` — added this review entry only.
+
+### What was implemented
+
+- Reviewed the electricity NPV source code, general parameters, technology parameters, distribution helpers, cement parameter placeholder, and notebooks.
+- Recomputed a 100,000-run electricity technology cost breakdown under the current assumptions.
+- Checked whether the model equations and units are internally consistent.
+- Identified model caveats and notebook-output risks for thesis interpretation.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 -m py_compile src/distributions.py src/general_parameters.py src/electricity_parameters.py src/electricity_model.py src/cement_parameters.py`
+  - `for f in notebooks/*.ipynb; do python3 -m json.tool "$f" >/dev/null || exit 1; done; echo all-notebooks-valid`
+  - `env PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src python3 - <<'PY' ...`
+- Result:
+  - Passed.
+  - Source files compile.
+  - All notebooks are valid JSON.
+  - Cost breakdown confirmed that PV, onshore wind, and offshore wind are the only positive mean-NPV technologies under the current model assumptions.
+
+### Reproducibility notes
+
+- No model code, parameter values, notebooks, generated results, figures, reports, or PDFs were changed.
+- The review found reproducibility and interpretation caveats that should be handled before final thesis use, especially unseeded plot notebooks, stale notebook outputs, shared lifetime, fixed electricity price, unused electricity-price distribution, and missing technology-specific capture prices.
+
+### Next suggested step
+
+Decide which model caveats should be fixed in code and which should be documented as limitations before using the current NPV comparison as a thesis result.
+
 ## 2026-06-04 09:09 — Add hard coal with CCS electricity NPV simulation
 
 ### User request
