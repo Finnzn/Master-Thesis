@@ -1097,3 +1097,91 @@ Review whether the electricity NPV summary figure code can be split into reusabl
 ### Next suggested step
 
 When the cement model is added, reuse `src/npv_summary.py` for summary aggregation and CSV export, and only define cement-specific model calculations and column sets.
+## 2026-06-04 11:19 — Split electricity NPV calculations
+
+### User request
+
+Create dedicated electricity Monte Carlo and deterministic NPV source files so summary figures and future analyses can reuse the calculation outputs without keeping model logic inside the summary script.
+
+### Files changed (if needed)
+
+- `src/electricity_npv_monte_carlo.py` — added the electricity Monte Carlo entry point and re-exported technology simulation functions from the existing electricity model.
+- `src/electricity_npv_deterministic.py` — added deterministic electricity NPV calculations and all deterministic result outputs.
+- `src/electricity_npv_summary_figures.py` — refactored the summary script to call the Monte Carlo and deterministic modules instead of containing deterministic model calculations itself.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Separated electricity calculation logic from electricity summary plotting/export logic.
+- Kept `electricity_model.py` as the shared low-level calculation and notebook-compatible simulation module.
+- Added `simulate_electricity_results()` in the Monte Carlo module for reusable multi-technology simulation outputs.
+- Added deterministic result functions in the deterministic module:
+  - `calculate_deterministic_electricity_result`
+  - `calculate_deterministic_electricity_results`
+  - `calculate_deterministic_electricity_npv_eur`
+- Preserved existing summary helper names for calculating mean and deterministic NPV in million EUR.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/electricity_npv_monte_carlo.py src/electricity_npv_deterministic.py src/electricity_npv_summary_figures.py src/npv_summary.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity_npv_summary_figures --kind all --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-figures-refactor --raw-data-dir /private/tmp/mt-data-refactor/raw --processed-data-dir /private/tmp/mt-data-refactor/processed`
+- Result:
+  - Passed.
+- Notes:
+  - Mean and deterministic electricity summary values remained unchanged after the refactor.
+  - Figure and CSV generation still works through the existing CLI.
+
+### Reproducibility notes
+
+- No model assumptions, parameters, generated thesis figures, or data files were changed in the repository.
+- The summary CLI can still be run with `PYTHONPATH=src python -m electricity_npv_summary_figures`.
+- Future ranking, sensitivity, or thesis table scripts can now consume the dedicated Monte Carlo and deterministic electricity result modules directly.
+
+### Next suggested step
+
+Use the same pattern for future sectors: sector-specific Monte Carlo and deterministic model files feeding reusable summary, ranking, plotting, and CSV export helpers.
+## 2026-06-04 11:26 — Remove electricity Monte Carlo overlap
+
+### User request
+
+Clean up overlapping source files so the electricity Monte Carlo calculations are no longer split ambiguously between `electricity_model.py` and `electricity_npv_monte_carlo.py`.
+
+### Files changed (if needed)
+
+- `src/electricity_model.py` — reduced to low-level capacity, present-value-factor, and NPV helper formulas.
+- `src/electricity_npv_monte_carlo.py` — moved the electricity Monte Carlo technology simulation logic into this module.
+- `notebooks/electricity/plot_*_npv.ipynb` — updated plot notebook imports to use `electricity_npv_monte_carlo` for simulation functions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Made `electricity_npv_monte_carlo.py` the single source for electricity Monte Carlo simulation runners.
+- Kept `electricity_model.py` as the low-level formula module used by deterministic and Monte Carlo calculations.
+- Removed the structural overlap where `electricity_npv_monte_carlo.py` merely wrapped simulation functions that still lived in `electricity_model.py`.
+- Updated notebook imports so plot notebooks continue to run with the new module split.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/electricity_model.py src/electricity_npv_monte_carlo.py src/electricity_npv_deterministic.py src/electricity_npv_summary_figures.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python -m electricity_npv_summary_figures --kind all --sample-size 5 --random-seed 42 --output-dir /private/tmp/mt-figures-cleanup --raw-data-dir /private/tmp/mt-data-cleanup/raw --processed-data-dir /private/tmp/mt-data-cleanup/processed`
+  - `env PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+- Result:
+  - Passed.
+- Notes:
+  - Mean and deterministic electricity summary values were unchanged.
+  - End-to-end figure and CSV generation still works.
+  - Technology-level simulation imports used by the plot notebooks still work.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, generated thesis figures, or repository data files were changed.
+- Monte Carlo simulation functions should now be imported from `electricity_npv_monte_carlo.py`.
+- `electricity_model.py` should be treated as a shared formula helper module.
+
+### Next suggested step
+
+Use the same separation for future sectors: low-level formulas, sector Monte Carlo runner, sector deterministic runner, then summary/export code.
