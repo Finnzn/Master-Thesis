@@ -7,7 +7,7 @@ from typing import Mapping
 import numpy as np
 
 from distributions import FixedParameter, ScaledBetaDistribution
-from electricity_model import calculate_capacity_kw, calculate_npv
+from electricity_capacity_calculation import calculate_capacity_kw
 from electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
@@ -25,6 +25,7 @@ from general_parameters import (
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
 from npv_summary import representative_value
+from npv_finance import calculate_npv
 
 
 def electricity_fuel_price_parameter(

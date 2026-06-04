@@ -15,7 +15,6 @@ from distributions import (
     sample_triangular,
     sample_uniform,
 )
-from electricity_model import calculate_npv
 from electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
@@ -32,6 +31,7 @@ from general_parameters import (
     NO_FUEL_PRICE_EUR_PER_MWH_TH,
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
+from npv_finance import calculate_npv
 
 
 DEFAULT_SAMPLE_SIZE = 100_000
