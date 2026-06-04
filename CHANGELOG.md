@@ -1,3 +1,164 @@
+## 2026-06-04 18:15 — Clarify beta-distribution concentration choice
+
+### User request
+
+Confirm whether the comments are sufficient for handover and add a note explaining that the beta-function concentration formula was chosen to achieve dome-shaped rather than U-shaped distributions.
+
+### Files changed (if needed)
+
+- `src/distributions.py` — added a comment explaining that the concentration factor, equivalent to the thesis model's `k` choice, keeps alpha and beta above 1 so the scaled beta distribution is dome-shaped rather than U-shaped.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a focused explanatory comment next to the scaled-beta concentration calculation.
+- Kept the existing formula and distribution behavior unchanged.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/distributions.py`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, formulas, generated figures, generated CSVs, notebooks, or scientific conclusions were changed.
+- This task only added explanatory documentation for the existing beta-distribution concentration choice.
+
+### Next suggested step
+
+If the final thesis uses a specific symbol for this concentration factor, align the code comment with that notation.
+
+## 2026-06-04 18:02 — Deepen source-code handover comments
+
+### User request
+
+The first comment pass was too simple; expand the comments so people can understand what was done in the source code after handover.
+
+### Files changed (if needed)
+
+- `src/distributions.py` — expanded module/class/function docstrings to explain how parameter assumptions are stored separately from sampling.
+- `src/general_parameters.py` — clarified why shared assumptions such as carbon price, discount rate, and fuel prices live outside sector modules.
+- `src/cement_parameters.py` — added context for the current cement-sector parameter module structure.
+- `src/npv_finance.py` — expanded NPV docstrings to explain the shared financial structure across sectors.
+- `src/npv_summary.py` — expanded comments/docstrings for deterministic representative values, table exports, simulation-level ranking, and rank summaries.
+- `src/npv_summary_plots.py` — expanded plotting comments/docstrings to explain mean bars, median markers, percentile whiskers, and rank-count heatmaps.
+- `src/electricity/electricity_capacity_calculation.py` — explained why full-load hours determine required installed capacity for a normalized annual output.
+- `src/electricity/electricity_parameters.py` — expanded comments around the electricity assumptions catalogue, normalized output, technology blocks, and parameter registries.
+- `src/electricity/electricity_npv_monte_carlo.py` — expanded docstrings/comments for the Monte Carlo workflow, sampling, technology sizing, fuel-price mapping, cash-flow construction, result traceability, and run IDs.
+- `src/electricity/electricity_npv_deterministic.py` — explained how deterministic calculations mirror Monte Carlo calculations using representative values.
+- `src/electricity/electricity_npv_summary_figures.py` — expanded output-workflow documentation for raw versus processed CSVs, plot summaries, ranking outputs, and CLI regeneration behavior.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Replaced or supplemented terse comments with higher-context handover comments.
+- Focused explanations on modelling intent, data flow, assumptions, reproducibility, and output interpretation.
+- Kept the comments close to the code they explain so future readers can follow the model without searching elsewhere.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_finance.py src/general_parameters.py src/cement_parameters.py src/distributions.py src/npv_summary.py src/npv_summary_plots.py src/electricity/electricity_capacity_calculation.py src/electricity/electricity_parameters.py src/electricity/electricity_npv_monte_carlo.py src/electricity/electricity_npv_deterministic.py src/electricity/electricity_npv_summary_figures.py`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, random seeds, formulas, generated figures, generated CSVs, notebooks, or scientific conclusions were changed.
+- This task only changed explanatory source comments and docstrings.
+
+### Next suggested step
+
+When the thesis text is finalized, align key terms in comments with the final thesis wording for NPV, raw inputs, processed outputs, and ranking probabilities.
+
+## 2026-06-04 17:53 — Improve README and source-code comments
+
+### User request
+
+Update the README if needed and add simple comments across the source code so future readers can understand the implementation after handover.
+
+### Files changed (if needed)
+
+- `README.md` — closed the repository-structure code block and added a source-code guide plus the command for regenerating electricity outputs.
+- `src/distributions.py` — added a short comment explaining scaled-beta normalization.
+- `src/npv_finance.py` — added comments for the zero-discount case and NPV cash-flow timing.
+- `src/npv_summary.py` — added comments for deterministic representative values, result table construction, and ranking semantics.
+- `src/npv_summary_plots.py` — added comments for optional uncertainty plotting, reproducibility notes, and rank-count plotting.
+- `src/electricity/electricity_npv_monte_carlo.py` — added comments/docstrings for sampling dispatch, output normalization, fuel-price mapping, cash-flow construction, and seeded simulation flow.
+- `src/electricity/electricity_npv_deterministic.py` — added comments connecting deterministic calculations to the Monte Carlo structure.
+- `src/electricity/electricity_npv_summary_figures.py` — added comments/docstrings for statistic extraction, shared simulation reuse, ranking exports, project-root resolution, and CLI output switches.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Updated the README so new project readers can find the main source modules and rerun the electricity output script.
+- Added concise comments at handover-relevant points in the source code.
+- Kept existing module docstrings and parameter section comments where they were already clear.
+- Avoided line-by-line comments and did not refactor formulas or data flow.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_finance.py src/general_parameters.py src/cement_parameters.py src/distributions.py src/npv_summary.py src/npv_summary_plots.py src/electricity/electricity_capacity_calculation.py src/electricity/electricity_parameters.py src/electricity/electricity_npv_monte_carlo.py src/electricity/electricity_npv_deterministic.py src/electricity/electricity_npv_summary_figures.py`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, random seeds, formulas, generated figures, generated CSVs, notebooks, or scientific conclusions were changed.
+- This task only changed documentation and source comments/docstrings.
+
+### Next suggested step
+
+Review the README source-code guide once more after the next major sector module is added, so it stays aligned with the project structure.
+
+## 2026-06-04 17:42 — Centralize electricity summary notebook plotting
+
+### User request
+
+Move the remaining plotting code out of the electricity summary notebook so the notebook uses shared source plotting functions instead of carrying large local plot helper definitions.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — allowed `plot_average_rank_bars` to run in display-only mode with `output_path=None`, matching the mean-NPV plot helper behavior.
+- `notebooks/electricity/electricity_summary.ipynb` — removed the helper section entirely, cleared stored execution outputs, and switched all plot rendering to shared plotting helpers.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- The electricity summary notebook now calls:
+  - `plot_mean_npv_technology_bars(..., output_path=None)` for Monte Carlo mean NPV.
+  - `plot_mean_npv_technology_bars(..., output_path=None)` for deterministic NPV.
+  - `plot_average_rank_bars(..., output_path=None)` for ranking.
+- Removed the notebook-local helper section entirely.
+- Kept only direct per-section data transformations needed to feed the shared plotting functions.
+- Removed notebook-local Matplotlib plotting functions for mean, deterministic, and ranking figures.
+- Cleared notebook outputs and execution counts so the notebook remains lightweight and rerunnable.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary_plots.py`
+  - `python3 -m json.tool notebooks/electricity/electricity_summary.ipynb`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache MPLBACKEND=Agg MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+- Result:
+  - Passed.
+  - The notebook is valid JSON.
+  - All notebook code cells executed in memory with the thesis conda environment.
+- Notes:
+  - The dry run used `MPLBACKEND=Agg`, so Matplotlib reported expected non-interactive `plt.show()` warnings.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, random seed, sample size, ranking logic, NPV calculations, generated CSVs, or generated repository figures were changed.
+- The notebook remains display-only: shared plotting functions are called with `output_path=None`.
+
+### Next suggested step
+
+If the deterministic plot should have a distinct visual style later, add that as another reusable source helper rather than putting plotting code back into the notebook.
+
 ## 2026-06-04 17:27 — Add random seed note to ranking plot
 
 ### User request

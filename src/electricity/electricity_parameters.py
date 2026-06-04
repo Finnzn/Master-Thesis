@@ -1,4 +1,14 @@
-"""Electricity-sector parameters for the Monte Carlo simulation."""
+"""Electricity-sector parameters for the Monte Carlo simulation.
+
+This file is the electricity assumptions catalogue. It does not perform NPV
+calculations; it only records input values and uncertainty ranges for each
+technology. The calculation modules import these objects so the modelling logic
+stays separate from the numerical assumptions.
+
+The technologies are compared on a normalized annual output of 1,000,000 MWh.
+Full-load hours then determine how much installed capacity each technology needs
+to produce that same annual output.
+"""
 
 from __future__ import annotations
 
@@ -7,28 +17,31 @@ from typing import Mapping
 from distributions import FixedParameter, TriangularDistribution, UniformDistribution
 
 
-# Economic lifetime for electricity-sector investments.
+# Economic lifetime used for all electricity technologies in this comparison.
 LIFETIME_ELECTRICITY_YEARS = FixedParameter(
     value=25.0,
     unit="years",
     description="Economic lifetime of electricity-sector assets.",
 )
 
-# Electricity retail price placeholder specified for the model setup.
+# Electricity revenue is calculated from this fixed retail price and the
+# normalized annual output.
 RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
     value=94.07,
     unit="EUR/MWh",
     description="Retail price of electricity used in the electricity-sector setup.",
 )
 
-# Normalized annual electricity output used to compare technologies.
+# Normalized annual output: every technology is sized to produce this amount so
+# the NPV comparison is not driven by different plant sizes.
 ANNUAL_ELECTRICITY_OUTPUT_MWH = FixedParameter(
     value=1_000_000.0,
     unit="MWh/year",
     description="Annual electricity output target used to normalize electricity technologies.",
 )
 
-# Hard coal technology parameters.
+# Hard coal technology parameters. Fuel cost and carbon cost are both relevant
+# because hard coal has non-zero fuel consumption and direct emissions.
 HARD_COAL_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_700.0,
     upper_bound=2_300.0,
@@ -75,7 +88,8 @@ HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# Hard coal with CCS technology parameters.
+# Hard coal with CCS technology parameters. CCS raises CAPEX/OPEX and fuel use,
+# but lowers residual emissions compared with unabated hard coal.
 HARD_COAL_CCS_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=3_021.0,
     upper_bound=5_131.0,
@@ -120,7 +134,8 @@ HARD_COAL_CCS_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# CCGT technology parameters.
+# CCGT technology parameters. Gas-price uncertainty is added in the calculation
+# module through the shared gas-price distribution.
 CCGT_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=900.0,
     upper_bound=1_300.0,
@@ -167,7 +182,8 @@ CCGT_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# CCGT with CCS technology parameters.
+# CCGT with CCS technology parameters. As with hard coal CCS, the model captures
+# higher costs and lower residual emissions relative to the unabated plant.
 CCGT_CCS_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_487.0,
     upper_bound=2_557.0,
@@ -212,7 +228,8 @@ CCGT_CCS_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# Nuclear technology parameters.
+# Nuclear technology parameters. Direct emissions are modelled as zero here, so
+# carbon cost does not affect the nuclear annual cash flow.
 NUCLEAR_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=6_000.0,
     upper_bound=16_000.0,
@@ -257,7 +274,8 @@ NUCLEAR_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# Offshore wind technology parameters.
+# Offshore wind technology parameters. Fuel consumption and direct emissions are
+# fixed at zero, so its uncertainty comes mainly from CAPEX/OPEX and full-load hours.
 WIND_OFFSHORE_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=2_200.0,
     upper_bound=3_400.0,
@@ -300,7 +318,8 @@ WIND_OFFSHORE_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# Onshore wind technology parameters.
+# Onshore wind technology parameters. The structure mirrors offshore wind, but
+# different CAPEX/OPEX and full-load hours capture the technology-specific case.
 WIND_ONSHORE_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_300.0,
     upper_bound=1_900.0,
@@ -343,7 +362,8 @@ WIND_ONSHORE_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# PV technology parameters.
+# PV technology parameters. PV has zero modelled fuel cost, variable OPEX, and
+# direct emissions in this setup; the low full-load hours drive required capacity.
 PV_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=700.0,
     upper_bound=900.0,
@@ -384,7 +404,8 @@ PV_FULL_LOAD_HOURS = FixedParameter(
 )
 
 
-# Biogas technology parameters.
+# Biogas technology parameters. Biogas has fuel consumption and fuel cost, but
+# fossil direct emissions are treated as zero in the current model setup.
 BIOGAS_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=2_894.0,
     upper_bound=5_788.0,
@@ -429,6 +450,10 @@ BIOGAS_FULL_LOAD_HOURS = FixedParameter(
 
 
 # Parameter registries.
+#
+# The calculation modules use these dictionaries instead of importing each
+# technology constant one by one. Adding a new electricity technology therefore
+# means adding its assumptions above and registering the same standard keys here.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
     "retail_price_electricity_eur_per_mwh": RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
@@ -439,6 +464,8 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     str,
     Mapping[str, FixedParameter],
 ] = {
+    # Full-load hours are stored separately because they are needed to size the
+    # plant before CAPEX and fixed OPEX can be calculated.
     "hard_coal": {
         "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
     },
@@ -472,6 +499,8 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
     str,
     Mapping[str, FixedParameter | TriangularDistribution | UniformDistribution],
 ] = {
+    # Each technology uses the same keys so Monte Carlo and deterministic
+    # calculations can loop over technologies with one shared formula.
     "hard_coal": {
         "capex_eur_per_kw": HARD_COAL_CAPEX_DISTRIBUTION,
         "fixed_opex_eur_per_kw_year": HARD_COAL_FIXED_OPEX_DISTRIBUTION,

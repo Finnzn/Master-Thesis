@@ -1,4 +1,15 @@
-"""Generate electricity-sector NPV comparison figures and CSV outputs."""
+"""Generate electricity-sector NPV comparison figures and CSV outputs.
+
+This module is the bridge between model calculations and thesis artefacts. It
+runs deterministic and Monte Carlo electricity NPV calculations, writes raw and
+processed CSV files, and saves comparison figures.
+
+The output split is intentional:
+- raw CSVs contain sampled or representative model inputs;
+- processed CSVs contain derived quantities such as capacity, costs, cash flow,
+  and NPV;
+- figures summarize those outputs for interpretation.
+"""
 
 from __future__ import annotations
 
@@ -47,6 +58,8 @@ ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
     "biogas": "Biogas",
 }
 
+# Columns exported as raw inputs. These are values that enter the model directly:
+# sampled techno-economic assumptions, fixed prices, and carbon price.
 ELECTRICITY_RAW_INPUT_COLUMNS = (
     "run_id",
     "technology",
@@ -62,6 +75,8 @@ ELECTRICITY_RAW_INPUT_COLUMNS = (
     "carbon_price_eur_per_t",
 )
 
+# Columns exported as processed outputs. These are derived from the raw inputs by
+# the capacity, cost, cash-flow, and NPV calculations.
 ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "run_id",
     "technology",
@@ -80,12 +95,18 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "npv_million_eur_per_mwh",
 )
 
+# Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
+# because that name is clearer for thesis readers.
 EXPORT_SIMULATION_ID_RENAME = {"run_id": "simulation_id"}
 EXPORT_SORT_COLUMNS = ("simulation_id", "technology")
 
 
 def _with_electricity_display_labels(ranking_summary):
-    """Return a ranking summary copy with human-readable technology labels."""
+    """Return a ranking summary copy with human-readable technology labels.
+
+    CSV outputs keep stable technology codes such as `hard_coal_ccs`, while
+    plots use display labels that are easier to read.
+    """
 
     return ranking_summary.assign(
         display_label=ranking_summary["technology"].map(
@@ -98,7 +119,12 @@ def electricity_npv_distribution_summary_million_eur(
     results_by_technology: Mapping[str, Mapping[str, object]],
     labels: Mapping[str, str] = ELECTRICITY_TECHNOLOGY_LABELS,
 ) -> dict[str, dict[str, float]]:
-    """Calculate mean, median, and percentile NPV summaries in million EUR."""
+    """Calculate mean, median, and percentile NPV summaries in million EUR.
+
+    The mean is used for the bar length in the Monte Carlo figure. The median
+    and 5th/95th percentiles are shown as markers and whiskers so the figure
+    communicates both central value and uncertainty.
+    """
 
     summary: dict[str, dict[str, float]] = {}
     for technology, results in results_by_technology.items():
@@ -119,6 +145,12 @@ def _distribution_stat(
     summary: Mapping[str, Mapping[str, float]],
     statistic: str,
 ) -> dict[str, float]:
+    """Extract one statistic from the nested distribution summary.
+
+    Plotting helpers expect a simple mapping from label to value, so this keeps
+    the summary calculation separate from the figure call.
+    """
+
     return {label: values[statistic] for label, values in summary.items()}
 
 
@@ -127,7 +159,11 @@ def calculate_mean_electricity_npv_million_eur(
     random_seed: int = DEFAULT_RANDOM_SEED,
     technologies: tuple[str, ...] | None = None,
 ) -> dict[str, float]:
-    """Calculate mean simulated NPV by electricity technology in million EUR."""
+    """Calculate mean simulated NPV by electricity technology in million EUR.
+
+    This is a lightweight programmatic helper for notebooks or quick checks when
+    the caller only needs the mean NPV values and not CSV or figure outputs.
+    """
 
     return mean_npv_million_eur(
         results_by_item=simulate_electricity_results(
@@ -142,7 +178,11 @@ def calculate_mean_electricity_npv_million_eur(
 def calculate_deterministic_electricity_npv_million_eur(
     technologies: tuple[str, ...] | None = None,
 ) -> dict[str, float]:
-    """Calculate deterministic NPV by electricity technology in million EUR."""
+    """Calculate deterministic NPV by electricity technology in million EUR.
+
+    This mirrors the Monte Carlo mean helper but uses representative parameter
+    values instead of random draws.
+    """
 
     return deterministic_npv_million_eur(
         results_by_item=calculate_deterministic_electricity_results(
@@ -159,8 +199,14 @@ def save_electricity_mean_npv_figure(
     run_date: date | None = None,
     sector_name: str = "Electricity",
 ) -> Path:
-    """Save the simulated mean NPV comparison figure for electricity."""
+    """Save the simulated mean NPV comparison figure for electricity.
 
+    This figure-only helper does not write CSVs. Use
+    `save_electricity_mean_npv_outputs` when the raw and processed data exports
+    should be regenerated together with the plot.
+    """
+
+    # Simulate once and reuse the same result arrays for all plot statistics.
     results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
@@ -216,10 +262,17 @@ def save_electricity_mean_npv_outputs(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
 ) -> tuple[Path, ...]:
-    """Save mean NPV figure plus raw-input, processed-output, and ranking outputs."""
+    """Save mean NPV figure plus raw-input, processed-output, and ranking outputs.
+
+    The same Monte Carlo result arrays are reused for the figure, raw input CSV,
+    processed output CSV, and optional ranking outputs. This is important: all
+    artefacts from one call describe the same simulation run.
+    """
 
     output_date = run_date or date.today()
     stem = f"Mean_NPV_{sector_name}"
+    # Generate the Monte Carlo results once. Reusing this object prevents the
+    # figure and CSVs from accidentally representing different random draws.
     results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
@@ -265,6 +318,7 @@ def save_electricity_mean_npv_outputs(
 
     output_paths: list[Path] = [figure_path, raw_csv_path, processed_csv_path]
     if save_ranking_outputs:
+        # Rankings are calculated from the same Monte Carlo draw as the mean-NPV plot.
         ranking, ranking_summary = calculate_electricity_npv_rankings_from_results(
             results=results,
             sector_name=sector_name,
@@ -291,7 +345,12 @@ def calculate_electricity_npv_rankings_from_results(
     results: Mapping[str, Mapping[str, object]],
     sector_name: str = "Electricity",
 ):
-    """Calculate raw and summary NPV rank tables from electricity results."""
+    """Calculate raw and summary NPV rank tables from electricity results.
+
+    Pass existing results here when rankings should correspond exactly to an
+    already generated Monte Carlo run. This is how the mean-NPV output function
+    keeps rankings aligned with the figure and CSVs.
+    """
 
     ranking = npv_ranking_dataframe(
         results_by_item=results,
@@ -307,7 +366,11 @@ def calculate_electricity_npv_rankings(
     technologies: tuple[str, ...] | None = None,
     sector_name: str = "Electricity",
 ):
-    """Run electricity Monte Carlo simulations and return NPV ranking tables."""
+    """Run electricity Monte Carlo simulations and return NPV ranking tables.
+
+    This convenience function is useful when rankings are needed on their own.
+    It creates a fresh simulation using the supplied sample size and seed.
+    """
 
     results = simulate_electricity_results(
         sample_size=sample_size,
@@ -332,11 +395,18 @@ def save_electricity_npv_ranking_outputs(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
 ) -> tuple[Path, ...]:
-    """Save electricity NPV ranking CSVs and/or plots."""
+    """Save electricity NPV ranking CSVs and/or plots.
+
+    The raw ranking CSV stores every technology in every simulation. The summary
+    CSV aggregates that table into probabilities and rank counts. The plot uses
+    the summary CSV structure.
+    """
 
     output_date = run_date or date.today()
     output_paths: list[Path] = []
     if save_ranking_csv:
+        # Raw ranking stores one row per technology and simulation, so it can be
+        # audited back to individual NPV draws.
         output_paths.append(
             save_dataframe_csv(
                 dataframe=ranking,
@@ -347,6 +417,8 @@ def save_electricity_npv_ranking_outputs(
                 ),
             )
         )
+        # Summary ranking aggregates the raw ranking table by technology for
+        # interpretation and plotting.
         output_paths.append(
             save_dataframe_csv(
                 dataframe=ranking_summary,
@@ -387,7 +459,11 @@ def generate_electricity_npv_rankings(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
 ):
-    """Return electricity NPV ranking DataFrames and optionally save outputs."""
+    """Return electricity NPV ranking DataFrames and optionally save outputs.
+
+    Notebooks can call this to inspect rankings in memory, while scripts can set
+    the save flags to persist CSVs and plots in the standard project folders.
+    """
 
     ranking, ranking_summary = calculate_electricity_npv_rankings(
         sample_size=sample_size,
@@ -421,7 +497,11 @@ def save_electricity_deterministic_npv_outputs(
     run_date: date | None = None,
     sector_name: str = "Electricity",
 ) -> tuple[Path, Path, Path]:
-    """Save deterministic NPV figure plus raw-input and processed-output CSVs."""
+    """Save deterministic NPV figure plus raw-input and processed-output CSVs.
+
+    Deterministic exports use the same raw/processed column split as Monte Carlo
+    exports, but each technology has only one representative row.
+    """
 
     output_date = run_date or date.today()
     stem = f"Deterministic_NPV_{sector_name}"
@@ -477,7 +557,11 @@ def save_electricity_npv_outputs(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
 ) -> tuple[Path, ...]:
-    """Save simulated mean and deterministic electricity NPV outputs."""
+    """Save simulated mean and deterministic electricity NPV outputs.
+
+    This is the main all-in-one output function used by the CLI when `--kind all`
+    and data exports are enabled.
+    """
 
     return (
         *save_electricity_mean_npv_outputs(
@@ -509,7 +593,10 @@ def save_electricity_npv_figures(
     run_date: date | None = None,
     sector_name: str = "Electricity",
 ) -> tuple[Path, Path]:
-    """Save both simulated mean and deterministic electricity NPV figures."""
+    """Save both simulated mean and deterministic electricity NPV figures.
+
+    This is used for figure-only runs, especially when `--no-data` is supplied.
+    """
 
     return (
         save_electricity_mean_npv_figure(
@@ -528,10 +615,14 @@ def save_electricity_npv_figures(
 
 
 def _project_root() -> Path:
+    """Return the repository root when this module is executed as a script."""
+
     return Path(__file__).resolve().parents[2]
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for regenerating electricity outputs."""
+
     parser = argparse.ArgumentParser(
         description="Generate electricity-sector NPV comparison figures."
     )
@@ -591,10 +682,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the electricity output workflow selected from the command line."""
+
     args = parse_args()
     if args.sample_size <= 0:
         raise ValueError("--sample-size must be positive.")
 
+    # `--no-data` suppresses CSV exports but still allows ranking plots. This is
+    # useful when only figures need to be refreshed for a presentation or notebook.
     save_ranking_outputs = args.ranking_output != "none"
     save_ranking_csv = args.ranking_output in ("csv", "both") and not args.no_data
     save_ranking_plots = args.ranking_output in ("plots", "both")

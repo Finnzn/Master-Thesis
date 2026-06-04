@@ -1,4 +1,10 @@
-"""Deterministic NPV calculations for electricity technologies."""
+"""Deterministic NPV calculations for electricity technologies.
+
+The deterministic calculation is the one-point counterpart to the Monte Carlo
+model. It uses the same electricity assumptions and cash-flow formula, but each
+uncertain parameter is replaced by one representative value. This gives a
+baseline NPV that can be compared with the simulated mean and uncertainty range.
+"""
 
 from __future__ import annotations
 
@@ -31,8 +37,15 @@ from npv_finance import calculate_npv
 def electricity_fuel_price_parameter(
     technology: str,
 ) -> FixedParameter | ScaledBetaDistribution:
-    """Return the fuel-price parameter used by an electricity technology."""
+    """Return the fuel-price parameter used by an electricity technology.
 
+    Fuel prices are not stored inside every technology block because several
+    technologies share the same fuel market assumption. This mapping connects
+    each electricity technology to the relevant shared fuel-price parameter.
+    """
+
+    # Fuel-price assumptions match the Monte Carlo model. The deterministic run
+    # later reduces the returned parameter to its representative value.
     fuel_price_by_technology = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "hard_coal_ccs": COAL_PRICE_DISTRIBUTION,
@@ -53,7 +66,12 @@ def electricity_fuel_price_parameter(
 def calculate_deterministic_electricity_result(
     technology: str,
 ) -> Mapping[str, object]:
-    """Calculate deterministic electricity inputs and outputs for one technology."""
+    """Calculate deterministic electricity inputs and outputs for one technology.
+
+    The returned structure deliberately mirrors the Monte Carlo result keys, but
+    each value is a one-element list. This allows shared CSV and plotting helpers
+    to work for deterministic and simulated results.
+    """
 
     if technology not in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
         raise ValueError(f"Unknown electricity technology: {technology!r}.")
@@ -61,6 +79,9 @@ def calculate_deterministic_electricity_result(
     distributions = ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology]
     fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
 
+    # Deterministic calculations use one representative value for each uncertain
+    # input, then follow the same sizing and cash-flow sequence as the Monte Carlo
+    # calculation.
     annual_output_mwh = ANNUAL_ELECTRICITY_OUTPUT_MWH.value
     full_load_hours = representative_value(
         fixed_parameters["full_load_hours_per_year"]
@@ -87,6 +108,8 @@ def calculate_deterministic_electricity_result(
         electricity_fuel_price_parameter(technology)
     )
 
+    # The cash-flow structure mirrors the Monte Carlo calculation: revenue from
+    # electricity sales minus fixed OPEX, variable OPEX, fuel cost, and carbon cost.
     initial_capex_eur = capacity_kw * capex_eur_per_kw
     annual_revenue_eur = (
         annual_output_mwh * RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
@@ -119,6 +142,7 @@ def calculate_deterministic_electricity_result(
     lifetime_output_mwh = annual_output_mwh * LIFETIME_ELECTRICITY_YEARS.value
     npv_eur_per_mwh = npv_eur / lifetime_output_mwh
 
+    # Keep the same output keys as the Monte Carlo result for shared export helpers.
     return {
         "run_id": [0],
         "technology": [technology],
@@ -153,7 +177,11 @@ def calculate_deterministic_electricity_result(
 
 
 def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
-    """Calculate deterministic electricity NPV from representative values."""
+    """Calculate deterministic electricity NPV from representative values.
+
+    This small wrapper is useful when only the final NPV is needed and not the
+    intermediate deterministic inputs and cost components.
+    """
 
     return float(calculate_deterministic_electricity_result(technology)["npv_eur"][0])
 
@@ -161,7 +189,12 @@ def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
 def calculate_deterministic_electricity_results(
     technologies: tuple[str, ...] | None = None,
 ) -> Mapping[str, Mapping[str, object]]:
-    """Calculate deterministic electricity results for all selected technologies."""
+    """Calculate deterministic electricity results for all selected technologies.
+
+    By default this follows the order of the electricity technology registry, so
+    adding a technology to `ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS` automatically
+    includes it in the deterministic comparison.
+    """
 
     selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
     return {

@@ -3,6 +3,10 @@
 This module contains global assumptions that are not specific to one sector.
 Sector modules can import these constants and combine them with their own
 technology or sector-specific parameter distributions.
+
+Values in this file affect several technologies at once. For that reason, they
+are kept separate from sector files such as `electricity_parameters.py`, where a
+future reader should expect only sector-specific assumptions.
 """
 
 from __future__ import annotations
@@ -15,14 +19,14 @@ from distributions import (
     create_scaled_beta_distribution,
 )
 
-# Carbon price placeholder specified for the general model setup.
+# Carbon price is applied to direct stack emissions in the NPV cash-flow model.
 CARBON_PRICE_EUR_PER_T = FixedParameter(
     value=80.0,
     unit="EUR/tCO2",
     description="Carbon price used in the general setup.",
 )
 
-# Annual interest rate used for cost annualization and discounting.
+# The same discount rate is used when future annual cash flows are converted to NPV.
 INTEREST_RATE = FixedParameter(
     value=0.08,
     unit="fraction/year",
@@ -48,6 +52,9 @@ NO_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
 )
 
 # Market-price distributions preserve source-table minimum, maximum, and mean.
+# They are shared by technologies that use the same fuel, so gas-fired plants
+# draw from the same gas-price uncertainty and coal-fired plants draw from the
+# same coal-price uncertainty.
 GAS_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     minimum=12.5,
     mean=39.3,

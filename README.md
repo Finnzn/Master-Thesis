@@ -64,3 +64,30 @@ MasterThesis/
 ├── README.md             # Project overview
 ├── requirements.txt      # Python dependencies
 └── .gitignore            # Files and folders ignored by Git
+```
+
+## Source Code Guide
+
+The reusable Python code is organized around small sector-independent helpers and
+electricity-sector calculations.
+
+- `src/distributions.py` defines deterministic parameters and probability
+  distribution specifications used by Monte Carlo simulations.
+- `src/general_parameters.py` stores shared assumptions such as carbon price,
+  discount rate, and fuel-price distributions.
+- `src/npv_finance.py` contains the sector-independent NPV formula.
+- `src/npv_summary.py` converts simulation outputs into summary tables, rankings,
+  and CSV files.
+- `src/npv_summary_plots.py` contains reusable plotting functions for NPV bar
+  charts and ranking figures.
+- `src/electricity/` contains electricity-sector assumptions, deterministic NPV
+  calculations, Monte Carlo simulations, and output-generation scripts.
+
+To regenerate the electricity-sector figures and CSV outputs, run:
+
+```bash
+PYTHONPATH=src python -m electricity.electricity_npv_summary_figures
+```
+
+Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
+and processed model outputs to `data/processed/`.

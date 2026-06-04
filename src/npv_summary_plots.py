@@ -1,4 +1,9 @@
-"""Reusable plotting helpers for NPV technology comparisons."""
+"""Reusable plotting helpers for NPV technology comparisons.
+
+The calculation modules produce dictionaries and DataFrames; this module turns
+those summaries into thesis-ready figures. It does not calculate NPV or rankings
+itself, which keeps visual presentation separate from model logic.
+"""
 
 from __future__ import annotations
 
@@ -39,6 +44,10 @@ def plot_mean_npv_technology_bars(
     The helper is sector-agnostic: callers provide display labels and NPV values
     in million EUR. It can therefore be reused for electricity, cement, or other
     sectors once they produce the same summary mapping.
+
+    For Monte Carlo outputs, callers can also pass median and percentile values.
+    In that case the bars still show the mean NPV, while markers and whiskers
+    show the distribution behind that mean.
     """
 
     if not values_million_eur:
@@ -52,6 +61,9 @@ def plot_mean_npv_technology_bars(
     labels = [label for label, _ in sorted_items]
     values = [value for _, value in sorted_items]
     colors = ["#4EA72E" if value >= 0 else "#FF0F0F" for value in values]
+    # Uncertainty markers are optional. This lets deterministic and Monte Carlo
+    # figures use the same visual style while only Monte Carlo figures show the
+    # simulated spread.
     has_uncertainty = (
         median_values_million_eur is not None
         and lower_values_million_eur is not None
@@ -84,6 +96,9 @@ def plot_mean_npv_technology_bars(
     ax.barh(y_positions, values, color=colors, height=0.42, label="Mean")
 
     if has_uncertainty:
+        # Percentile whiskers show the simulated 5th-95th percentile range. The
+        # median marker is plotted separately so readers can see whether the
+        # distribution is skewed relative to the mean.
         ax.errorbar(
             values,
             y_positions,
@@ -129,6 +144,9 @@ def plot_mean_npv_technology_bars(
         ax.set_xlim(min(values) - margin, max(values) + margin)
 
     if has_uncertainty:
+        # The note records reproducibility context without putting it in the title.
+        # This keeps the figure readable while still documenting the sample size
+        # and seed used to create the uncertainty range.
         note_parts = []
         if sample_size is not None:
             note_parts.append(f"Sample size: {sample_size:,}")
@@ -194,11 +212,17 @@ def plot_mean_npv_technology_bars(
 
 def plot_average_rank_bars(
     ranking_summary: pd.DataFrame,
-    output_path: Path,
+    output_path: Path | None,
     title: str = "Monte Carlo NPV Ranking",
     random_seed: int | None = None,
-) -> Path:
-    """Save an average-rank chart with rank-frequency counts."""
+) -> Path | None:
+    """Plot an average-rank chart with rank-frequency counts.
+
+    The left panel summarizes average rank and top-rank probabilities. If the
+    ranking summary contains rank-count columns, the right panel shows how often
+    each technology reached every rank, which is useful for spotting unstable
+    or polarized ranking behavior.
+    """
 
     required_columns = {
         "technology",
@@ -221,6 +245,8 @@ def plot_average_rank_bars(
     probability_rank_1 = sorted_summary["probability_rank_1"].astype(float).tolist()
     probability_top_3 = sorted_summary["probability_top_3"].astype(float).tolist()
     n_simulations = int(sorted_summary["n_simulations"].max())
+    # Ranking CSVs can include rank_1_count, rank_2_count, ...; plot them if present.
+    # The function still works without these columns for older summary tables.
     rank_count_columns = sorted(
         [
             column
@@ -230,7 +256,8 @@ def plot_average_rank_bars(
         key=lambda column: int(column.removeprefix("rank_").removesuffix("_count")),
     )
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
     figure_height = max(5.6, 0.58 * len(labels) + 2.2)
     if rank_count_columns:
@@ -295,6 +322,9 @@ def plot_average_rank_bars(
             for column in rank_count_columns
         ]
         rank_counts = sorted_summary[rank_count_columns].astype(int)
+        # The heatmap shows how often each technology reached each rank. Darker
+        # cells mean that technology landed in that rank more often across the
+        # Monte Carlo simulations.
         count_cmap = LinearSegmentedColormap.from_list(
             "rank_counts_blue",
             ["#f7f9fc", "#d9e5f6", bar_color],
@@ -353,7 +383,9 @@ def plot_average_rank_bars(
         bottom=0.14,
         wspace=0.12,
     )
+    if output_path is None:
+        return None
+
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
-
     return output_path

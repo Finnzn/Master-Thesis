@@ -1,4 +1,14 @@
-"""Monte Carlo NPV calculations for electricity technologies."""
+"""Monte Carlo NPV calculations for electricity technologies.
+
+This module is the main electricity-sector simulation engine. For each
+technology, it samples uncertain techno-economic inputs, sizes the plant to
+produce the same annual electricity output, calculates annual costs and revenue,
+and converts the resulting annual net cash flow into NPV.
+
+The output intentionally includes both sampled inputs and derived financial
+outputs. That makes each Monte Carlo result traceable from assumptions to NPV
+when exported to CSV.
+"""
 
 from __future__ import annotations
 
@@ -45,6 +55,13 @@ def _sample_distribution(
     size: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
+    """Dispatch one supported stochastic parameter to its sampler.
+
+    Parameter modules store distributions as dataclasses. This helper translates
+    each dataclass into the corresponding NumPy random draw while preserving the
+    shared random generator.
+    """
+
     if isinstance(distribution, ScaledBetaDistribution):
         return sample_scaled_beta(distribution=distribution, size=size, rng=rng)
     if isinstance(distribution, TriangularDistribution):
@@ -65,6 +82,13 @@ def _sample_parameter(
     size: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
+    """Sample stochastic parameters and broadcast fixed parameters.
+
+    Fixed values are expanded to arrays with the same length as sampled values.
+    This keeps the later cash-flow formulas vectorized and identical for fixed
+    and uncertain inputs.
+    """
+
     if isinstance(parameter, FixedParameter):
         return np.full(size, parameter.value)
 
@@ -76,7 +100,12 @@ def simulate_electricity_technology_npv(
     size: int,
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, np.ndarray]:
-    """Run a Monte Carlo NPV simulation for one electricity technology."""
+    """Run a Monte Carlo NPV simulation for one electricity technology.
+
+    Each returned array has length `size`. Row `i` across all arrays is one
+    simulated case for this technology: sampled CAPEX, OPEX, fuel use, emissions,
+    fuel price, calculated capacity, annual cash flow, and NPV.
+    """
 
     if size <= 0:
         raise ValueError("size must be positive.")
@@ -87,6 +116,9 @@ def simulate_electricity_technology_npv(
     technology_distributions = ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology]
     technology_fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
 
+    # All technologies are normalized to the same annual electricity output. The
+    # model therefore compares the economic value of supplying the same amount of
+    # electricity, not the economics of arbitrary plant sizes.
     annual_output_mwh = ANNUAL_ELECTRICITY_OUTPUT_MWH.value
     full_load_hours = _sample_parameter(
         technology_fixed_parameters["full_load_hours_per_year"],
@@ -96,6 +128,9 @@ def simulate_electricity_technology_npv(
     capacity_mw = annual_output_mwh / full_load_hours
     capacity_kw = capacity_mw * 1_000.0
 
+    # Technology-specific uncertainty comes from the electricity parameter
+    # registry. The same keys are used for every technology so this formula can
+    # be shared by coal, gas, nuclear, renewables, and CCS variants.
     capex_eur_per_kw = _sample_parameter(
         technology_distributions["capex_eur_per_kw"],
         size=size,
@@ -121,6 +156,9 @@ def simulate_electricity_technology_npv(
         size=size,
         rng=generator,
     )
+    # Fuel prices are shared by fuel type, while renewable technologies use zero
+    # fuel cost. This avoids duplicating the same gas or coal price assumption in
+    # every technology definition.
     fuel_price_distribution_by_technology = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "hard_coal_ccs": COAL_PRICE_DISTRIBUTION,
@@ -153,6 +191,8 @@ def simulate_electricity_technology_npv(
     )
     electricity_price_eur_per_mwh = RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
 
+    # Annual cash flow is revenue minus operating, fuel, and carbon-cost terms.
+    # CAPEX is handled separately as the initial investment in the NPV formula.
     initial_capex_eur = capacity_kw * capex_eur_per_kw
     annual_revenue_eur = annual_output_mwh * electricity_price_eur_per_mwh
     annual_fixed_opex_eur = capacity_kw * fixed_opex_eur_per_kw_year
@@ -181,6 +221,8 @@ def simulate_electricity_technology_npv(
     lifetime_output_mwh = annual_output_mwh * LIFETIME_ELECTRICITY_YEARS.value
     npv_eur_per_mwh = npv_eur / lifetime_output_mwh
 
+    # Return both sampled inputs and derived outputs so CSV exports are traceable.
+    # `run_id` links technologies when they are ranked within the same simulation.
     return {
         "run_id": np.arange(size),
         "technology": np.full(size, technology),
@@ -343,11 +385,18 @@ def simulate_electricity_technologies_npv(
     ),
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:
-    """Run NPV simulations for multiple technologies with aligned run IDs."""
+    """Run NPV simulations for multiple technologies with aligned run IDs.
+
+    The same generator is passed through all technologies, and each technology
+    receives run IDs from 0 to size-1. The rank calculation later uses those IDs
+    to compare technologies within each Monte Carlo iteration.
+    """
 
     if size <= 0:
         raise ValueError("size must be positive.")
 
+    # Reusing one generator keeps the random sequence reproducible across technologies
+    # for a given top-level seed.
     generator = rng if rng is not None else np.random.default_rng()
     return {
         technology: simulate_electricity_technology_npv(
@@ -364,9 +413,14 @@ def simulate_electricity_results(
     random_seed: int = DEFAULT_RANDOM_SEED,
     technologies: tuple[str, ...] | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:
-    """Run electricity NPV simulations for all selected technologies."""
+    """Run electricity NPV simulations for all selected technologies.
+
+    This is the public entry point used by notebooks and output scripts. Use the
+    same sample size and seed to reproduce a previous electricity Monte Carlo run.
+    """
 
     selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
+    # The seed is applied once at the top-level simulation entry point.
     rng = np.random.default_rng(random_seed)
     return simulate_electricity_technologies_npv(
         size=sample_size,

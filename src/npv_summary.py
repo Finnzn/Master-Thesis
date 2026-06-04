@@ -1,4 +1,10 @@
-"""Reusable helpers for sector NPV summaries and CSV exports."""
+"""Reusable helpers for sector NPV summaries and CSV exports.
+
+Simulation modules return dictionaries of arrays because that format is compact
+and easy to calculate with NumPy. This module turns those arrays into the tables
+used for figures, CSV exports, and technology rankings. The helpers are
+sector-agnostic so electricity and later sectors can share one output workflow.
+"""
 
 from __future__ import annotations
 
@@ -21,8 +27,16 @@ ParameterSpec = FixedParameter | ScaledBetaDistribution | TriangularDistribution
 
 
 def representative_value(parameter: ParameterSpec) -> float:
-    """Return the deterministic representative value for a parameter."""
+    """Return the deterministic representative value for a parameter.
 
+    Deterministic runs are used as a one-point comparison against the Monte Carlo
+    results. For each uncertainty type, this function defines which single value
+    stands in for the whole distribution.
+    """
+
+    # Fixed parameters already have a single value. For distributions, use the
+    # value that best represents the source assumption: mean for scaled beta,
+    # mode for triangular, and midpoint for uniform ranges.
     if isinstance(parameter, FixedParameter):
         return parameter.value
     if isinstance(parameter, ScaledBetaDistribution):
@@ -40,7 +54,12 @@ def mean_npv_million_eur(
     labels: Mapping[str, str],
     npv_column: str = "npv_eur",
 ) -> dict[str, float]:
-    """Calculate mean NPV in million EUR from sector result mappings."""
+    """Calculate mean NPV in million EUR from sector result mappings.
+
+    The raw model stores NPV in EUR. Figures and thesis tables are easier to
+    read in million EUR, so this function performs that conversion once in the
+    shared summary layer.
+    """
 
     values: dict[str, float] = {}
     for item, results in results_by_item.items():
@@ -85,7 +104,12 @@ def results_to_dataframe(
     rename_columns: Mapping[str, str] | None = None,
     sort_by: Sequence[str] = (),
 ) -> pd.DataFrame:
-    """Combine selected result columns from multiple items into one DataFrame."""
+    """Combine selected result columns from multiple items into one DataFrame.
+
+    `results_by_item` is usually keyed by technology. The caller chooses which
+    columns belong in a raw-input export or a processed-output export, and this
+    helper stacks all technologies into one long table.
+    """
 
     frames = []
     for item, results in results_by_item.items():
@@ -93,6 +117,8 @@ def results_to_dataframe(
         if missing_columns:
             raise KeyError(f"{item!r} results are missing columns: {missing_columns}")
 
+        # Each result mapping already stores equal-length arrays for one technology,
+        # so a DataFrame can be built directly from the selected columns.
         frame = pd.DataFrame({column: results[column] for column in columns})
         frames.append(frame)
 
@@ -119,7 +145,12 @@ def npv_ranking_dataframe(
     technology_column: str = "technology",
     npv_column: str = "npv_eur",
 ) -> pd.DataFrame:
-    """Rank technologies by NPV within each Monte Carlo simulation."""
+    """Rank technologies by NPV within each Monte Carlo simulation.
+
+    A single Monte Carlo simulation ID represents one shared uncertain world.
+    Ranking within each ID answers: under this draw of uncertain parameters,
+    which technology has the highest NPV?
+    """
 
     frames = []
     for item, results in results_by_item.items():
@@ -131,6 +162,7 @@ def npv_ranking_dataframe(
         if missing_columns:
             raise KeyError(f"{item!r} results are missing columns: {missing_columns}")
 
+        # Some callers store technology explicitly; otherwise the mapping key is used.
         technology_values = (
             results[technology_column]
             if technology_column in results
@@ -152,6 +184,9 @@ def npv_ranking_dataframe(
         )
 
     ranking = pd.concat(frames, ignore_index=True)
+    # Rank 1 is the highest NPV within a simulation and sector. `method="min"`
+    # gives tied technologies the same best rank rather than forcing an arbitrary
+    # ordering.
     ranking["rank"] = ranking.groupby(["sector", "simulation_id"])["npv"].rank(
         method="min",
         ascending=False,
@@ -164,7 +199,12 @@ def npv_ranking_dataframe(
 
 
 def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
-    """Summarize NPV ranks by sector and technology."""
+    """Summarize NPV ranks by sector and technology.
+
+    The raw ranking table is long and simulation-level. This summary collapses
+    it into interpretable indicators: average rank, probability of being rank 1,
+    probability of being in the top 3, and the full rank-count distribution.
+    """
 
     required_columns = {"sector", "technology", "rank", "simulation_id"}
     missing_columns = sorted(required_columns - set(ranking.columns))
@@ -185,6 +225,9 @@ def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
             ]
         )
 
+    # Keep explicit rank-count columns so CSV outputs show the full rank distribution,
+    # not just aggregate probabilities. This is useful when one technology is often
+    # either very good or very bad rather than consistently average.
     rank_count_columns = {
         rank: f"rank_{rank}_count"
         for rank in sorted(ranking["rank"].astype(int).unique())
