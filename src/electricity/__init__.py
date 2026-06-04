@@ -1,1 +1,0 @@
-"""Electricity-sector source modules."""
