@@ -1,3 +1,54 @@
+## 2026-06-04 17:16 — Reuse notebook-style uncertainty plot for mean NPV outputs
+
+### User request
+
+Follow the thesis workflow with a changelog entry, change the reusable plotting function to mirror the electricity summary notebook's Monte Carlo mean NPV graph, and update the notebook to use the shared function instead of keeping its own mean-NPV plot helper.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — extended `plot_mean_npv_technology_bars` with optional median markers, 5th-95th percentile whiskers, sample-size/seed notes, and display-only use with `output_path=None`.
+- `src/electricity/electricity_npv_summary_figures.py` — added electricity NPV distribution-summary helpers and passed mean, median, and percentile values into the reusable plot function for simulated mean NPV figures.
+- `notebooks/electricity/electricity_summary.ipynb` — changed the Monte Carlo mean NPV section to import and use `plot_mean_npv_technology_bars` instead of the notebook-local mean-NPV plotting helper.
+- `figures/2026-06-04-Mean_NPV_Electricity.png` — regenerated the mean NPV figure with uncertainty whiskers and median markers.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Made the reusable mean-NPV bar plot match the notebook's improved visual structure:
+  - Bars show mean NPV.
+  - White circle markers show median NPV.
+  - Whiskers show the simulated 5th-95th percentile range.
+  - A note records sample size and random seed when provided.
+- Preserved backwards compatibility: existing callers can still pass only mean values and an output path.
+- Added `output_path=None` support so notebooks can display the shared plot inline without saving a figure.
+- Updated the electricity summary notebook so the Monte Carlo mean plot uses the shared source function.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary_plots.py src/electricity/electricity_npv_summary_figures.py`
+  - `python3 -m json.tool notebooks/electricity/electricity_summary.ipynb`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache MPLBACKEND=Agg MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --no-data --ranking-output none`
+- Result:
+  - Passed.
+  - Source modules compile.
+  - The electricity summary notebook is valid JSON.
+  - All notebook code cells executed in memory using the thesis conda environment.
+  - The regenerated mean NPV figure was visually inspected and the legend no longer overlaps the plotted data.
+- Notes:
+  - The notebook dry run used `MPLBACKEND=Agg`, so Matplotlib reported expected non-interactive `plt.show()` warnings. These do not occur as a functional problem when running the notebook interactively.
+
+### Reproducibility notes
+
+- No model assumptions, parameter values, random seed, or NPV calculations were changed.
+- The regenerated mean NPV figure uses the default 100,000-simulation electricity run with seed `42`.
+- The summary notebook still does not save figures or CSV files; it displays the shared mean-NPV plot inline with `output_path=None`.
+
+### Next suggested step
+
+Consider using the same shared display-only pattern for the deterministic and ranking notebook plots if those should also be fully centralized in `src/`.
+
 ## 2026-06-04 16:51 — Standardize NPV output IDs and rank raw data location
 
 ### User request

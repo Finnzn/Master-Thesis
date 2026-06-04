@@ -26,10 +26,15 @@ def dated_figure_path(
 
 def plot_mean_npv_technology_bars(
     values_million_eur: Mapping[str, float],
-    output_path: Path,
+    output_path: Path | None,
     title: str = "Mean NPV (MEUR)",
-) -> Path:
-    """Save a horizontal positive/negative NPV bar chart.
+    median_values_million_eur: Mapping[str, float] | None = None,
+    lower_values_million_eur: Mapping[str, float] | None = None,
+    upper_values_million_eur: Mapping[str, float] | None = None,
+    sample_size: int | None = None,
+    random_seed: int | None = None,
+) -> Path | None:
+    """Plot a horizontal positive/negative NPV bar chart.
 
     The helper is sector-agnostic: callers provide display labels and NPV values
     in million EUR. It can therefore be reused for electricity, cement, or other
@@ -47,48 +52,129 @@ def plot_mean_npv_technology_bars(
     labels = [label for label, _ in sorted_items]
     values = [value for _, value in sorted_items]
     colors = ["#4EA72E" if value >= 0 else "#FF0F0F" for value in values]
+    has_uncertainty = (
+        median_values_million_eur is not None
+        and lower_values_million_eur is not None
+        and upper_values_million_eur is not None
+    )
+    if has_uncertainty:
+        missing_uncertainty_labels = [
+            label
+            for label in labels
+            if label not in median_values_million_eur
+            or label not in lower_values_million_eur
+            or label not in upper_values_million_eur
+        ]
+        if missing_uncertainty_labels:
+            raise KeyError(
+                "uncertainty mappings are missing labels: "
+                f"{missing_uncertainty_labels}"
+            )
+        medians = [median_values_million_eur[label] for label in labels]
+        lower_values = [lower_values_million_eur[label] for label in labels]
+        upper_values = [upper_values_million_eur[label] for label in labels]
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    figure_height = max(4.6, 0.48 * len(values) + 1.5)
-    fig, ax = plt.subplots(figsize=(7.5, figure_height), dpi=160)
-    y_positions = range(len(labels))
-    ax.barh(y_positions, values, color=colors, height=0.38)
+    figure_height = max(5.0, 0.52 * len(values) + 1.7)
+    figure_width = 9.5 if has_uncertainty else 7.5
+    fig, ax = plt.subplots(figsize=(figure_width, figure_height), dpi=160)
+    y_positions = list(range(len(labels)))
+    ax.barh(y_positions, values, color=colors, height=0.42, label="Mean")
+
+    if has_uncertainty:
+        ax.errorbar(
+            values,
+            y_positions,
+            xerr=[
+                [value - lower for value, lower in zip(values, lower_values)],
+                [upper - value for value, upper in zip(values, upper_values)],
+            ],
+            fmt="none",
+            ecolor="#4d4d4d",
+            elinewidth=1.1,
+            capsize=3,
+            label="5th-95th percentile",
+        )
+        ax.scatter(
+            medians,
+            y_positions,
+            color="white",
+            edgecolor="#333333",
+            s=26,
+            zorder=3,
+            label="Median",
+        )
 
     ax.set_yticks(list(y_positions))
     ax.set_yticklabels(labels, fontsize=9, color="#5a5a5a")
     ax.invert_yaxis()
-    ax.axvline(0, color="#c8c8c8", linewidth=1.2)
-    ax.set_title(title, fontsize=15, color="#555555", pad=14)
+    ax.axvline(0, color="#bbbbbb", linewidth=1.1)
+    ax.set_title(title, fontsize=14, color="#444444", pad=12)
+    ax.set_xlabel("NPV (million EUR)", fontsize=9, color="#5a5a5a")
+    ax.grid(axis="x", color="#e6e6e6", linewidth=0.8)
+    ax.set_axisbelow(True)
 
-    max_abs_value = max(abs(value) for value in values)
-    margin = max(25.0, 0.16 * max_abs_value)
-    ax.set_xlim(min(values) - margin, max(values) + margin)
+    if has_uncertainty:
+        max_abs_value = max(
+            max(abs(value) for value in lower_values),
+            max(abs(value) for value in upper_values),
+        )
+        margin = max(60.0, 0.12 * max_abs_value)
+        ax.set_xlim(min(lower_values) - margin, max(upper_values) + margin)
+    else:
+        max_abs_value = max(abs(value) for value in values)
+        margin = max(25.0, 0.16 * max_abs_value)
+        ax.set_xlim(min(values) - margin, max(values) + margin)
 
-    for y_position, value in zip(y_positions, values):
-        label = f"{value:.0f}"
-        if value >= 0:
-            ax.text(
-                value + margin * 0.12,
-                y_position,
-                label,
-                va="center",
-                ha="left",
-                fontsize=9,
-                color="#333333",
-            )
-        else:
-            ax.text(
-                value - margin * 0.12,
-                y_position,
-                label,
-                va="center",
-                ha="right",
-                fontsize=9,
-                color="#333333",
-            )
+    if has_uncertainty:
+        note_parts = []
+        if sample_size is not None:
+            note_parts.append(f"Sample size: {sample_size:,}")
+        if random_seed is not None:
+            note_parts.append(f"random seed: {random_seed}")
+        note = "; ".join(note_parts)
+        note = f"{note}. " if note else ""
+        ax.text(
+            0,
+            -0.12,
+            f"{note}Bars show mean NPV; whiskers show simulated 5th-95th percentiles.",
+            transform=ax.transAxes,
+            fontsize=8.5,
+            color="#5a5a5a",
+        )
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1.0),
+            fontsize=8,
+            frameon=False,
+        )
+    else:
+        for y_position, value in zip(y_positions, values):
+            label = f"{value:.0f}"
+            if value >= 0:
+                ax.text(
+                    value + margin * 0.12,
+                    y_position,
+                    label,
+                    va="center",
+                    ha="left",
+                    fontsize=9,
+                    color="#333333",
+                )
+            else:
+                ax.text(
+                    value - margin * 0.12,
+                    y_position,
+                    label,
+                    va="center",
+                    ha="right",
+                    fontsize=9,
+                    color="#333333",
+                )
 
-    ax.tick_params(axis="x", bottom=False, labelbottom=False)
+    ax.tick_params(axis="x", colors="#7a7a7a", labelsize=8)
     ax.tick_params(axis="y", left=False)
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -98,9 +184,11 @@ def plot_mean_npv_technology_bars(
     fig.patch.set_linewidth(1.0)
     ax.set_facecolor("white")
     fig.tight_layout(pad=1.2)
+    if output_path is None:
+        return None
+
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
-
     return output_path
 
 

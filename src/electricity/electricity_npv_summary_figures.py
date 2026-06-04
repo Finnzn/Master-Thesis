@@ -7,6 +7,8 @@ from datetime import date
 from pathlib import Path
 from typing import Mapping
 
+import numpy as np
+
 from electricity.electricity_npv_deterministic import (
     calculate_deterministic_electricity_npv_eur,
     calculate_deterministic_electricity_result,
@@ -92,6 +94,34 @@ def _with_electricity_display_labels(ranking_summary):
     )
 
 
+def electricity_npv_distribution_summary_million_eur(
+    results_by_technology: Mapping[str, Mapping[str, object]],
+    labels: Mapping[str, str] = ELECTRICITY_TECHNOLOGY_LABELS,
+) -> dict[str, dict[str, float]]:
+    """Calculate mean, median, and percentile NPV summaries in million EUR."""
+
+    summary: dict[str, dict[str, float]] = {}
+    for technology, results in results_by_technology.items():
+        if "npv_eur" not in results:
+            raise KeyError(f"{technology!r} results do not contain 'npv_eur'.")
+        label = labels.get(technology, technology)
+        npv_million_eur = np.asarray(results["npv_eur"], dtype=float) / 1_000_000
+        summary[label] = {
+            "mean": float(npv_million_eur.mean()),
+            "median": float(np.median(npv_million_eur)),
+            "p05": float(np.percentile(npv_million_eur, 5)),
+            "p95": float(np.percentile(npv_million_eur, 95)),
+        }
+    return summary
+
+
+def _distribution_stat(
+    summary: Mapping[str, Mapping[str, float]],
+    statistic: str,
+) -> dict[str, float]:
+    return {label: values[statistic] for label, values in summary.items()}
+
+
 def calculate_mean_electricity_npv_million_eur(
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
@@ -131,10 +161,12 @@ def save_electricity_mean_npv_figure(
 ) -> Path:
     """Save the simulated mean NPV comparison figure for electricity."""
 
-    values = calculate_mean_electricity_npv_million_eur(
+    results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
     )
+    summary = electricity_npv_distribution_summary_million_eur(results)
+    values = _distribution_stat(summary, "mean")
     output_path = dated_figure_path(
         output_dir=output_dir,
         stem=f"Mean_NPV_{sector_name}",
@@ -143,7 +175,12 @@ def save_electricity_mean_npv_figure(
     return plot_mean_npv_technology_bars(
         values_million_eur=values,
         output_path=output_path,
-        title="Mean NPV (MEUR)",
+        title="Monte Carlo mean NPV by electricity technology",
+        median_values_million_eur=_distribution_stat(summary, "median"),
+        lower_values_million_eur=_distribution_stat(summary, "p05"),
+        upper_values_million_eur=_distribution_stat(summary, "p95"),
+        sample_size=sample_size,
+        random_seed=random_seed,
     )
 
 
@@ -187,10 +224,8 @@ def save_electricity_mean_npv_outputs(
         sample_size=sample_size,
         random_seed=random_seed,
     )
-    values = mean_npv_million_eur(
-        results_by_item=results,
-        labels=ELECTRICITY_TECHNOLOGY_LABELS,
-    )
+    summary = electricity_npv_distribution_summary_million_eur(results)
+    values = _distribution_stat(summary, "mean")
     figure_path = plot_mean_npv_technology_bars(
         values_million_eur=values,
         output_path=dated_figure_path(
@@ -198,7 +233,12 @@ def save_electricity_mean_npv_outputs(
             stem=stem,
             run_date=output_date,
         ),
-        title="Mean NPV (MEUR)",
+        title="Monte Carlo mean NPV by electricity technology",
+        median_values_million_eur=_distribution_stat(summary, "median"),
+        lower_values_million_eur=_distribution_stat(summary, "p05"),
+        upper_values_million_eur=_distribution_stat(summary, "p95"),
+        sample_size=sample_size,
+        random_seed=random_seed,
     )
     raw_csv_path = save_results_csv(
         results_by_item=results,
