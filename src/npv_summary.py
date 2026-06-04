@@ -82,6 +82,8 @@ def dated_csv_path(
 def results_to_dataframe(
     results_by_item: Mapping[str, Mapping[str, object]],
     columns: Sequence[str],
+    rename_columns: Mapping[str, str] | None = None,
+    sort_by: Sequence[str] = (),
 ) -> pd.DataFrame:
     """Combine selected result columns from multiple items into one DataFrame."""
 
@@ -95,9 +97,19 @@ def results_to_dataframe(
         frames.append(frame)
 
     if not frames:
-        return pd.DataFrame(columns=columns)
+        dataframe = pd.DataFrame(columns=columns)
+    else:
+        dataframe = pd.concat(frames, ignore_index=True)
 
-    return pd.concat(frames, ignore_index=True)
+    if rename_columns:
+        dataframe = dataframe.rename(columns=dict(rename_columns))
+    if sort_by:
+        missing_sort_columns = [column for column in sort_by if column not in dataframe]
+        if missing_sort_columns:
+            raise KeyError(f"dataframe is missing sort columns: {missing_sort_columns}")
+        dataframe = dataframe.sort_values(list(sort_by)).reset_index(drop=True)
+
+    return dataframe
 
 
 def npv_ranking_dataframe(
@@ -209,14 +221,18 @@ def save_results_csv(
     results_by_item: Mapping[str, Mapping[str, object]],
     columns: Sequence[str],
     output_path: Path,
+    rename_columns: Mapping[str, str] | None = None,
+    sort_by: Sequence[str] = (),
 ) -> Path:
     """Save selected result columns as a CSV file."""
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    results_to_dataframe(results_by_item=results_by_item, columns=columns).to_csv(
-        output_path,
-        index=False,
-    )
+    results_to_dataframe(
+        results_by_item=results_by_item,
+        columns=columns,
+        rename_columns=rename_columns,
+        sort_by=sort_by,
+    ).to_csv(output_path, index=False)
     return output_path
 
 

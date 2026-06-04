@@ -78,6 +78,9 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "npv_million_eur_per_mwh",
 )
 
+EXPORT_SIMULATION_ID_RENAME = {"run_id": "simulation_id"}
+EXPORT_SORT_COLUMNS = ("simulation_id", "technology")
+
 
 def _with_electricity_display_labels(ranking_summary):
     """Return a ranking summary copy with human-readable technology labels."""
@@ -205,6 +208,8 @@ def save_electricity_mean_npv_outputs(
             stem=f"{stem}_raw_inputs",
             run_date=output_date,
         ),
+        rename_columns=EXPORT_SIMULATION_ID_RENAME,
+        sort_by=EXPORT_SORT_COLUMNS,
     )
     processed_csv_path = save_results_csv(
         results_by_item=results,
@@ -214,6 +219,8 @@ def save_electricity_mean_npv_outputs(
             stem=f"{stem}_processed_outputs",
             run_date=output_date,
         ),
+        rename_columns=EXPORT_SIMULATION_ID_RENAME,
+        sort_by=EXPORT_SORT_COLUMNS,
     )
 
     output_paths: list[Path] = [figure_path, raw_csv_path, processed_csv_path]
@@ -227,6 +234,7 @@ def save_electricity_mean_npv_outputs(
                 ranking=ranking,
                 ranking_summary=ranking_summary,
                 figure_dir=figure_dir,
+                raw_data_dir=raw_data_dir,
                 processed_data_dir=processed_data_dir,
                 run_date=output_date,
                 sector_name=sector_name,
@@ -242,7 +250,7 @@ def calculate_electricity_npv_rankings_from_results(
     results: Mapping[str, Mapping[str, object]],
     sector_name: str = "Electricity",
 ):
-    """Calculate detailed and summary NPV rank tables from electricity results."""
+    """Calculate raw and summary NPV rank tables from electricity results."""
 
     ranking = npv_ranking_dataframe(
         results_by_item=results,
@@ -275,6 +283,7 @@ def save_electricity_npv_ranking_outputs(
     ranking,
     ranking_summary,
     figure_dir: Path,
+    raw_data_dir: Path,
     processed_data_dir: Path,
     run_date: date | None = None,
     sector_name: str = "Electricity",
@@ -290,8 +299,8 @@ def save_electricity_npv_ranking_outputs(
             save_dataframe_csv(
                 dataframe=ranking,
                 output_path=dated_csv_path(
-                    output_dir=processed_data_dir,
-                    stem=f"NPV_Ranking_{sector_name}_detailed",
+                    output_dir=raw_data_dir,
+                    stem=f"NPV_Ranking_{sector_name}_raw",
                     run_date=output_date,
                 ),
             )
@@ -324,6 +333,7 @@ def save_electricity_npv_ranking_outputs(
 
 def generate_electricity_npv_rankings(
     figure_dir: Path | None = None,
+    raw_data_dir: Path | None = None,
     processed_data_dir: Path | None = None,
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
@@ -349,6 +359,7 @@ def generate_electricity_npv_rankings(
             ranking=ranking,
             ranking_summary=ranking_summary,
             figure_dir=figure_dir or root / "figures",
+            raw_data_dir=raw_data_dir or root / "data" / "raw",
             processed_data_dir=processed_data_dir or root / "data" / "processed",
             run_date=run_date,
             sector_name=sector_name,
@@ -392,6 +403,8 @@ def save_electricity_deterministic_npv_outputs(
             stem=f"{stem}_raw_inputs",
             run_date=output_date,
         ),
+        rename_columns=EXPORT_SIMULATION_ID_RENAME,
+        sort_by=EXPORT_SORT_COLUMNS,
     )
     processed_csv_path = save_results_csv(
         results_by_item=results,
@@ -401,6 +414,8 @@ def save_electricity_deterministic_npv_outputs(
             stem=f"{stem}_processed_outputs",
             run_date=output_date,
         ),
+        rename_columns=EXPORT_SIMULATION_ID_RENAME,
+        sort_by=EXPORT_SORT_COLUMNS,
     )
 
     return figure_path, raw_csv_path, processed_csv_path
@@ -577,6 +592,7 @@ def main() -> None:
                     ranking=ranking,
                     ranking_summary=ranking_summary,
                     figure_dir=args.output_dir,
+                    raw_data_dir=args.raw_data_dir,
                     processed_data_dir=args.processed_data_dir,
                     sector_name=args.sector_name,
                     save_ranking_csv=save_ranking_csv,

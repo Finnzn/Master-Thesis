@@ -1,3 +1,52 @@
+## 2026-06-04 16:51 — Standardize NPV output IDs and rank raw data location
+
+### User request
+
+Rename the detailed ranking data to raw ranking data, store it in the raw data folder, order the raw mean-NPV simulation data by simulation ID, and keep ID naming uniform so outputs do not mix `run_id` and `simulation_id`.
+
+### Files changed (if needed)
+
+- `src/npv_summary.py` — added optional CSV-export column renaming and sorting while preserving the existing result-combination helper.
+- `src/electricity/electricity_npv_summary_figures.py` — exported mean NPV raw/processed CSVs with `simulation_id`, sorted run-level exports by simulation ID and technology, and moved ranking raw output to the raw data directory.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Changed the ranking raw export path from processed `NPV_Ranking_Electricity_detailed.csv` to raw `NPV_Ranking_Electricity_raw.csv`.
+- Kept ranking summary output in `data/processed/` because it is aggregated/processed data.
+- Sorted mean NPV raw input exports by `simulation_id` and `technology`.
+- Also sorted mean NPV processed output exports by `simulation_id` and `technology` for consistency.
+- Renamed exported `run_id` columns to `simulation_id` in raw and processed mean-NPV CSV outputs.
+- Preserved internal simulation result keys as `run_id` to avoid a broad model refactor; the output layer now standardizes the naming.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary.py src/electricity/electricity_npv_summary_figures.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --ranking-output both`
+  - `head -n 12 data/raw/2026-06-04-NPV_Ranking_Electricity_raw.csv`
+  - `head -n 12 data/raw/2026-06-04-Mean_NPV_Electricity_raw_inputs.csv`
+  - `head -n 12 data/processed/2026-06-04-Mean_NPV_Electricity_processed_outputs.csv`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'import pandas as pd; paths=("data/raw/2026-06-04-Mean_NPV_Electricity_raw_inputs.csv","data/processed/2026-06-04-Mean_NPV_Electricity_processed_outputs.csv","data/raw/2026-06-04-NPV_Ranking_Electricity_raw.csv","data/processed/2026-06-04-NPV_Ranking_Electricity_summary.csv"); [print(p, "first_cols", pd.read_csv(p, nrows=5).columns[:3].tolist(), "has_run_id", "run_id" in pd.read_csv(p, nrows=0).columns, "has_simulation_id", "simulation_id" in pd.read_csv(p, nrows=0).columns) for p in paths]'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'import pandas as pd; checks=[]; paths=("data/raw/2026-06-04-Mean_NPV_Electricity_raw_inputs.csv","data/processed/2026-06-04-Mean_NPV_Electricity_processed_outputs.csv","data/raw/2026-06-04-NPV_Ranking_Electricity_raw.csv"); [checks.append((p, pd.read_csv(p, usecols=["simulation_id"])["simulation_id"].head(20).tolist(), bool(pd.read_csv(p, usecols=["simulation_id"])["simulation_id"].is_monotonic_increasing))) for p in paths]; [print(p, "first_sim_ids", ids, "monotonic", ok) for p, ids, ok in checks]'`
+- Result:
+  - Passed.
+  - Generated outputs now include `data/raw/2026-06-04-NPV_Ranking_Electricity_raw.csv`.
+  - Run-level raw and processed exports start with `simulation_id` and do not contain `run_id` in their headers.
+  - Run-level raw and processed exports are monotonically ordered by `simulation_id`.
+- Notes:
+  - The old ignored file `data/processed/2026-06-04-NPV_Ranking_Electricity_detailed.csv` still exists locally from an earlier generation, but the code no longer writes it. It was not deleted because existing generated results should not be removed unless explicitly requested.
+
+### Reproducibility notes
+
+- No model assumptions, parameters, random seed, ranking method, or NPV calculations were changed.
+- The output-location and exported-column-name changes affect generated CSV layout only.
+- Regenerated CSV outputs use the default 100,000-simulation electricity run with seed `42`.
+
+### Next suggested step
+
+Delete or archive the old ignored `data/processed/2026-06-04-NPV_Ranking_Electricity_detailed.csv` file if you want the local data folder to contain only the current naming convention.
+
 ## 2026-06-04 16:39 — Rework electricity NPV rank figure and rank-count summary
 
 ### User request
