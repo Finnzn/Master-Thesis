@@ -21,9 +21,7 @@ from typing import Mapping
 import numpy as np
 
 from electricity.electricity_npv_deterministic import (
-    calculate_deterministic_electricity_npv_eur,
-    calculate_deterministic_electricity_result,
-    calculate_deterministic_electricity_results,
+    calculate_deterministic_electricity_results
 )
 from electricity.electricity_npv_monte_carlo import (
     DEFAULT_RANDOM_SEED,
