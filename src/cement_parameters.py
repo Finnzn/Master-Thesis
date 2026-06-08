@@ -75,6 +75,101 @@ BAU_CEMENT_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     description="Triangular distribution for BAU cement direct emissions.",
 )
 
+
+# Electrification is an alternative cement technology. Fuel consumption is fixed
+# at zero, while electricity consumption is an absolute intensity, not a
+# percentage reduction.
+ELECTRIFICATION_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=140.0,
+    mode=204.0,
+    maximum=300.0,
+    unit="EUR/t",
+    description="Triangular distribution for electrification cement CAPEX, not annualized.",
+)
+
+ELECTRIFICATION_CEMENT_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=13.0,
+    mode=19.0,
+    maximum=28.0,
+    unit="EUR/t",
+    description="Triangular distribution for electrification cement fixed OPEX.",
+)
+
+ELECTRIFICATION_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=5.1,
+    mode=7.3,
+    maximum=11.0,
+    unit="EUR/t",
+    description="Triangular distribution for electrification cement variable OPEX excluding fuel and electricity.",
+)
+
+ELECTRIFICATION_CEMENT_FUEL_CONSUMPTION = FixedParameter(
+    value=0.0,
+    unit="MWh_th/t",
+    description="Fuel consumption for electrification cement production.",
+)
+
+ELECTRIFICATION_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.90,
+    upper_bound=1.00,
+    unit="MWh/t",
+    description="Uniform distribution for electrification cement electricity consumption.",
+)
+
+ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
+    lower_bound=350.0,
+    upper_bound=450.0,
+    unit="kgCO2/t",
+    description="Uniform distribution for electrification cement direct emissions.",
+)
+
+
+# Electrolysis is an alternative cement technology. Fuel consumption is fixed at
+# zero, while electricity consumption and emissions are absolute intensities.
+ELECTROLYSIS_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=255.0,
+    mode=362.0,
+    maximum=545.0,
+    unit="EUR/t",
+    description="Triangular distribution for electrolysis cement CAPEX, not annualized.",
+)
+
+ELECTROLYSIS_CEMENT_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=24.0,
+    mode=34.0,
+    maximum=51.0,
+    unit="EUR/t",
+    description="Triangular distribution for electrolysis cement fixed OPEX.",
+)
+
+ELECTROLYSIS_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
+    minimum=13.0,
+    mode=19.0,
+    maximum=28.0,
+    unit="EUR/t",
+    description="Triangular distribution for electrolysis cement variable OPEX excluding fuel and electricity.",
+)
+
+ELECTROLYSIS_CEMENT_FUEL_CONSUMPTION = FixedParameter(
+    value=0.0,
+    unit="MWh_th/t",
+    description="Fuel consumption for electrolysis cement production.",
+)
+
+ELECTROLYSIS_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=1.60,
+    upper_bound=3.10,
+    unit="MWh/t",
+    description="Uniform distribution for electrolysis cement electricity consumption.",
+)
+
+ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
+    lower_bound=60.0,
+    upper_bound=140.0,
+    unit="kgCO2/t",
+    description="Uniform distribution for electrolysis cement direct emissions.",
+)
+
 CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_cement_years": LIFETIME_CEMENT_YEARS,
     "retail_price_cement_eur_per_t": RETAIL_PRICE_CEMENT_EUR_PER_T,
@@ -82,7 +177,7 @@ CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
 
 CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
     str,
-    Mapping[str, TriangularDistribution | UniformDistribution],
+    Mapping[str, FixedParameter | TriangularDistribution | UniformDistribution],
 ] = {
     "bau": {
         "capex_eur_per_t": BAU_CEMENT_CAPEX_DISTRIBUTION,
@@ -93,5 +188,27 @@ CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
             BAU_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
         ),
         "emissions_kgco2_per_t": BAU_CEMENT_EMISSIONS_DISTRIBUTION,
+    },
+    "electrification": {
+        "capex_eur_per_t": ELECTRIFICATION_CEMENT_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_t": ELECTRIFICATION_CEMENT_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_t": (
+            ELECTRIFICATION_CEMENT_VARIABLE_OPEX_DISTRIBUTION
+        ),
+        "fuel_consumption_mwh_th_per_t": ELECTRIFICATION_CEMENT_FUEL_CONSUMPTION,
+        "electricity_consumption_mwh_per_t": (
+            ELECTRIFICATION_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
+        ),
+        "emissions_kgco2_per_t": ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION,
+    },
+    "electrolysis": {
+        "capex_eur_per_t": ELECTROLYSIS_CEMENT_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_t": ELECTROLYSIS_CEMENT_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_t": ELECTROLYSIS_CEMENT_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_t": ELECTROLYSIS_CEMENT_FUEL_CONSUMPTION,
+        "electricity_consumption_mwh_per_t": (
+            ELECTROLYSIS_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
+        ),
+        "emissions_kgco2_per_t": ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION,
     },
 }

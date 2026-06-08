@@ -1,3 +1,73 @@
+## 2026-06-08 11:26 — Add electrolysis cement parameters
+
+### User request
+
+Add the second alternative cement technology, electrolysis, using the same thesis workflow and cement-parameter structure.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added electrolysis cement CAPEX, fixed OPEX, variable OPEX, fuel consumption, electricity consumption, and direct emissions assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added triangular distributions for electrolysis CAPEX, fixed OPEX, and variable OPEX using the provided base values as modes.
+- Added fixed zero fuel consumption for electrolysis.
+- Added uniform distributions for electrolysis electricity consumption and direct emissions because only ranges were provided.
+- Registered electrolysis under `"electrolysis"` in the single `CEMENT_TECHNOLOGY_DISTRIBUTIONS` registry.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_TECHNOLOGY_DISTRIBUTIONS; e=CEMENT_TECHNOLOGY_DISTRIBUTIONS["electrolysis"]; print(sorted(CEMENT_TECHNOLOGY_DISTRIBUTIONS)); print(e["capex_eur_per_t"].minimum, e["capex_eur_per_t"].mode, e["capex_eur_per_t"].maximum); print(e["fixed_opex_eur_per_t"].minimum, e["fixed_opex_eur_per_t"].mode, e["fixed_opex_eur_per_t"].maximum); print(e["fuel_consumption_mwh_th_per_t"].value, e["electricity_consumption_mwh_per_t"].lower_bound, e["emissions_kgco2_per_t"].upper_bound)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector electrolysis assumptions were added from the user-provided table only.
+- No generated figures, generated CSVs, notebooks, NPV calculations, or electricity-sector assumptions were changed.
+
+### Next suggested step
+
+Add the next cement alternative technology row to `CEMENT_TECHNOLOGY_DISTRIBUTIONS`.
+
+## 2026-06-08 11:22 — Add electrification cement parameters
+
+### User request
+
+Add the first alternative cement technology, electrification, using the same cement-parameter structure and distribution rules as before.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added electrification cement CAPEX, fixed OPEX, variable OPEX, fuel consumption, electricity consumption, and direct emissions assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added triangular distributions for electrification CAPEX, fixed OPEX, and variable OPEX using the provided base values as modes.
+- Added fixed zero fuel consumption for electrification.
+- Added uniform distributions for electrification electricity consumption and direct emissions because only ranges were provided.
+- Registered electrification under `"electrification"` in the single `CEMENT_TECHNOLOGY_DISTRIBUTIONS` registry.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_TECHNOLOGY_DISTRIBUTIONS; e=CEMENT_TECHNOLOGY_DISTRIBUTIONS["electrification"]; print(sorted(CEMENT_TECHNOLOGY_DISTRIBUTIONS)); print(e["capex_eur_per_t"].minimum, e["capex_eur_per_t"].mode, e["capex_eur_per_t"].maximum); print(e["fuel_consumption_mwh_th_per_t"].value, e["electricity_consumption_mwh_per_t"].lower_bound, e["emissions_kgco2_per_t"].upper_bound)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector electrification assumptions were added from the user-provided table only.
+- No generated figures, generated CSVs, notebooks, NPV calculations, or electricity-sector assumptions were changed.
+
+### Next suggested step
+
+Add the next cement alternative technology row to `CEMENT_TECHNOLOGY_DISTRIBUTIONS`.
+
 ## 2026-06-08 11:16 — Align cement registry with electricity pattern
 
 ### User request
