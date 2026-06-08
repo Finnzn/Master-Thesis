@@ -297,6 +297,137 @@ EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribu
     description="Uniform distribution for efficiency improvement emissions reduction relative to BAU.",
 )
 
+
+# Waste heat recovery is a retrofit measure. It increases CAPEX and fixed OPEX,
+# and reduces electricity consumption relative to BAU.
+WASTE_HEAT_RECOVERY_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=2.0,
+    upper_bound=18.0,
+    unit="EUR/t",
+    description="Uniform distribution for waste heat recovery retrofit CAPEX increase.",
+)
+
+WASTE_HEAT_RECOVERY_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.1,
+    upper_bound=0.5,
+    unit="EUR/t",
+    description="Uniform distribution for waste heat recovery fixed OPEX increase.",
+)
+
+WASTE_HEAT_RECOVERY_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Variable OPEX change excluding fuel and electricity for waste heat recovery retrofit.",
+)
+
+WASTE_HEAT_RECOVERY_CEMENT_FUEL_REDUCTION = FixedParameter(
+    value=0.0,
+    unit="fraction",
+    description="Fuel-consumption reduction for waste heat recovery retrofit relative to BAU.",
+)
+
+WASTE_HEAT_RECOVERY_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.17,
+    upper_bound=0.40,
+    unit="fraction",
+    description="Uniform distribution for waste heat recovery electricity-consumption reduction relative to BAU.",
+)
+
+WASTE_HEAT_RECOVERY_CEMENT_EMISSIONS_REDUCTION = FixedParameter(
+    value=0.0,
+    unit="fraction",
+    description="Emissions reduction for waste heat recovery retrofit relative to BAU.",
+)
+
+
+# CCS is a retrofit measure. Positive reduction fractions lower the BAU value,
+# while the negative electricity reduction bound represents an electricity
+# consumption increase in later retrofit calculations.
+CCS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=55.0,
+    upper_bound=185.0,
+    unit="EUR/t",
+    description="Uniform distribution for CCS retrofit CAPEX increase.",
+)
+
+CCS_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=4.0,
+    upper_bound=10.0,
+    unit="EUR/t",
+    description="Uniform distribution for CCS fixed OPEX increase.",
+)
+
+CCS_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=3.0,
+    unit="EUR/t",
+    description="Uniform distribution for CCS variable OPEX increase excluding fuel and electricity.",
+)
+
+CCS_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=1.30,
+    unit="fraction",
+    description="Uniform distribution for CCS fuel-consumption reduction relative to BAU.",
+)
+
+CCS_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=-2.60,
+    upper_bound=0.70,
+    unit="fraction",
+    description="Uniform distribution for CCS electricity-consumption reduction relative to BAU; negative values represent increases.",
+)
+
+CCS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.88,
+    upper_bound=0.94,
+    unit="fraction",
+    description="Uniform distribution for CCS emissions reduction relative to BAU.",
+)
+
+
+# Process heat integration is a retrofit measure. It increases CAPEX and fixed
+# OPEX, and reduces fuel consumption and emissions relative to BAU.
+PROCESS_HEAT_INTEGRATION_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=1.0,
+    upper_bound=13.0,
+    unit="EUR/t",
+    description="Uniform distribution for process heat integration retrofit CAPEX increase.",
+)
+
+PROCESS_HEAT_INTEGRATION_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=0.5,
+    unit="EUR/t",
+    description="Uniform distribution for process heat integration fixed OPEX increase.",
+)
+
+PROCESS_HEAT_INTEGRATION_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Variable OPEX change excluding fuel and electricity for process heat integration retrofit.",
+)
+
+PROCESS_HEAT_INTEGRATION_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.03,
+    upper_bound=0.30,
+    unit="fraction",
+    description="Uniform distribution for process heat integration fuel-consumption reduction relative to BAU.",
+)
+
+PROCESS_HEAT_INTEGRATION_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
+    value=0.0,
+    unit="fraction",
+    description="Electricity-consumption reduction for process heat integration retrofit relative to BAU.",
+)
+
+PROCESS_HEAT_INTEGRATION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.01,
+    upper_bound=0.12,
+    unit="fraction",
+    description="Uniform distribution for process heat integration emissions reduction relative to BAU.",
+)
+
 CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_cement_years": LIFETIME_CEMENT_YEARS,
     "retail_price_cement_eur_per_t": RETAIL_PRICE_CEMENT_EUR_PER_T,
@@ -392,6 +523,58 @@ CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         ),
         "emissions_reduction_fraction": (
             EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
+        ),
+    },
+    "waste_heat_recovery": {
+        "capex_change_eur_per_t": (
+            WASTE_HEAT_RECOVERY_CEMENT_CAPEX_CHANGE_DISTRIBUTION
+        ),
+        "fixed_opex_change_eur_per_t": (
+            WASTE_HEAT_RECOVERY_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "variable_opex_change_eur_per_t": (
+            WASTE_HEAT_RECOVERY_CEMENT_VARIABLE_OPEX_CHANGE
+        ),
+        "fuel_consumption_reduction_fraction": (
+            WASTE_HEAT_RECOVERY_CEMENT_FUEL_REDUCTION
+        ),
+        "electricity_consumption_reduction_fraction": (
+            WASTE_HEAT_RECOVERY_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION
+        ),
+        "emissions_reduction_fraction": (
+            WASTE_HEAT_RECOVERY_CEMENT_EMISSIONS_REDUCTION
+        ),
+    },
+    "ccs": {
+        "capex_change_eur_per_t": CCS_CEMENT_CAPEX_CHANGE_DISTRIBUTION,
+        "fixed_opex_change_eur_per_t": CCS_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION,
+        "variable_opex_change_eur_per_t": (
+            CCS_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "fuel_consumption_reduction_fraction": CCS_CEMENT_FUEL_REDUCTION_DISTRIBUTION,
+        "electricity_consumption_reduction_fraction": (
+            CCS_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION
+        ),
+        "emissions_reduction_fraction": CCS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION,
+    },
+    "process_heat_integration": {
+        "capex_change_eur_per_t": (
+            PROCESS_HEAT_INTEGRATION_CEMENT_CAPEX_CHANGE_DISTRIBUTION
+        ),
+        "fixed_opex_change_eur_per_t": (
+            PROCESS_HEAT_INTEGRATION_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "variable_opex_change_eur_per_t": (
+            PROCESS_HEAT_INTEGRATION_CEMENT_VARIABLE_OPEX_CHANGE
+        ),
+        "fuel_consumption_reduction_fraction": (
+            PROCESS_HEAT_INTEGRATION_CEMENT_FUEL_REDUCTION_DISTRIBUTION
+        ),
+        "electricity_consumption_reduction_fraction": (
+            PROCESS_HEAT_INTEGRATION_CEMENT_ELECTRICITY_REDUCTION
+        ),
+        "emissions_reduction_fraction": (
+            PROCESS_HEAT_INTEGRATION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
         ),
     },
 }

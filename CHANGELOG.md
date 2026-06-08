@@ -1,3 +1,115 @@
+## 2026-06-08 14:02 — Add process heat integration retrofit parameters
+
+### User request
+
+Add the final cement retrofit technology, process heat integration, using the same retrofit parameter structure.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added process heat integration retrofit CAPEX change, fixed OPEX change, variable OPEX change, fuel-consumption reduction, electricity-consumption reduction, and emissions-reduction assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a uniform process heat integration CAPEX increase distribution over `1-13 EUR/t`.
+- Added a uniform fixed OPEX increase distribution over `0-0.5 EUR/t`.
+- Added fixed zero variable OPEX change and electricity-consumption reduction.
+- Added uniform fuel-consumption and emissions-reduction distributions, converting `3-30%` and `1-12%` to fractions `0.03-0.30` and `0.01-0.12`.
+- Registered process heat integration under `"process_heat_integration"` in `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS; r=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["process_heat_integration"]; print(sorted(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)); print(r["capex_change_eur_per_t"].lower_bound, r["capex_change_eur_per_t"].upper_bound); print(r["fixed_opex_change_eur_per_t"].lower_bound, r["fixed_opex_change_eur_per_t"].upper_bound); print(r["variable_opex_change_eur_per_t"].value, r["electricity_consumption_reduction_fraction"].value); print(r["fuel_consumption_reduction_fraction"].lower_bound, r["fuel_consumption_reduction_fraction"].upper_bound); print(r["emissions_reduction_fraction"].lower_bound, r["emissions_reduction_fraction"].upper_bound)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector process heat integration assumptions were added from the user-provided table only.
+- Retrofit percentage values are stored as fractions for later calculations.
+- No generated figures, generated CSVs, notebooks, NPV calculations, electricity-sector assumptions, or existing cement technology parameter values were changed.
+
+### Next suggested step
+
+Implement the cement NPV logic that applies retrofit changes relative to the BAU cement baseline.
+
+## 2026-06-08 13:56 — Add CCS retrofit parameters
+
+### User request
+
+Add the cement retrofit technology CCS using the same retrofit parameter structure.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added CCS retrofit CAPEX change, fixed OPEX change, variable OPEX change, fuel-consumption reduction, electricity-consumption reduction, and emissions-reduction assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a uniform CCS CAPEX increase distribution over `55-185 EUR/t`.
+- Added a uniform fixed OPEX increase distribution over `4-10 EUR/t`.
+- Added a uniform variable OPEX increase distribution over `0-3 EUR/t`.
+- Added uniform fuel-consumption and emissions-reduction distributions, converting `0-130%` and `88-94%` to fractions `0-1.30` and `0.88-0.94`.
+- Added a uniform electricity-consumption signed reduction distribution from `-2.60` to `0.70`, where the negative bound represents a `260%` increase.
+- Registered CCS under `"ccs"` in `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS; r=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["ccs"]; print(sorted(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)); print(r["capex_change_eur_per_t"].lower_bound, r["capex_change_eur_per_t"].upper_bound); print(r["fixed_opex_change_eur_per_t"].lower_bound, r["fixed_opex_change_eur_per_t"].upper_bound); print(r["variable_opex_change_eur_per_t"].lower_bound, r["variable_opex_change_eur_per_t"].upper_bound); print(r["fuel_consumption_reduction_fraction"].lower_bound, r["fuel_consumption_reduction_fraction"].upper_bound); print(r["electricity_consumption_reduction_fraction"].lower_bound, r["electricity_consumption_reduction_fraction"].upper_bound); print(r["emissions_reduction_fraction"].lower_bound, r["emissions_reduction_fraction"].upper_bound)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector CCS assumptions were added from the user-provided table only.
+- Retrofit percentage values are stored as signed fractions for later calculations; positive values reduce BAU values and negative values increase them.
+- No generated figures, generated CSVs, notebooks, NPV calculations, electricity-sector assumptions, or existing cement technology parameter values were changed.
+
+### Next suggested step
+
+Add the next cement retrofit row to `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
+## 2026-06-08 13:42 — Add waste heat recovery retrofit parameters
+
+### User request
+
+Add the cement retrofit technology waste heat recovery using the same retrofit parameter structure.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added waste heat recovery retrofit CAPEX change, fixed OPEX change, variable OPEX change, fuel-consumption reduction, electricity-consumption reduction, and emissions-reduction assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a uniform waste heat recovery CAPEX increase distribution over `2-18 EUR/t`.
+- Added a uniform fixed OPEX increase distribution over `0.1-0.5 EUR/t`.
+- Added fixed zero variable OPEX change, fuel-consumption reduction, and emissions reduction.
+- Added a uniform electricity-consumption reduction distribution, converting `17-40%` to fractions `0.17-0.40`.
+- Registered waste heat recovery under `"waste_heat_recovery"` in `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS; r=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["waste_heat_recovery"]; print(sorted(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)); print(r["capex_change_eur_per_t"].lower_bound, r["capex_change_eur_per_t"].upper_bound); print(r["fixed_opex_change_eur_per_t"].lower_bound, r["fixed_opex_change_eur_per_t"].upper_bound); print(r["variable_opex_change_eur_per_t"].value, r["fuel_consumption_reduction_fraction"].value); print(r["electricity_consumption_reduction_fraction"].lower_bound, r["electricity_consumption_reduction_fraction"].upper_bound); print(r["emissions_reduction_fraction"].value)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector waste heat recovery assumptions were added from the user-provided table only.
+- Retrofit percentage values are stored as fractions for later calculations.
+- No generated figures, generated CSVs, notebooks, NPV calculations, electricity-sector assumptions, or existing cement technology parameter values were changed.
+
+### Next suggested step
+
+Add the next cement retrofit row to `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
 ## 2026-06-08 13:33 — Add efficiency improvement retrofit parameters
 
 ### User request
