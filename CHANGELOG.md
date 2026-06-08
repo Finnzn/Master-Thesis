@@ -1,3 +1,73 @@
+## 2026-06-08 11:16 — Align cement registry with electricity pattern
+
+### User request
+
+Clarify whether the extra cement mapping section is needed and keep the cement parameter structure consistent with electricity parameters.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — removed the cement-only BAU, alternative, and retrofit distribution registries and kept one combined technology registry.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Removed `CEMENT_BAU_TECHNOLOGY_DISTRIBUTIONS`, `CEMENT_ALTERNATIVE_TECHNOLOGY_DISTRIBUTIONS`, and `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+- Kept `CEMENT_TECHNOLOGY_DISTRIBUTIONS` as the single registry for cement technologies, matching the electricity parameter module pattern.
+- Kept the BAU technology key as `"bau"` so later cement model code can still distinguish BAU from alternatives and retrofits by technology identity.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_TECHNOLOGY_DISTRIBUTIONS; bau=CEMENT_TECHNOLOGY_DISTRIBUTIONS["bau"]; print(sorted(CEMENT_TECHNOLOGY_DISTRIBUTIONS)); print(bau["capex_eur_per_t"].lower_bound, bau["emissions_kgco2_per_t"].mode)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No cement parameter values, distributions, generated outputs, notebooks, or electricity-sector assumptions were changed.
+- This task only simplified the cement parameter registry structure for consistency with the electricity module.
+
+### Next suggested step
+
+Add the next cement technology assumptions to the single `CEMENT_TECHNOLOGY_DISTRIBUTIONS` registry.
+
+## 2026-06-08 11:11 — Add BAU cement parameters
+
+### User request
+
+Start the cement sector by adding BAU cement technology parameters in the same style as the electricity parameter module, while keeping BAU, alternatives, and retrofits separated for later modelling.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added BAU cement CAPEX, fixed OPEX, variable OPEX, fuel consumption, electricity consumption, and direct emissions assumptions with cement-specific registries.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a uniform CAPEX distribution for BAU cement using the provided `150-170 EUR/t` range.
+- Added triangular distributions for BAU cement fixed OPEX, variable OPEX, fuel consumption, electricity consumption, and emissions where the provided base value is stored as the triangular mode.
+- Added separate `CEMENT_BAU_TECHNOLOGY_DISTRIBUTIONS`, `CEMENT_ALTERNATIVE_TECHNOLOGY_DISTRIBUTIONS`, and `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS` registries, plus a combined `CEMENT_TECHNOLOGY_DISTRIBUTIONS` registry.
+- Documented that BAU fuel consumption, electricity consumption, and emissions are absolute intensities, not percentage reductions.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'import numpy as np; from cement_parameters import CEMENT_BAU_TECHNOLOGY_DISTRIBUTIONS, CEMENT_ALTERNATIVE_TECHNOLOGY_DISTRIBUTIONS, CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS, CEMENT_TECHNOLOGY_DISTRIBUTIONS; from distributions import sample_triangular, sample_uniform; bau=CEMENT_BAU_TECHNOLOGY_DISTRIBUTIONS["bau"]; rng=np.random.default_rng(42); print(bau["capex_eur_per_t"].lower_bound, bau["capex_eur_per_t"].upper_bound, sample_uniform(bau["capex_eur_per_t"], 2, rng).shape); print(bau["fuel_consumption_mwh_th_per_t"].mode, sample_triangular(bau["fuel_consumption_mwh_th_per_t"], 2, rng).shape); print(len(CEMENT_ALTERNATIVE_TECHNOLOGY_DISTRIBUTIONS), len(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS), sorted(CEMENT_TECHNOLOGY_DISTRIBUTIONS))'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector BAU assumptions were added from the user-provided table only.
+- No generated figures, generated CSVs, notebooks, NPV calculations, or electricity-sector assumptions were changed.
+- Alternative and retrofit cement registries are present but empty until those technology assumptions are provided.
+
+### Next suggested step
+
+Add the cement alternative technology rows next, then connect retrofit technologies to their BAU baseline when the cement NPV model is implemented.
+
 ## 2026-06-04 18:15 — Clarify beta-distribution concentration choice
 
 ### User request
