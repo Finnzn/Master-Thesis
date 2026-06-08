@@ -1,3 +1,79 @@
+## 2026-06-08 13:18 — Add alternative fuels retrofit and biofuel price
+
+### User request
+
+Add the cement retrofit technology alternative fuels and add a general biofuel price range from `1.5-9 EUR/GJ`, converted to MWh.
+
+### Files changed (if needed)
+
+- `src/general_parameters.py` — added a uniform biofuel price distribution converted to `5.4-32.4 EUR/MWh_th`.
+- `src/cement_parameters.py` — added alternative fuels retrofit CAPEX change, fixed OPEX change, variable OPEX change, fuel-consumption reduction, electricity-consumption reduction, and emissions-reduction assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added `BIOFUEL_PRICE_DISTRIBUTION` as a uniform distribution over `5.4-32.4 EUR/MWh_th`, using `1 MWh = 3.6 GJ`.
+- Registered biofuel price under `"biofuel_price_eur_per_mwh_th"` in `GENERAL_DISTRIBUTIONS`.
+- Added a uniform alternative fuels CAPEX increase distribution over `0-2 EUR/t`.
+- Added fixed zero fixed OPEX change, variable OPEX change, fuel-consumption reduction, and electricity-consumption reduction for alternative fuels.
+- Added a uniform emissions-reduction distribution for alternative fuels, converting `3-17%` to fractions `0.03-0.17`.
+- Renamed retrofit cost keys in `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS` to `capex_change_eur_per_t` and `fixed_opex_change_eur_per_t` so retrofit cost entries consistently represent changes relative to BAU.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/general_parameters.py src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from general_parameters import BIOFUEL_PRICE_DISTRIBUTION, GENERAL_DISTRIBUTIONS; from cement_parameters import CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS; r=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["alternative_fuels"]; c=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["clinker_substitution"]; print(BIOFUEL_PRICE_DISTRIBUTION.lower_bound, BIOFUEL_PRICE_DISTRIBUTION.upper_bound, BIOFUEL_PRICE_DISTRIBUTION.unit); print("biofuel_price_eur_per_mwh_th" in GENERAL_DISTRIBUTIONS); print(sorted(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)); print(r["capex_change_eur_per_t"].lower_bound, r["capex_change_eur_per_t"].upper_bound); print(r["fixed_opex_change_eur_per_t"].value, r["variable_opex_change_eur_per_t"].value, r["fuel_consumption_reduction_fraction"].value, r["electricity_consumption_reduction_fraction"].value); print(r["emissions_reduction_fraction"].lower_bound, r["emissions_reduction_fraction"].upper_bound); print(c["capex_change_eur_per_t"].value, c["fixed_opex_change_eur_per_t"].value)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector alternative fuels assumptions and the biofuel price range were added from the user-provided values only.
+- The biofuel price conversion is `EUR/MWh_th = EUR/GJ * 3.6`.
+- No generated figures, generated CSVs, notebooks, NPV calculations, electricity-sector assumptions, or existing cement technology parameter values were changed.
+
+### Next suggested step
+
+Add the next cement retrofit row to `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
+## 2026-06-08 12:58 — Add clinker substitution retrofit parameters
+
+### User request
+
+Start the cement retrofit technologies by adding clinker substitution, treating positive percentages as reductions and negative percentages as increases for later retrofit logic.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added clinker substitution retrofit CAPEX, fixed OPEX, variable OPEX change, fuel-consumption reduction, electricity-consumption reduction, and emissions-reduction assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added fixed zero CAPEX and fixed zero fixed OPEX for clinker substitution.
+- Added a uniform variable OPEX increase distribution over `3.00-6.56 EUR/t`.
+- Added uniform fuel-consumption reduction and emissions-reduction distributions, converting `15-25%` and `5-20%` to fractions `0.15-0.25` and `0.05-0.20`.
+- Added a fixed zero electricity-consumption reduction.
+- Added `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS` so retrofit measures remain separate from BAU and alternative technologies, because retrofit rows define changes relative to BAU rather than absolute technology intensities.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS, CEMENT_TECHNOLOGY_DISTRIBUTIONS; r=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["clinker_substitution"]; print(sorted(CEMENT_TECHNOLOGY_DISTRIBUTIONS)); print(sorted(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)); print(r["capex_eur_per_t"].value, r["fixed_opex_eur_per_t"].value); print(r["variable_opex_change_eur_per_t"].lower_bound, r["variable_opex_change_eur_per_t"].upper_bound); print(r["fuel_consumption_reduction_fraction"].lower_bound, r["fuel_consumption_reduction_fraction"].upper_bound); print(r["electricity_consumption_reduction_fraction"].value, r["emissions_reduction_fraction"].lower_bound, r["emissions_reduction_fraction"].upper_bound)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector clinker substitution assumptions were added from the user-provided table only.
+- No generated figures, generated CSVs, notebooks, NPV calculations, electricity-sector assumptions, or existing cement technology parameter values were changed.
+- Retrofit percentage values are stored as fractions for later calculations.
+
+### Next suggested step
+
+Add the next cement retrofit row to `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
 ## 2026-06-08 12:52 — Add electricity price distribution to notebook
 
 ### User request

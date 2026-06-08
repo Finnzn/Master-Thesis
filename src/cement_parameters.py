@@ -170,6 +170,90 @@ ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
     description="Uniform distribution for electrolysis cement direct emissions.",
 )
 
+
+# Clinker substitution is a retrofit measure. Retrofit parameters are changes
+# relative to BAU: positive reduction fractions lower the BAU value, while
+# negative reduction fractions would represent an increase.
+CLINKER_SUBSTITUTION_CEMENT_CAPEX = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="CAPEX for clinker substitution retrofit, not annualized.",
+)
+
+CLINKER_SUBSTITUTION_CEMENT_FIXED_OPEX = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Fixed OPEX for clinker substitution retrofit.",
+)
+
+CLINKER_SUBSTITUTION_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=3.00,
+    upper_bound=6.56,
+    unit="EUR/t",
+    description="Uniform distribution for clinker substitution variable OPEX increase.",
+)
+
+CLINKER_SUBSTITUTION_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.15,
+    upper_bound=0.25,
+    unit="fraction",
+    description="Uniform distribution for clinker substitution fuel-consumption reduction relative to BAU.",
+)
+
+CLINKER_SUBSTITUTION_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
+    value=0.0,
+    unit="fraction",
+    description="Electricity-consumption reduction for clinker substitution relative to BAU.",
+)
+
+CLINKER_SUBSTITUTION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.05,
+    upper_bound=0.20,
+    unit="fraction",
+    description="Uniform distribution for clinker substitution emissions reduction relative to BAU.",
+)
+
+
+# Alternative fuels are a retrofit measure. CAPEX is represented as an increase
+# relative to BAU, and fuel/electricity reductions are fixed at zero.
+ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=2.0,
+    unit="EUR/t",
+    description="Uniform distribution for alternative fuels retrofit CAPEX increase.",
+)
+
+ALTERNATIVE_FUELS_CEMENT_FIXED_OPEX_CHANGE = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Fixed OPEX change for alternative fuels retrofit.",
+)
+
+ALTERNATIVE_FUELS_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Variable OPEX change excluding fuel and electricity for alternative fuels retrofit.",
+)
+
+ALTERNATIVE_FUELS_CEMENT_FUEL_REDUCTION = FixedParameter(
+    value=0.0,
+    unit="fraction",
+    description="Fuel-consumption reduction for alternative fuels retrofit relative to BAU.",
+)
+
+ALTERNATIVE_FUELS_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
+    value=0.0,
+    unit="fraction",
+    description="Electricity-consumption reduction for alternative fuels retrofit relative to BAU.",
+)
+
+ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.03,
+    upper_bound=0.17,
+    unit="fraction",
+    description="Uniform distribution for alternative fuels emissions reduction relative to BAU.",
+)
+
 CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_cement_years": LIFETIME_CEMENT_YEARS,
     "retail_price_cement_eur_per_t": RETAIL_PRICE_CEMENT_EUR_PER_T,
@@ -210,5 +294,41 @@ CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
             ELECTROLYSIS_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
         ),
         "emissions_kgco2_per_t": ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION,
+    },
+}
+
+CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
+    str,
+    Mapping[str, FixedParameter | UniformDistribution],
+] = {
+    "clinker_substitution": {
+        "capex_change_eur_per_t": CLINKER_SUBSTITUTION_CEMENT_CAPEX,
+        "fixed_opex_change_eur_per_t": CLINKER_SUBSTITUTION_CEMENT_FIXED_OPEX,
+        "variable_opex_change_eur_per_t": (
+            CLINKER_SUBSTITUTION_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "fuel_consumption_reduction_fraction": (
+            CLINKER_SUBSTITUTION_CEMENT_FUEL_REDUCTION_DISTRIBUTION
+        ),
+        "electricity_consumption_reduction_fraction": (
+            CLINKER_SUBSTITUTION_CEMENT_ELECTRICITY_REDUCTION
+        ),
+        "emissions_reduction_fraction": (
+            CLINKER_SUBSTITUTION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
+        ),
+    },
+    "alternative_fuels": {
+        "capex_change_eur_per_t": ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION,
+        "fixed_opex_change_eur_per_t": ALTERNATIVE_FUELS_CEMENT_FIXED_OPEX_CHANGE,
+        "variable_opex_change_eur_per_t": (
+            ALTERNATIVE_FUELS_CEMENT_VARIABLE_OPEX_CHANGE
+        ),
+        "fuel_consumption_reduction_fraction": ALTERNATIVE_FUELS_CEMENT_FUEL_REDUCTION,
+        "electricity_consumption_reduction_fraction": (
+            ALTERNATIVE_FUELS_CEMENT_ELECTRICITY_REDUCTION
+        ),
+        "emissions_reduction_fraction": (
+            ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
+        ),
     },
 }

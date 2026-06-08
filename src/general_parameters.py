@@ -16,6 +16,7 @@ from typing import Mapping
 from distributions import (
     FixedParameter,
     ScaledBetaDistribution,
+    UniformDistribution,
     create_scaled_beta_distribution,
 )
 
@@ -79,6 +80,13 @@ ELECTRICITY_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
     description="Scaled beta distribution for electricity price.",
 )
 
+BIOFUEL_PRICE_DISTRIBUTION = UniformDistribution(
+    lower_bound=5.4,
+    upper_bound=32.4,
+    unit="EUR/MWh_th",
+    description="Uniform distribution for biofuel price converted from 1.5-9 EUR/GJ.",
+)
+
 GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "carbon_price_eur_per_t": CARBON_PRICE_EUR_PER_T,
     "interest_rate": INTEREST_RATE,
@@ -87,8 +95,9 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,
 }
 
-GENERAL_DISTRIBUTIONS: Mapping[str, ScaledBetaDistribution] = {
+GENERAL_DISTRIBUTIONS: Mapping[str, ScaledBetaDistribution | UniformDistribution] = {
     "gas_price_eur_per_mwh_th": GAS_PRICE_DISTRIBUTION,
     "coal_price_eur_per_mwh_th": COAL_PRICE_DISTRIBUTION,
     "electricity_price_eur_per_mwh": ELECTRICITY_PRICE_DISTRIBUTION,
+    "biofuel_price_eur_per_mwh_th": BIOFUEL_PRICE_DISTRIBUTION,
 }
