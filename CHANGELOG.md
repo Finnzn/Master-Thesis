@@ -1,3 +1,42 @@
+## 2026-06-08 12:52 — Add electricity price distribution to notebook
+
+### User request
+
+Include the electricity scaled beta distribution in the existing notebook that plots continuous and simulated gas and coal beta distributions.
+
+### Files changed (if needed)
+
+- `notebooks/plot_fuel_price_distributions.ipynb` — added electricity price imports, samples, continuous density curve, separate histogram, and overlay histogram.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Imported `ELECTRICITY_PRICE_DISTRIBUTION` from `general_parameters.py`.
+- Sampled electricity prices with the same `sample_scaled_beta` helper, sample size, random seed, and RNG stream used for gas and coal.
+- Added electricity to the continuous scaled beta plot.
+- Expanded the simulated sample subplot layout from two to three panels so gas, coal, and electricity each have one histogram.
+- Added electricity to the combined simulated histogram and updated plot titles/text from gas-and-coal wording to gas, coal, and electricity wording.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src MPLCONFIGDIR=/private/tmp/masterthesis_mpl /opt/anaconda3/envs/master-thesis/bin/python -m jupyter nbconvert --to notebook --execute notebooks/plot_fuel_price_distributions.ipynb --inplace --ExecutePreprocessor.timeout=120`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'import json; p="notebooks/plot_fuel_price_distributions.ipynb"; nb=json.load(open(p)); print(len(nb["cells"])); print("ELECTRICITY_PRICE_DISTRIBUTION" in "".join("".join(c.get("source", [])) for c in nb["cells"])); print([len(c.get("outputs", [])) for c in nb["cells"] if c["cell_type"] == "code"]); print("execution_counts", [c.get("execution_count") for c in nb["cells"] if c["cell_type"] == "code"])'`
+  - `rg -n "electricity_samples|Electricity|Continuous scaled beta price|Gas, coal, and electricity|1, 3" notebooks/plot_fuel_price_distributions.ipynb -S`
+- Result:
+  - Passed.
+- Notes:
+  - The first notebook execution attempt failed inside the sandbox because Jupyter could not bind local kernel ports. The same command passed after rerunning with approved elevated execution.
+
+### Reproducibility notes
+
+- No parameter values, distribution definitions, generated CSVs, model code, or NPV calculations were changed.
+- The notebook was executed in place, so its embedded plot outputs now reflect gas, coal, and electricity.
+
+### Next suggested step
+
+Use the updated notebook when visually checking shared market-price assumptions for electricity and cement calculations.
+
 ## 2026-06-08 11:26 — Add electrolysis cement parameters
 
 ### User request
