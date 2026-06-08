@@ -254,6 +254,49 @@ ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     description="Uniform distribution for alternative fuels emissions reduction relative to BAU.",
 )
 
+
+# Efficiency improvement is a retrofit measure. CAPEX is represented as an
+# increase relative to BAU, while fuel, electricity, and emissions are reductions.
+EFFICIENCY_IMPROVEMENT_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=28.0,
+    unit="EUR/t",
+    description="Uniform distribution for efficiency improvement retrofit CAPEX increase.",
+)
+
+EFFICIENCY_IMPROVEMENT_CEMENT_FIXED_OPEX_CHANGE = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Fixed OPEX change for efficiency improvement retrofit.",
+)
+
+EFFICIENCY_IMPROVEMENT_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
+    value=0.0,
+    unit="EUR/t",
+    description="Variable OPEX change excluding fuel and electricity for efficiency improvement retrofit.",
+)
+
+EFFICIENCY_IMPROVEMENT_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=0.10,
+    unit="fraction",
+    description="Uniform distribution for efficiency improvement fuel-consumption reduction relative to BAU.",
+)
+
+EFFICIENCY_IMPROVEMENT_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=0.20,
+    unit="fraction",
+    description="Uniform distribution for efficiency improvement electricity-consumption reduction relative to BAU.",
+)
+
+EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.0,
+    upper_bound=0.02,
+    unit="fraction",
+    description="Uniform distribution for efficiency improvement emissions reduction relative to BAU.",
+)
+
 CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_cement_years": LIFETIME_CEMENT_YEARS,
     "retail_price_cement_eur_per_t": RETAIL_PRICE_CEMENT_EUR_PER_T,
@@ -329,6 +372,26 @@ CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         ),
         "emissions_reduction_fraction": (
             ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
+        ),
+    },
+    "efficiency_improvement": {
+        "capex_change_eur_per_t": (
+            EFFICIENCY_IMPROVEMENT_CEMENT_CAPEX_CHANGE_DISTRIBUTION
+        ),
+        "fixed_opex_change_eur_per_t": (
+            EFFICIENCY_IMPROVEMENT_CEMENT_FIXED_OPEX_CHANGE
+        ),
+        "variable_opex_change_eur_per_t": (
+            EFFICIENCY_IMPROVEMENT_CEMENT_VARIABLE_OPEX_CHANGE
+        ),
+        "fuel_consumption_reduction_fraction": (
+            EFFICIENCY_IMPROVEMENT_CEMENT_FUEL_REDUCTION_DISTRIBUTION
+        ),
+        "electricity_consumption_reduction_fraction": (
+            EFFICIENCY_IMPROVEMENT_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION
+        ),
+        "emissions_reduction_fraction": (
+            EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
         ),
     },
 }

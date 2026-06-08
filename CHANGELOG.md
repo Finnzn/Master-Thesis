@@ -1,3 +1,39 @@
+## 2026-06-08 13:33 — Add efficiency improvement retrofit parameters
+
+### User request
+
+Add the cement retrofit technology efficiency improvement using the same retrofit parameter structure.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added efficiency improvement retrofit CAPEX change, fixed OPEX change, variable OPEX change, fuel-consumption reduction, electricity-consumption reduction, and emissions-reduction assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a uniform efficiency improvement CAPEX increase distribution over `0-28 EUR/t`.
+- Added fixed zero fixed OPEX change and variable OPEX change.
+- Added uniform fuel-consumption, electricity-consumption, and emissions-reduction distributions, converting `0-10%`, `0-20%`, and `0-2%` to fractions `0-0.10`, `0-0.20`, and `0-0.02`.
+- Registered efficiency improvement under `"efficiency_improvement"` in `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS; r=CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS["efficiency_improvement"]; print(sorted(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)); print(r["capex_change_eur_per_t"].lower_bound, r["capex_change_eur_per_t"].upper_bound); print(r["fixed_opex_change_eur_per_t"].value, r["variable_opex_change_eur_per_t"].value); print(r["fuel_consumption_reduction_fraction"].lower_bound, r["fuel_consumption_reduction_fraction"].upper_bound); print(r["electricity_consumption_reduction_fraction"].lower_bound, r["electricity_consumption_reduction_fraction"].upper_bound); print(r["emissions_reduction_fraction"].lower_bound, r["emissions_reduction_fraction"].upper_bound)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Cement-sector efficiency improvement assumptions were added from the user-provided table only.
+- Retrofit percentage values are stored as fractions for later calculations.
+- No generated figures, generated CSVs, notebooks, NPV calculations, electricity-sector assumptions, or existing cement technology parameter values were changed.
+
+### Next suggested step
+
+Add the next cement retrofit row to `CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS`.
+
 ## 2026-06-08 13:18 — Add alternative fuels retrofit and biofuel price
 
 ### User request
