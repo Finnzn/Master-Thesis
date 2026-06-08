@@ -1,3 +1,36 @@
+## 2026-06-08 14:18 — Add annual cement output parameter
+
+### User request
+
+Add an annual cement output parameter equal to one million tonnes.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — added the normalized annual cement output fixed parameter and registered it with cement fixed parameters.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added `ANNUAL_CEMENT_OUTPUT_T` with value `1_000_000.0` and unit `t/year`.
+- Registered it under `"annual_cement_output_t"` in `CEMENT_FIXED_PARAMETERS`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import ANNUAL_CEMENT_OUTPUT_T, CEMENT_FIXED_PARAMETERS; print(ANNUAL_CEMENT_OUTPUT_T.value, ANNUAL_CEMENT_OUTPUT_T.unit); print(CEMENT_FIXED_PARAMETERS["annual_cement_output_t"].value)'`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- Added one fixed cement-sector normalization assumption.
+- No generated figures, generated CSVs, notebooks, NPV calculations, or existing technology parameter values were changed.
+
+### Next suggested step
+
+Use `ANNUAL_CEMENT_OUTPUT_T` when implementing cement NPV calculations.
+
 ## 2026-06-08 14:02 — Add process heat integration retrofit parameters
 
 ### User request

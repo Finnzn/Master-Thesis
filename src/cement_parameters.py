@@ -26,6 +26,14 @@ RETAIL_PRICE_CEMENT_EUR_PER_T = FixedParameter(
     description="Retail price of cement used in the cement-sector setup.",
 )
 
+# Normalized annual output: every cement technology is compared at this annual
+# cement production volume.
+ANNUAL_CEMENT_OUTPUT_T = FixedParameter(
+    value=1_000_000.0,
+    unit="t/year",
+    description="Annual cement output target used to normalize cement technologies.",
+)
+
 # BAU cement technology parameters. Fuel consumption, electricity consumption,
 # and emissions are absolute intensities, not percentage reductions.
 BAU_CEMENT_CAPEX_DISTRIBUTION = UniformDistribution(
@@ -431,6 +439,7 @@ PROCESS_HEAT_INTEGRATION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistri
 CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "lifetime_cement_years": LIFETIME_CEMENT_YEARS,
     "retail_price_cement_eur_per_t": RETAIL_PRICE_CEMENT_EUR_PER_T,
+    "annual_cement_output_t": ANNUAL_CEMENT_OUTPUT_T,
 }
 
 CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
