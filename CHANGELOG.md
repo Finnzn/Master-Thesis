@@ -1,3 +1,63 @@
+## 2026-06-09 15:21 — Add cement NPV summary figures source
+
+### User request
+
+Create the cement equivalent of the electricity NPV summary figures source code, while watching for avoidable inconsistencies and highlighting any that remain.
+
+### Files changed (if needed)
+
+- `src/cement/cement_npv_summary_figures.py` — added cement-sector summary, CSV export, figure, ranking, and CLI workflow.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added cement technology display labels for BAU, alternative technologies, and retrofit technologies.
+- Added cement raw-input and processed-output export column schemas.
+- Added cement Monte Carlo NPV distribution summaries in million EUR.
+- Added helper functions for simulated and deterministic mean NPV values.
+- Added cement mean NPV, deterministic NPV, and combined figure/output save functions.
+- Added cement NPV ranking calculation, ranking CSV export, and ranking plot functions.
+- Added `generate_cement_npv_rankings` for notebook/script use.
+- Added a CLI matching the electricity module structure:
+  - `--kind all|mean|deterministic`
+  - `--sample-size`
+  - `--random-seed`
+  - `--retrofit-bau-mode sampled|deterministic`
+  - `--no-data`
+  - `--ranking-output csv|plots|both|none`
+- Added an export-only normalization helper for deterministic cement results so deterministic CSV exports include `retrofit_bau_mode`, matching the Monte Carlo cement schema without changing deterministic model logic.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement/cement_npv_summary_figures.py`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cement summary smoke test ... PY`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m cement.cement_npv_summary_figures --kind mean --sample-size 10 --random-seed 2 --output-dir /private/tmp/masterthesis_cement_summary_cli/figures --raw-data-dir /private/tmp/masterthesis_cement_summary_cli/raw --processed-data-dir /private/tmp/masterthesis_cement_summary_cli/processed --ranking-output none`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cement all-output helper check ... PY`
+  - `rg -n "def save_cement|def calculate_cement|def generate_cement|CEMENT_RAW_INPUT_COLUMNS|retrofit_bau_mode|save_cement_npv_outputs|parse_args" src/cement/cement_npv_summary_figures.py`
+- Result:
+  - Passed.
+- Notes:
+  - Smoke tests generated mean, deterministic, ranking, raw-input, and processed-output cement artefacts in `/private/tmp`.
+  - The CLI generated the expected mean figure plus raw and processed CSVs.
+  - The all-output helper generated the expected six paths when ranking outputs were disabled.
+  - Matplotlib emitted sandbox-related font-cache warnings, but output files were created successfully.
+
+### Review notes
+
+- Cement differs from electricity because it has `retrofit_bau_mode` and BAU-relative retrofit handling. The new module keeps this difference explicit instead of hiding it.
+- Deterministic cement results do not need `retrofit_bau_mode` internally, so the summary module adds it only for export schema consistency.
+- No additional source-level inconsistency was found that needed to be fixed in this pass.
+- Remaining known cleanup candidate, intentionally left unchanged: normalized NPV fields still include `npv_million_eur_per_mwh` / `npv_million_eur_per_t` in source outputs and deterministic notebooks.
+
+### Reproducibility notes
+
+- No project figures, project data CSVs, raw data, or parameter values were changed.
+- The new CLI can generate project outputs with:
+  - `PYTHONPATH=src python -m cement.cement_npv_summary_figures`
+- Cement retrofit summary outputs default to `retrofit_bau_mode="sampled"` unless `--retrofit-bau-mode deterministic` is provided.
+
 ## 2026-06-09 15:08 — Align electricity and cement NPV simulation entry patterns
 
 ### User request
