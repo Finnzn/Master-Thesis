@@ -1,3 +1,56 @@
+## 2026-06-09 14:02 — Update electricity NPV plotting notebook defaults and normalized units
+
+### User request
+
+Update all electricity NPV plotting notebooks to import the Monte Carlo default sample size and random seed while keeping those values editable, and change normalized NPV plots from `MEUR/MWh` to `EUR/MWh`.
+
+### Files changed (if needed)
+
+- `notebooks/electricity/plot_biogas_npv.ipynb` — imported Monte Carlo defaults, made `SAMPLE_SIZE` and `RANDOM_SEED` editable from defaults, and changed normalized NPV output to `EUR/MWh`.
+- `notebooks/electricity/plot_ccgt_ccs_npv.ipynb` — same plotting notebook update for CCGT+CCS.
+- `notebooks/electricity/plot_ccgt_npv.ipynb` — same plotting notebook update for CCGT.
+- `notebooks/electricity/plot_hard_coal_ccs_npv.ipynb` — same plotting notebook update for hard coal+CCS.
+- `notebooks/electricity/plot_hard_coal_npv.ipynb` — same plotting notebook update for hard coal.
+- `notebooks/electricity/plot_nuclear_npv.ipynb` — same plotting notebook update for nuclear.
+- `notebooks/electricity/plot_pv_npv.ipynb` — same plotting notebook update for PV.
+- `notebooks/electricity/plot_wind_offshore_npv.ipynb` — same plotting notebook update for offshore wind.
+- `notebooks/electricity/plot_wind_onshore_npv.ipynb` — same plotting notebook update for onshore wind.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Imported `DEFAULT_SAMPLE_SIZE` and `DEFAULT_RANDOM_SEED` from `electricity.electricity_npv_monte_carlo` in each electricity plotting notebook.
+- Replaced hard-coded `SAMPLE_SIZE = 1000000` and unseeded `np.random.default_rng()` setup with editable notebook variables:
+  - `SAMPLE_SIZE = DEFAULT_SAMPLE_SIZE`
+  - `RANDOM_SEED = DEFAULT_RANDOM_SEED`
+- Kept custom plotting possible because users can still override `SAMPLE_SIZE` and `RANDOM_SEED` in the notebook setup cell.
+- Removed the `NPV million EUR/MWh` summary column from the plotting notebooks.
+- Changed the normalized NPV histogram to use `npv_eur_per_mwh` and label the x-axis as `NPV (EUR/MWh)`.
+- Re-executed all nine plotting notebooks in place so saved outputs match the updated code.
+
+### Verification (if needed)
+
+- Commands run:
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/electricity/plot_biogas_npv.ipynb notebooks/electricity/plot_ccgt_ccs_npv.ipynb notebooks/electricity/plot_ccgt_npv.ipynb notebooks/electricity/plot_hard_coal_ccs_npv.ipynb notebooks/electricity/plot_hard_coal_npv.ipynb notebooks/electricity/plot_nuclear_npv.ipynb notebooks/electricity/plot_pv_npv.ipynb notebooks/electricity/plot_wind_offshore_npv.ipynb notebooks/electricity/plot_wind_onshore_npv.ipynb`
+  - `rg -n "NPV million EUR/MWh|NPV \\(million EUR/MWh\\)|npv_million_eur_per_mwh =|SAMPLE_SIZE = 1000000|np.random.default_rng\\(\\)" notebooks/electricity/plot_*_npv.ipynb`
+  - `/opt/anaconda3/envs/master-thesis/bin/python -c 'import json; from pathlib import Path; paths=sorted(Path("notebooks/electricity").glob("plot_*_npv.ipynb")); [print(path.name, [c.get("execution_count") for c in json.loads(path.read_text())["cells"] if c["cell_type"] == "code"], sum(len(c.get("outputs", [])) for c in json.loads(path.read_text())["cells"] if c["cell_type"] == "code")) for path in paths]'`
+  - `/opt/anaconda3/envs/master-thesis/bin/python -c 'import nbformat; from pathlib import Path; paths=sorted(Path("notebooks/electricity").glob("plot_*_npv.ipynb")); [nbformat.validate(nbformat.read(path, as_version=4)) for path in paths]; print(len(paths), "electricity plotting notebooks validated")'`
+- Result:
+  - Passed.
+- Notes:
+  - The `rg` check returned no matches for stale `MEUR/MWh` normalized plotting code, old hard-coded `SAMPLE_SIZE = 1000000`, or unseeded `np.random.default_rng()`.
+  - All nine plotting notebooks executed successfully and validated as notebook format version 4.
+
+### Reproducibility notes
+
+- No source code, raw data, generated CSVs, or standalone figure files were changed.
+- Saved notebook outputs now use the electricity Monte Carlo module defaults unless `SAMPLE_SIZE` or `RANDOM_SEED` are changed in a notebook.
+- The normalized NPV distribution remains normalized by lifetime MWh, but is now displayed in `EUR/MWh`.
+
+### Next suggested step
+
+Apply the same default-import and `EUR/t` normalized plotting convention when cement Monte Carlo plotting notebooks are added.
+
 ## 2026-06-09 13:41 — Add cement Monte Carlo NPV simulation
 
 ### User request
