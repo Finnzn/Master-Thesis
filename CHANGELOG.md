@@ -1,3 +1,53 @@
+## 2026-06-09 13:41 — Add cement Monte Carlo NPV simulation
+
+### User request
+
+Implement the cement NPV Monte Carlo file following the electricity equivalent, with a configurable choice for retrofit technologies to use either sampled or deterministic BAU baseline values.
+
+### Files changed (if needed)
+
+- `src/cement/cement_npv_monte_carlo.py` — added the cement-sector Monte Carlo NPV simulation engine with absolute technology handling and BAU-relative retrofit handling.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added `simulate_cement_technology_npv`, `simulate_cement_technologies_npv`, and `simulate_cement_results`, mirroring the electricity Monte Carlo entry-point structure.
+- Added one wrapper function for each cement technology: BAU, electrification, electrolysis, clinker substitution, alternative fuels, efficiency improvement, waste heat recovery, CCS, and process heat integration.
+- Added `retrofit_bau_mode` with supported values `"sampled"` and `"deterministic"`.
+- Set `"sampled"` as the default retrofit BAU mode for full uncertainty propagation.
+- In sampled BAU mode, BAU technology parameters are sampled once for the simulation run IDs and reused for the `bau` result and all retrofit technologies.
+- In deterministic BAU mode, retrofit technologies use representative BAU values while sampling only their retrofit distributions.
+- Added traceability columns for retrofit outputs, including resolved absolute values, sampled retrofit changes/reduction fractions, and `bau_*` baseline values used for each run ID.
+- Kept the shared result contract used by sector-agnostic helpers: `run_id`, `technology`, `npv_eur`, `initial_capex_eur`, and `annual_net_cash_flow_eur`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement/cement_npv_monte_carlo.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement.cement_npv_monte_carlo import simulate_cement_results; r=simulate_cement_results(sample_size=5, random_seed=42, retrofit_bau_mode="sampled"); print(sorted(r)); print(r["bau"]["capex_eur_per_t"][:3]); print(r["ccs"]["bau_capex_eur_per_t"][:3]); print((r["bau"]["capex_eur_per_t"] == r["ccs"]["bau_capex_eur_per_t"]).all()); print(r["ccs"]["retrofit_bau_mode"][0]); print(round(float(r["ccs"]["electricity_consumption_mwh_per_t"][0]), 6)); print(round(float(r["ccs"]["npv_eur"][0] / 1_000_000), 3))'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement.cement_npv_monte_carlo import simulate_cement_results, simulate_cement_technology_npv; r=simulate_cement_results(sample_size=5, random_seed=42, retrofit_bau_mode="deterministic"); print(sorted(r)); print(r["ccs"]["bau_capex_eur_per_t"][:3]); print(r["ccs"]["retrofit_bau_mode"][0]); print(round(float(r["ccs"]["bau_emissions_tco2_per_t"][0]), 6)); print(round(float(r["ccs"]["npv_eur"][0] / 1_000_000), 3)); single=simulate_cement_technology_npv("clinker_substitution", size=3, retrofit_bau_mode="deterministic"); print(single["technology_type"][0], single["retrofit_bau_mode"][0])'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement.cement_npv_monte_carlo import simulate_cement_results; from npv_summary import npv_ranking_dataframe; r=simulate_cement_results(sample_size=10, random_seed=7, technologies=("bau", "electrification", "ccs")); ranking=npv_ranking_dataframe(r, sector="cement"); print(ranking.shape); print(sorted(ranking["technology"].unique())); print(ranking.groupby("simulation_id").size().unique().tolist())'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c $'from cement.cement_npv_monte_carlo import simulate_cement_results\ntry:\n    simulate_cement_results(sample_size=1, retrofit_bau_mode="bad")\nexcept ValueError as exc:\n    print(str(exc))'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement.cement_npv_monte_carlo import simulate_cement_results; r=simulate_cement_results(sample_size=3, random_seed=1); assert all(set(len(value) for value in result.values()) == {3} for result in r.values()); print("all lengths ok")'`
+  - `awk 'length($0) > 88 { print FNR ":" length($0) ":" $0 }' src/cement/cement_npv_monte_carlo.py`
+- Result:
+  - Passed.
+- Notes:
+  - Sampled BAU mode returned identical BAU CAPEX arrays for the `bau` result and the `ccs` retrofit baseline columns.
+  - Deterministic BAU mode returned fixed `160 EUR/t` BAU CAPEX and `0.6 tCO2/t` BAU emissions baseline arrays for CCS.
+  - The cement Monte Carlo result worked with `npv_summary.npv_ranking_dataframe`.
+  - Invalid `retrofit_bau_mode` values raise a clear `ValueError`.
+
+### Reproducibility notes
+
+- No raw data, generated figures, generated CSVs, notebooks, or parameter values were changed.
+- Main cement Monte Carlo runs can use `simulate_cement_results(sample_size=..., random_seed=..., retrofit_bau_mode="sampled")`.
+- Diagnostic retrofit-only runs can use `retrofit_bau_mode="deterministic"` to isolate retrofit uncertainty from BAU uncertainty.
+
+### Next suggested step
+
+Add cement Monte Carlo summary/export scripts and notebooks that reuse the existing sector-agnostic NPV summary helpers.
+
 ## 2026-06-09 11:49 — Add cement source package and deterministic notebooks
 
 ### User request
