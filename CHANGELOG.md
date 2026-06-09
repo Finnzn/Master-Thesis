@@ -1,3 +1,40 @@
+## 2026-06-09 17:11 — Align cement summary notebook with electricity summary structure
+
+### User request
+
+Make the cement summary notebook match the electricity summary notebook structure by removing the cement-only explanation section or adding an equivalent electricity section.
+
+### Files changed (if needed)
+
+- `notebooks/cement/cement_summary.ipynb` — removed the cement-only quick interpretation section and re-executed the notebook.
+- `CHANGELOG.md` — added this consistency correction entry.
+
+### What was implemented
+
+- Removed the `Quick result interpretation` markdown cell from the cement summary notebook.
+- Removed the associated interpretation-table code cell.
+- Re-executed `notebooks/cement/cement_summary.ipynb` in place.
+- Confirmed the cement and electricity summary notebooks now share the same section structure:
+  - summary title
+  - settings
+  - Monte Carlo mean NPV
+  - deterministic NPV
+  - Monte Carlo NPV ranking
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cement summary structure validation ... PY`
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/cement/cement_summary.ipynb`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... executed notebook validation and heading comparison ... PY`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No source code, raw data, generated CSVs, project figures, or parameter values were changed.
+- The cement notebook still includes the cement-specific `RETROFIT_BAU_MODE` setting because cement retrofits are BAU-relative.
+
 ## 2026-06-09 15:51 — Add cement NPV summary notebook
 
 ### User request
