@@ -1,3 +1,39 @@
+## 2026-06-09 14:33 — Align electricity MC fuel prices by run ID
+
+### User request
+
+Update the electricity Monte Carlo logic so technologies sharing a fuel type, such as CCGT and CCGT+CCS, are compared with consistent fuel-price draws for the same `run_id`.
+
+### Files changed (if needed)
+
+- `src/electricity/electricity_npv_monte_carlo.py` — added shared fuel-price arrays for sector-level electricity Monte Carlo runs.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added an optional `market_values` mapping to `simulate_electricity_technology_npv`.
+- In `simulate_electricity_technologies_npv`, sampled fuel prices once per `run_id` for coal, gas, uranium, no-fuel, and biogas assumptions.
+- Passed those shared market values into each technology simulation in sector-level runs.
+- Kept single-technology simulations unchanged: direct calls without `market_values` still sample their own fuel-price arrays.
+- Aligned electricity with the cement MC interpretation that one `run_id` represents one shared uncertain market context for ranking.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... electricity MC consistency checks ... PY`
+- Result:
+  - Passed.
+- Notes:
+  - Confirmed that `hard_coal` and `hard_coal_ccs` share identical coal-price arrays for the same `run_id`.
+  - Confirmed that `ccgt` and `ccgt_ccs` share identical gas-price arrays for the same `run_id`.
+  - Confirmed that electricity NPV ranking still produces the expected number of rows and simulation counts.
+
+### Reproducibility notes
+
+- Sector-level electricity Monte Carlo results will change numerically compared with previous runs because shared fuel-price draws are now sampled before technology-specific parameters.
+- Single-technology notebook simulations are not affected unless they call the multi-technology sector simulation.
+
 ## 2026-06-09 14:24 — Add cement NPV plotting notebooks and align cement MC run IDs
 
 ### User request

@@ -99,6 +99,7 @@ def simulate_electricity_technology_npv(
     technology: str,
     size: int,
     rng: np.random.Generator | None = None,
+    market_values: Mapping[str, np.ndarray] | None = None,
 ) -> Mapping[str, np.ndarray]:
     """Run a Monte Carlo NPV simulation for one electricity technology.
 
@@ -184,11 +185,15 @@ def simulate_electricity_technology_npv(
     if technology not in fuel_price_distribution_by_technology:
         raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
 
-    fuel_price_eur_per_mwh_th = _sample_parameter(
-        parameter=fuel_price_distribution_by_technology[technology],
-        size=size,
-        rng=generator,
-    )
+    fuel_price_key = fuel_price_key_by_technology[technology]
+    if market_values is None:
+        fuel_price_eur_per_mwh_th = _sample_parameter(
+            parameter=fuel_price_distribution_by_technology[technology],
+            size=size,
+            rng=generator,
+        )
+    else:
+        fuel_price_eur_per_mwh_th = market_values[fuel_price_key]
     electricity_price_eur_per_mwh = RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
 
     # Annual cash flow is revenue minus operating, fuel, and carbon-cost terms.
@@ -236,7 +241,7 @@ def simulate_electricity_technology_npv(
         "fuel_consumption_mwh_th_per_mwh_e": fuel_consumption_mwh_th_per_mwh_e,
         "emissions_tco2_per_mwh_e": emissions_tco2_per_mwh_e,
         "fuel_price_eur_per_mwh_th": fuel_price_eur_per_mwh_th,
-        fuel_price_key_by_technology[technology]: fuel_price_eur_per_mwh_th,
+        fuel_price_key: fuel_price_eur_per_mwh_th,
         "electricity_price_eur_per_mwh": np.full(size, electricity_price_eur_per_mwh),
         "carbon_price_eur_per_t": np.full(size, CARBON_PRICE_EUR_PER_T.value),
         "initial_capex_eur": initial_capex_eur,
@@ -396,13 +401,42 @@ def simulate_electricity_technologies_npv(
         raise ValueError("size must be positive.")
 
     # Reusing one generator keeps the random sequence reproducible across technologies
-    # for a given top-level seed.
+    # for a given top-level seed. Fuel prices are sampled once per run ID so
+    # technologies sharing a fuel type are compared under the same market draw.
     generator = rng if rng is not None else np.random.default_rng()
+    market_values = {
+        "coal_price_eur_per_mwh_th": _sample_parameter(
+            parameter=COAL_PRICE_DISTRIBUTION,
+            size=size,
+            rng=generator,
+        ),
+        "gas_price_eur_per_mwh_th": _sample_parameter(
+            parameter=GAS_PRICE_DISTRIBUTION,
+            size=size,
+            rng=generator,
+        ),
+        "uranium_price_eur_per_mwh_th": _sample_parameter(
+            parameter=NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
+            size=size,
+            rng=generator,
+        ),
+        "no_fuel_price_eur_per_mwh_th": _sample_parameter(
+            parameter=NO_FUEL_PRICE_EUR_PER_MWH_TH,
+            size=size,
+            rng=generator,
+        ),
+        "biogas_price_eur_per_mwh_th": _sample_parameter(
+            parameter=BIOGAS_PRICE_EUR_PER_MWH_TH,
+            size=size,
+            rng=generator,
+        ),
+    }
     return {
         technology: simulate_electricity_technology_npv(
             technology=technology,
             size=size,
             rng=generator,
+            market_values=market_values,
         )
         for technology in technologies
     }
