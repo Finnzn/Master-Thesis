@@ -1,3 +1,90 @@
+## 2026-06-09 11:34 — Move cement emissions conversion into parameters
+
+### User request
+
+Move the cement `tCO2` conversion into the parameter section and remove the conversion from deterministic cement NPV calculations.
+
+### Files changed (if needed)
+
+- `src/cement_parameters.py` — converted absolute cement emissions distributions from `kgCO2/t` values to `tCO2/t` values and exposed them under `emissions_tco2_per_t`.
+- `src/cement_npv_deterministic.py` — removed the deterministic NPV-layer `kgCO2` to `tCO2` conversion and consumed `emissions_tco2_per_t` directly.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Converted BAU cement emissions from `600-700 kgCO2/t` to `0.600-0.700 tCO2/t`.
+- Converted electrification cement emissions from `350-450 kgCO2/t` to `0.350-0.450 tCO2/t`.
+- Converted electrolysis cement emissions from `60-140 kgCO2/t` to `0.060-0.140 tCO2/t`.
+- Renamed the absolute cement technology registry key from `emissions_kgco2_per_t` to `emissions_tco2_per_t`.
+- Updated deterministic retrofit calculations so BAU-relative emissions reductions operate on `tCO2/t` values directly.
+- Kept the annual emissions cost and deterministic NPV results numerically unchanged, since this is a unit-boundary cleanup rather than a model-value change.
+
+### Verification (if needed)
+
+- Commands run:
+  - `rg -n "emissions_kgco2_per_t|kgCO2/t" src -S`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_parameters.py src/cement_npv_deterministic.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_parameters import CEMENT_TECHNOLOGY_DISTRIBUTIONS; from cement_npv_deterministic import calculate_deterministic_cement_result; bau_params=CEMENT_TECHNOLOGY_DISTRIBUTIONS["bau"]; print(bau_params["emissions_tco2_per_t"].mode, bau_params["emissions_tco2_per_t"].unit); bau=calculate_deterministic_cement_result("bau"); ccs=calculate_deterministic_cement_result("ccs"); print(round(bau["emissions_tco2_per_t"][0], 6)); print(round(ccs["emissions_tco2_per_t"][0], 6)); print("emissions_kgco2_per_t" in bau); print(round(bau["annual_emissions_cost_eur"][0] / 1_000_000, 3))'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_npv_deterministic import calculate_deterministic_cement_results; results=calculate_deterministic_cement_results(); print(sorted(results)); print(round(results["electrolysis"]["emissions_tco2_per_t"][0], 6)); print(round(results["ccs"]["annual_emissions_cost_eur"][0] / 1_000_000, 3)); print(round(results["bau"]["npv_eur"][0] / 1_000_000, 3))'`
+- Result:
+  - Passed.
+- Notes:
+  - Source code no longer contains the old `emissions_kgco2_per_t` key or `kgCO2/t` unit.
+  - BAU parameters now report `0.6 tCO2/t`.
+  - Deterministic BAU annual emissions cost remains `48.0 million EUR`, and deterministic BAU NPV remains `474.262 million EUR`.
+
+### Reproducibility notes
+
+- No raw data, generated figures, generated CSVs, notebooks, or model result files were changed.
+- Existing downstream code should use `emissions_tco2_per_t` for absolute cement emissions.
+
+### Next suggested step
+
+Carry the same `emissions_tco2_per_t` convention into future cement Monte Carlo code and export schemas.
+
+## 2026-06-09 11:25 — Add deterministic cement NPV calculations
+
+### User request
+
+Implement deterministic cement NPV values following the structure of the deterministic electricity NPV model, while applying retrofit technologies relative to BAU.
+
+### Files changed (if needed)
+
+- `src/cement_npv_deterministic.py` — added deterministic cement NPV calculation helpers for BAU, alternative cement technologies, and BAU-relative retrofit technologies.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a deterministic cement NPV module that mirrors the electricity deterministic workflow: representative parameter values, normalized annual output, revenue, cost components, annual net cash flow, and discounted NPV.
+- Added absolute-value handling for BAU, electrification, and electrolysis using `CEMENT_TECHNOLOGY_DISTRIBUTIONS`.
+- Added retrofit handling for clinker substitution, alternative fuels, efficiency improvement, waste heat recovery, CCS, and process heat integration using BAU representative values plus retrofit CAPEX/OPEX changes and BAU-relative reduction fractions.
+- Converted cement emissions from `kgCO2/t` to `tCO2/t` before applying the shared carbon price.
+- Used the existing coal price distribution as the cement thermal fuel-price source, except for the alternative-fuels retrofit, which uses the existing biofuel price distribution.
+- Used the existing electricity price distribution for purchased electricity consumption.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement_npv_deterministic.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement_npv_deterministic import calculate_deterministic_cement_result, calculate_deterministic_cement_results; results=calculate_deterministic_cement_results(); print(sorted(results)); bau=calculate_deterministic_cement_result("bau"); ccs=calculate_deterministic_cement_result("ccs"); alt=calculate_deterministic_cement_result("alternative_fuels"); print(round(bau["fuel_consumption_mwh_th_per_t"][0], 6), round(ccs["fuel_consumption_mwh_th_per_t"][0], 6)); print(round(bau["electricity_consumption_mwh_per_t"][0], 6), round(ccs["electricity_consumption_mwh_per_t"][0], 6)); print(round(alt["fuel_price_eur_per_mwh_th"][0], 4)); print(round(results["bau"]["npv_eur"][0] / 1_000_000, 3))'`
+  - `awk 'length($0) > 88 { print FNR ":" length($0) ":" $0 }' src/cement_npv_deterministic.py`
+- Result:
+  - Passed.
+- Notes:
+  - The smoke calculation returned all nine cement technologies.
+  - Deterministic CCS resolved from BAU to `0.2135 MWh_th/t` fuel consumption and `0.156 MWh/t` electricity consumption, confirming that negative electricity reduction fractions increase BAU electricity use.
+  - Alternative fuels used a deterministic biofuel price of `18.9 EUR/MWh_th`.
+
+### Reproducibility notes
+
+- No raw data, generated figures, generated CSVs, notebooks, or existing parameter values were changed.
+- Deterministic cement outputs can be reproduced by importing `calculate_deterministic_cement_results()` from `src/cement_npv_deterministic.py` with `PYTHONPATH=src`.
+- The fuel-price mapping is now an explicit modeling assumption in code: cement thermal fuel uses coal price except alternative fuels, which uses biofuel price.
+
+### Next suggested step
+
+Add cement deterministic CSV export and plotting wrappers that reuse the existing sector-agnostic NPV summary helpers.
+
 ## 2026-06-08 14:18 — Add annual cement output parameter
 
 ### User request

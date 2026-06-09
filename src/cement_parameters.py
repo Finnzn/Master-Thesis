@@ -76,10 +76,10 @@ BAU_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
 )
 
 BAU_CEMENT_EMISSIONS_DISTRIBUTION = TriangularDistribution(
-    minimum=600.0,
-    mode=600.0,
-    maximum=700.0,
-    unit="kgCO2/t",
+    minimum=0.600,
+    mode=0.600,
+    maximum=0.700,
+    unit="tCO2/t",
     description="Triangular distribution for BAU cement direct emissions.",
 )
 
@@ -125,9 +125,9 @@ ELECTRIFICATION_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = UniformDistributio
 )
 
 ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
-    lower_bound=350.0,
-    upper_bound=450.0,
-    unit="kgCO2/t",
+    lower_bound=0.350,
+    upper_bound=0.450,
+    unit="tCO2/t",
     description="Uniform distribution for electrification cement direct emissions.",
 )
 
@@ -172,9 +172,9 @@ ELECTROLYSIS_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = UniformDistribution(
 )
 
 ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
-    lower_bound=60.0,
-    upper_bound=140.0,
-    unit="kgCO2/t",
+    lower_bound=0.060,
+    upper_bound=0.140,
+    unit="tCO2/t",
     description="Uniform distribution for electrolysis cement direct emissions.",
 )
 
@@ -454,7 +454,7 @@ CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "electricity_consumption_mwh_per_t": (
             BAU_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
         ),
-        "emissions_kgco2_per_t": BAU_CEMENT_EMISSIONS_DISTRIBUTION,
+        "emissions_tco2_per_t": BAU_CEMENT_EMISSIONS_DISTRIBUTION,
     },
     "electrification": {
         "capex_eur_per_t": ELECTRIFICATION_CEMENT_CAPEX_DISTRIBUTION,
@@ -466,7 +466,7 @@ CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "electricity_consumption_mwh_per_t": (
             ELECTRIFICATION_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
         ),
-        "emissions_kgco2_per_t": ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION,
+        "emissions_tco2_per_t": ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION,
     },
     "electrolysis": {
         "capex_eur_per_t": ELECTROLYSIS_CEMENT_CAPEX_DISTRIBUTION,
@@ -476,7 +476,7 @@ CEMENT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "electricity_consumption_mwh_per_t": (
             ELECTROLYSIS_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION
         ),
-        "emissions_kgco2_per_t": ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION,
+        "emissions_tco2_per_t": ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION,
     },
 }
 
