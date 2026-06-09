@@ -377,17 +377,7 @@ def simulate_biogas_npv(
 
 def simulate_electricity_technologies_npv(
     size: int,
-    technologies: tuple[str, ...] = (
-        "hard_coal",
-        "hard_coal_ccs",
-        "ccgt",
-        "ccgt_ccs",
-        "nuclear",
-        "wind_offshore",
-        "wind_onshore",
-        "pv",
-        "biogas",
-    ),
+    technologies: tuple[str, ...] | None = None,
     rng: np.random.Generator | None = None,
 ) -> Mapping[str, Mapping[str, np.ndarray]]:
     """Run NPV simulations for multiple technologies with aligned run IDs.
@@ -400,6 +390,7 @@ def simulate_electricity_technologies_npv(
     if size <= 0:
         raise ValueError("size must be positive.")
 
+    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
     # Reusing one generator keeps the random sequence reproducible across technologies
     # for a given top-level seed. Fuel prices are sampled once per run ID so
     # technologies sharing a fuel type are compared under the same market draw.
@@ -438,7 +429,7 @@ def simulate_electricity_technologies_npv(
             rng=generator,
             market_values=market_values,
         )
-        for technology in technologies
+        for technology in selected_technologies
     }
 
 
@@ -453,11 +444,10 @@ def simulate_electricity_results(
     same sample size and seed to reproduce a previous electricity Monte Carlo run.
     """
 
-    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
     # The seed is applied once at the top-level simulation entry point.
     rng = np.random.default_rng(random_seed)
     return simulate_electricity_technologies_npv(
         size=sample_size,
-        technologies=selected_technologies,
+        technologies=technologies,
         rng=rng,
     )

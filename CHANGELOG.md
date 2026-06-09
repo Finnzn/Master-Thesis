@@ -1,3 +1,72 @@
+## 2026-06-09 15:08 — Align electricity and cement NPV simulation entry patterns
+
+### User request
+
+Keep the electricity and cement Monte Carlo code/notebook structure consistent, especially around default technology selection and notebook simulation entry points, and review both sectors for avoidable inconsistencies.
+
+### Files changed (if needed)
+
+- `src/electricity/electricity_npv_monte_carlo.py` — changed sector-level technology selection to the registry-driven `None` default pattern used by cement.
+- `notebooks/electricity/plot_biogas_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_ccgt_ccs_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_ccgt_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_hard_coal_ccs_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_hard_coal_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_nuclear_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_pv_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_wind_offshore_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/electricity/plot_wind_onshore_npv.ipynb` — switched to the public `simulate_electricity_results` entry point.
+- `notebooks/cement/plot_bau_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_electrification_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_electrolysis_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_clinker_substitution_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_alternative_fuels_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_efficiency_improvement_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_waste_heat_recovery_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_ccs_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `notebooks/cement/plot_process_heat_integration_npv.ipynb` — switched to the public `simulate_cement_results` entry point.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Changed `simulate_electricity_technologies_npv` from a hard-coded default technology tuple to `technologies: tuple[str, ...] | None = None`.
+- Resolved default electricity technologies from `tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)`, matching the cement registry-driven pattern.
+- Simplified `simulate_electricity_results` so it passes the optional `technologies` argument through to the sector-level function, matching cement's public-entry layering.
+- Updated all electricity plotting notebooks to call:
+  - `simulate_electricity_results(sample_size=SAMPLE_SIZE, random_seed=RANDOM_SEED, technologies=(TECHNOLOGY,))`
+- Updated all cement plotting notebooks to call:
+  - `simulate_cement_results(sample_size=SAMPLE_SIZE, random_seed=RANDOM_SEED, technologies=(TECHNOLOGY,), retrofit_bau_mode=RETROFIT_BAU_MODE)`
+- Removed notebook-level RNG construction from all electricity and cement plotting notebooks so the public result functions own default seed handling.
+- Re-executed all 18 plotting notebooks in place.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... plotting notebook entry-point validation ... PY`
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/electricity/plot_biogas_npv.ipynb notebooks/electricity/plot_ccgt_ccs_npv.ipynb notebooks/electricity/plot_ccgt_npv.ipynb notebooks/electricity/plot_hard_coal_ccs_npv.ipynb notebooks/electricity/plot_hard_coal_npv.ipynb notebooks/electricity/plot_nuclear_npv.ipynb notebooks/electricity/plot_pv_npv.ipynb notebooks/electricity/plot_wind_offshore_npv.ipynb notebooks/electricity/plot_wind_onshore_npv.ipynb notebooks/cement/plot_bau_npv.ipynb notebooks/cement/plot_electrification_npv.ipynb notebooks/cement/plot_electrolysis_npv.ipynb notebooks/cement/plot_clinker_substitution_npv.ipynb notebooks/cement/plot_alternative_fuels_npv.ipynb notebooks/cement/plot_efficiency_improvement_npv.ipynb notebooks/cement/plot_waste_heat_recovery_npv.ipynb notebooks/cement/plot_ccs_npv.ipynb notebooks/cement/plot_process_heat_integration_npv.ipynb`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... sector MC defaults, market alignment, and ranking checks ... PY`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... executed plotting notebook validation ... PY`
+  - `rg -n "technologies: tuple\\[str, \\.\\.\\.\\] = \\(|simulate_electricity_technology_npv|simulate_cement_technology_npv|np.random.default_rng\\(RANDOM_SEED\\)" src/electricity src/cement notebooks/electricity notebooks/cement -S`
+- Result:
+  - Passed.
+- Notes:
+  - Confirmed electricity and cement sector-level MC functions now use registry-driven default technology selection.
+  - Confirmed all 18 plotting notebooks use public result entry points and no longer construct notebook-level RNGs.
+  - Confirmed electricity coal/gas shared price alignment and cement BAU/market alignment still work.
+  - Confirmed NPV ranking helpers still produce expected row counts and simulation counts.
+
+### Review notes
+
+- Fixed avoidable inconsistency: electricity no longer duplicates its default technology list in the MC function signature.
+- Fixed avoidable inconsistency: plotting notebooks in both sectors now use the public `simulate_*_results` layer with `SAMPLE_SIZE`, `RANDOM_SEED`, and `technologies=(TECHNOLOGY,)`.
+- Remaining cleanup candidate: source outputs and deterministic notebooks still expose `npv_million_eur_per_mwh` / `npv_million_eur_per_t`. This is now consistent across sectors, but it conflicts with the newer plotting convention of displaying normalized NPV as `EUR/MWh` or `EUR/t`.
+
+### Reproducibility notes
+
+- Plotting notebook outputs changed because they now use the public sector result functions, which own seed handling and run-level shared market sampling.
+- Single-technology source wrappers remain available for backwards compatibility, but notebooks no longer use them.
+
 ## 2026-06-09 14:53 — Standardize electricity plotting notebooks on generic technology selection
 
 ### User request
