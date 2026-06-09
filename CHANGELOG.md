@@ -1,3 +1,59 @@
+## 2026-06-09 15:51 — Add cement NPV summary notebook
+
+### User request
+
+Add a cement summary notebook consistent with the electricity summary notebook, mark inconsistencies if present, and include quick basic feedback on the cement NPV results.
+
+### Files changed (if needed)
+
+- `notebooks/cement/cement_summary.ipynb` — added executed cement summary notebook with Monte Carlo mean NPV, deterministic NPV, ranking, and quick interpretation table.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Created a cement-sector counterpart to `notebooks/electricity/electricity_summary.ipynb`.
+- Mirrored the electricity notebook structure:
+  - project/source import setup
+  - settings cell
+  - Monte Carlo mean NPV figure
+  - deterministic NPV figure
+  - Monte Carlo NPV ranking table and plot
+- Added cement-specific `RETROFIT_BAU_MODE = DEFAULT_RETROFIT_BAU_MODE`.
+- Added a quick result interpretation table with Monte Carlo mean NPV, normalized `EUR/t`, deterministic NPV, ranking metrics, and one short explanation per technology.
+- Executed the notebook in place so plots and tables are rendered.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... static notebook validation ... PY`
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/cement/cement_summary.ipynb`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... executed notebook validation ... PY`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cement summary result extraction ... PY`
+  - `rg -n "electricity|Electricity|simulate_electricity|ELECTRICITY" notebooks/cement/cement_summary.ipynb -S`
+- Result:
+  - Passed.
+- Notes:
+  - The notebook has six executed code cells with rendered outputs.
+  - The `rg` check found only ordinary explanatory uses of the word "electricity" in cement technology explanations, not stale electricity imports or module names.
+
+### Result notes
+
+- CCS has the highest Monte Carlo mean NPV in the current assumptions, because the emissions-cost reduction dominates despite high CAPEX/OPEX and electricity penalties.
+- Process heat integration, waste heat recovery, and clinker substitution cluster near each other with strong positive NPVs because they improve BAU fuel, electricity, or emissions intensities without becoming fully new high-CAPEX production routes.
+- Efficiency improvement and alternative fuels remain positive but rank lower than the strongest retrofit options because their benefits are more modest or depend on higher fuel-cost assumptions.
+- BAU remains positive, mainly due to low CAPEX and the shared cement price assumption, but it ranks below most retrofits once carbon and fuel savings are counted.
+- Electrification and electrolysis are strongly negative under current assumptions because high electricity consumption dominates the NPV.
+
+### Review notes
+
+- No avoidable structural inconsistency was found versus the electricity summary notebook.
+- The cement notebook necessarily differs by including `RETROFIT_BAU_MODE`, because cement retrofits are BAU-relative while electricity technologies are absolute.
+
+### Reproducibility notes
+
+- No raw data, project figures, generated CSVs, or parameter values were changed.
+- The notebook uses `DEFAULT_SAMPLE_SIZE`, `DEFAULT_RANDOM_SEED`, and `DEFAULT_RETROFIT_BAU_MODE` from the cement Monte Carlo source.
+
 ## 2026-06-09 15:21 — Add cement NPV summary figures source
 
 ### User request
