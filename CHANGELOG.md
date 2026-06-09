@@ -1,3 +1,59 @@
+## 2026-06-09 14:24 — Add cement NPV plotting notebooks and align cement MC run IDs
+
+### User request
+
+Create Monte Carlo plotting notebooks for the cement technologies, then review the NPV code for inconsistencies, logic errors, or other issues.
+
+### Files changed (if needed)
+
+- `notebooks/cement/plot_bau_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for BAU.
+- `notebooks/cement/plot_electrification_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for electrification.
+- `notebooks/cement/plot_electrolysis_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for electrolysis.
+- `notebooks/cement/plot_clinker_substitution_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for clinker substitution.
+- `notebooks/cement/plot_alternative_fuels_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for alternative fuels.
+- `notebooks/cement/plot_efficiency_improvement_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for efficiency improvement.
+- `notebooks/cement/plot_waste_heat_recovery_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for waste heat recovery.
+- `notebooks/cement/plot_ccs_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for CCS.
+- `notebooks/cement/plot_process_heat_integration_npv.ipynb` — added executed cement Monte Carlo NPV plotting notebook for process heat integration.
+- `src/cement/cement_npv_monte_carlo.py` — aligned shared cement market-price draws across technologies in sector-level Monte Carlo runs.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added one cement plotting notebook per cement technology, following the electricity plotting notebook structure.
+- Imported `DEFAULT_SAMPLE_SIZE`, `DEFAULT_RANDOM_SEED`, and `DEFAULT_RETROFIT_BAU_MODE` from `cement.cement_npv_monte_carlo` while keeping notebook variables editable for custom plots.
+- Used `npv_eur_per_t` for normalized cement NPV plots, with the x-axis labeled `NPV (EUR/t)`.
+- Added retrofit input summaries in retrofit notebooks so sampled BAU-relative changes and BAU baseline columns are visible.
+- Kept the total NPV distribution in million EUR and annual cost components in million EUR/year.
+- Updated sector-level cement Monte Carlo runs so coal, biofuel, and electricity price samples are drawn once per `run_id` and reused across technologies.
+- Preserved single-technology notebook behavior: when a notebook simulates one technology directly, it samples its own market prices as before.
+
+### Verification (if needed)
+
+- Commands run:
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/cement/plot_bau_npv.ipynb notebooks/cement/plot_electrification_npv.ipynb notebooks/cement/plot_electrolysis_npv.ipynb notebooks/cement/plot_clinker_substitution_npv.ipynb notebooks/cement/plot_alternative_fuels_npv.ipynb notebooks/cement/plot_efficiency_improvement_npv.ipynb notebooks/cement/plot_waste_heat_recovery_npv.ipynb notebooks/cement/plot_ccs_npv.ipynb notebooks/cement/plot_process_heat_integration_npv.ipynb`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cement MC consistency checks ... PY`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cement plotting notebook validation ... PY`
+  - `rg -n "NPV \\(MEUR/t\\)|MEUR/t|npv_million_eur_per_t|NPV \\(MEUR/MWh\\)|MEUR/MWh" src notebooks/cement notebooks/electricity/plot_*_npv.ipynb -S`
+- Result:
+  - Passed for source compilation, cement Monte Carlo consistency, and all nine new cement plotting notebooks.
+- Notes:
+  - The cement MC consistency check confirmed that sampled BAU baseline columns match the BAU result for retrofit runs.
+  - The same check confirmed that sector-level cement runs now align coal and electricity prices across technologies for the same `run_id`.
+  - All nine cement plotting notebooks validated as JSON notebooks and contain the editable default imports and `EUR/t` normalized plot labels.
+
+### Review notes
+
+- Fixed: sector-level cement MC previously aligned BAU technical values across retrofit technologies but sampled market prices separately by technology. That conflicted with the shared `run_id` ranking interpretation.
+- Remaining caveat: deterministic cement notebooks and cement source outputs still expose `npv_million_eur_per_t` / `MEUR/t`. The new plotting notebooks do not use this for normalized plots, but the older deterministic notebooks still show it in their tables.
+
+### Reproducibility notes
+
+- The new cement plotting notebooks can be customized by overriding `SAMPLE_SIZE`, `RANDOM_SEED`, or `RETROFIT_BAU_MODE` in the setup cell.
+- For retrofit notebooks, `RETROFIT_BAU_MODE = "sampled"` propagates sampled BAU uncertainty; `"deterministic"` isolates retrofit uncertainty against representative BAU values.
+- The sector-level cement MC result now better matches the ranking helper's interpretation of each `run_id` as one shared uncertain world.
+
 ## 2026-06-09 14:02 — Update electricity NPV plotting notebook defaults and normalized units
 
 ### User request

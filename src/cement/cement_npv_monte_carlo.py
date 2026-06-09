@@ -226,6 +226,7 @@ def _calculate_cement_cash_flow_result(
     rng: np.random.Generator,
     bau_values: Mapping[str, np.ndarray] | None = None,
     retrofit_values: Mapping[str, np.ndarray] | None = None,
+    market_values: Mapping[str, np.ndarray] | None = None,
 ) -> Mapping[str, np.ndarray]:
     """Calculate cement cash flows and NPV from absolute technology arrays."""
 
@@ -237,16 +238,25 @@ def _calculate_cement_cash_flow_result(
     electricity_consumption_mwh_per_t = values["electricity_consumption_mwh_per_t"]
     emissions_tco2_per_t = values["emissions_tco2_per_t"]
 
-    fuel_price_eur_per_mwh_th = _sample_parameter(
-        cement_fuel_price_parameter(technology),
-        size=size,
-        rng=rng,
+    fuel_price_key = (
+        "biofuel_price_eur_per_mwh_th"
+        if technology == "alternative_fuels"
+        else "coal_price_eur_per_mwh_th"
     )
-    electricity_price_eur_per_mwh = _sample_parameter(
-        ELECTRICITY_PRICE_DISTRIBUTION,
-        size=size,
-        rng=rng,
-    )
+    if market_values is None:
+        fuel_price_eur_per_mwh_th = _sample_parameter(
+            cement_fuel_price_parameter(technology),
+            size=size,
+            rng=rng,
+        )
+        electricity_price_eur_per_mwh = _sample_parameter(
+            ELECTRICITY_PRICE_DISTRIBUTION,
+            size=size,
+            rng=rng,
+        )
+    else:
+        fuel_price_eur_per_mwh_th = market_values[fuel_price_key]
+        electricity_price_eur_per_mwh = market_values["electricity_price_eur_per_mwh"]
 
     initial_capex_eur = annual_output_t * capex_eur_per_t
     annual_revenue_eur = annual_output_t * RETAIL_PRICE_CEMENT_EUR_PER_T.value
@@ -312,10 +322,7 @@ def _calculate_cement_cash_flow_result(
         "npv_million_eur_per_t": npv_eur_per_t / 1_000_000,
     }
 
-    if technology == "alternative_fuels":
-        result["biofuel_price_eur_per_mwh_th"] = fuel_price_eur_per_mwh_th
-    else:
-        result["coal_price_eur_per_mwh_th"] = fuel_price_eur_per_mwh_th
+    result[fuel_price_key] = fuel_price_eur_per_mwh_th
 
     if bau_values is not None:
         for parameter_name, baseline_value in bau_values.items():
@@ -333,6 +340,7 @@ def simulate_cement_technology_npv(
     rng: np.random.Generator | None = None,
     retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
     bau_values: Mapping[str, np.ndarray] | None = None,
+    market_values: Mapping[str, np.ndarray] | None = None,
 ) -> Mapping[str, np.ndarray]:
     """Run a Monte Carlo NPV simulation for one cement technology.
 
@@ -363,6 +371,7 @@ def simulate_cement_technology_npv(
             values=values,
             size=size,
             rng=generator,
+            market_values=market_values,
         )
 
     if technology not in CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS:
@@ -399,6 +408,7 @@ def simulate_cement_technology_npv(
         rng=generator,
         bau_values=baseline_values,
         retrofit_values=retrofit_values,
+        market_values=market_values,
     )
 
 
@@ -562,6 +572,24 @@ def simulate_cement_technologies_npv(
             rng=generator,
         )
 
+    market_values = {
+        "coal_price_eur_per_mwh_th": _sample_parameter(
+            COAL_PRICE_DISTRIBUTION,
+            size=size,
+            rng=generator,
+        ),
+        "biofuel_price_eur_per_mwh_th": _sample_parameter(
+            BIOFUEL_PRICE_DISTRIBUTION,
+            size=size,
+            rng=generator,
+        ),
+        "electricity_price_eur_per_mwh": _sample_parameter(
+            ELECTRICITY_PRICE_DISTRIBUTION,
+            size=size,
+            rng=generator,
+        ),
+    }
+
     return {
         technology: simulate_cement_technology_npv(
             technology=technology,
@@ -569,6 +597,7 @@ def simulate_cement_technologies_npv(
             rng=generator,
             retrofit_bau_mode=retrofit_bau_mode,
             bau_values=sampled_bau_values,
+            market_values=market_values,
         )
         for technology in selected_technologies
     }
