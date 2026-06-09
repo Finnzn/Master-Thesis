@@ -1,3 +1,51 @@
+## 2026-06-09 14:53 — Standardize electricity plotting notebooks on generic technology selection
+
+### User request
+
+Make the electricity Monte Carlo plotting notebooks consistent with the cement plotting notebooks by choosing the technology through a notebook variable instead of importing one technology-specific simulation wrapper per notebook.
+
+### Files changed (if needed)
+
+- `notebooks/electricity/plot_biogas_npv.ipynb` — switched to `TECHNOLOGY = "biogas"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_ccgt_ccs_npv.ipynb` — switched to `TECHNOLOGY = "ccgt_ccs"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_ccgt_npv.ipynb` — switched to `TECHNOLOGY = "ccgt"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_hard_coal_ccs_npv.ipynb` — switched to `TECHNOLOGY = "hard_coal_ccs"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_hard_coal_npv.ipynb` — switched to `TECHNOLOGY = "hard_coal"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_nuclear_npv.ipynb` — switched to `TECHNOLOGY = "nuclear"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_pv_npv.ipynb` — switched to `TECHNOLOGY = "pv"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_wind_offshore_npv.ipynb` — switched to `TECHNOLOGY = "wind_offshore"` and `simulate_electricity_technology_npv`.
+- `notebooks/electricity/plot_wind_onshore_npv.ipynb` — switched to `TECHNOLOGY = "wind_onshore"` and `simulate_electricity_technology_npv`.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Replaced technology-specific wrapper imports such as `simulate_ccgt_npv` with the generic `simulate_electricity_technology_npv` import.
+- Added a `TECHNOLOGY` variable to each electricity plotting notebook setup cell.
+- Changed each notebook setup call to:
+  - `simulate_electricity_technology_npv(technology=TECHNOLOGY, size=SAMPLE_SIZE, rng=rng)`
+- Kept `SAMPLE_SIZE = DEFAULT_SAMPLE_SIZE` and `RANDOM_SEED = DEFAULT_RANDOM_SEED` editable in every notebook.
+- Re-executed all nine electricity plotting notebooks in place so outputs match the updated cells.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... electricity notebook conversion validation ... PY`
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/electricity/plot_biogas_npv.ipynb notebooks/electricity/plot_ccgt_ccs_npv.ipynb notebooks/electricity/plot_ccgt_npv.ipynb notebooks/electricity/plot_hard_coal_ccs_npv.ipynb notebooks/electricity/plot_hard_coal_npv.ipynb notebooks/electricity/plot_nuclear_npv.ipynb notebooks/electricity/plot_pv_npv.ipynb notebooks/electricity/plot_wind_offshore_npv.ipynb notebooks/electricity/plot_wind_onshore_npv.ipynb`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... executed notebook validation ... PY`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+- Result:
+  - Passed.
+- Notes:
+  - Confirmed all nine notebooks import `simulate_electricity_technology_npv`.
+  - Confirmed all nine notebooks define the correct `TECHNOLOGY` string and call `technology=TECHNOLOGY`.
+  - Confirmed old technology-specific wrapper names no longer appear in the electricity plotting notebooks.
+  - Confirmed all nine notebooks execute and validate as notebooks.
+
+### Reproducibility notes
+
+- No source simulation logic or parameter values were changed in this step.
+- The notebook output values remain single-technology simulations; sector-level shared fuel-price behavior is handled by `simulate_electricity_results` / `simulate_electricity_technologies_npv`.
+
 ## 2026-06-09 14:33 — Align electricity MC fuel prices by run ID
 
 ### User request
