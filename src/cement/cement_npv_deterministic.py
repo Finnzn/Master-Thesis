@@ -17,7 +17,7 @@ from typing import Mapping
 
 import numpy as np
 
-from cement_parameters import (
+from cement.cement_parameters import (
     ANNUAL_CEMENT_OUTPUT_T,
     CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     CEMENT_TECHNOLOGY_DISTRIBUTIONS,

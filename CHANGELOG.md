@@ -1,3 +1,59 @@
+## 2026-06-09 11:49 — Add cement source package and deterministic notebooks
+
+### User request
+
+Create a cement folder in `src` like the electricity sector and add deterministic notebooks for all cement technologies in `notebooks/cement`, following the deterministic electricity technology notebooks.
+
+### Files changed (if needed)
+
+- `src/cement/cement_parameters.py` — moved cement parameter definitions into a cement source package.
+- `src/cement/cement_npv_deterministic.py` — moved deterministic cement NPV calculations into the cement source package and updated imports to `cement.cement_parameters`.
+- `notebooks/cement/deterministic_bau_npv.ipynb` — added executed deterministic BAU cement notebook.
+- `notebooks/cement/deterministic_electrification_npv.ipynb` — added executed deterministic electrification cement notebook.
+- `notebooks/cement/deterministic_electrolysis_npv.ipynb` — added executed deterministic electrolysis cement notebook.
+- `notebooks/cement/deterministic_clinker_substitution_npv.ipynb` — added executed deterministic clinker substitution retrofit notebook.
+- `notebooks/cement/deterministic_alternative_fuels_npv.ipynb` — added executed deterministic alternative fuels retrofit notebook.
+- `notebooks/cement/deterministic_efficiency_improvement_npv.ipynb` — added executed deterministic efficiency improvement retrofit notebook.
+- `notebooks/cement/deterministic_waste_heat_recovery_npv.ipynb` — added executed deterministic waste heat recovery retrofit notebook.
+- `notebooks/cement/deterministic_ccs_npv.ipynb` — added executed deterministic CCS retrofit notebook.
+- `notebooks/cement/deterministic_process_heat_integration_npv.ipynb` — added executed deterministic process heat integration retrofit notebook.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Created `src/cement/` and moved the cement parameter and deterministic NPV modules into that sector folder, matching the existing `src/electricity/` layout.
+- Updated deterministic cement imports so callers use `cement.cement_npv_deterministic` and the module imports `cement.cement_parameters`.
+- Created one deterministic notebook for each cement technology in `notebooks/cement/`.
+- Mirrored the deterministic electricity notebook structure: project path setup, shared source-code import, summary table, representative input table, and processed output table.
+- Added a BAU-relative retrofit input table only for retrofit technologies, so retrofit notebooks show the CAPEX/OPEX changes and reduction fractions used to derive absolute cement values.
+- Executed the notebooks in place so each notebook contains rendered deterministic outputs.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement/cement_parameters.py src/cement/cement_npv_deterministic.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -c 'from cement.cement_npv_deterministic import calculate_deterministic_cement_results; results=calculate_deterministic_cement_results(); print(sorted(results)); print(round(results["bau"]["npv_eur"][0] / 1_000_000, 3)); print(round(results["ccs"]["emissions_tco2_per_t"][0], 6))'`
+  - `rg -n "from cement_parameters|import cement_parameters|from cement_npv_deterministic|import cement_npv_deterministic|from cement\\.cement_npv_deterministic|from cement\\.cement_parameters" src notebooks -S`
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/cement/deterministic_bau_npv.ipynb notebooks/cement/deterministic_electrification_npv.ipynb notebooks/cement/deterministic_electrolysis_npv.ipynb notebooks/cement/deterministic_clinker_substitution_npv.ipynb notebooks/cement/deterministic_alternative_fuels_npv.ipynb notebooks/cement/deterministic_efficiency_improvement_npv.ipynb notebooks/cement/deterministic_waste_heat_recovery_npv.ipynb notebooks/cement/deterministic_ccs_npv.ipynb notebooks/cement/deterministic_process_heat_integration_npv.ipynb`
+  - `/opt/anaconda3/envs/master-thesis/bin/python -c 'import json; from pathlib import Path; paths=sorted(Path("notebooks/cement").glob("deterministic_*_npv.ipynb")); print(len(paths)); [print(path.name, len([c for c in json.loads(path.read_text())["cells"] if c["cell_type"] == "code"]), [c.get("execution_count") for c in json.loads(path.read_text())["cells"] if c["cell_type"] == "code"], sum(len(c.get("outputs", [])) for c in json.loads(path.read_text())["cells"] if c["cell_type"] == "code")) for path in paths]'`
+  - `/opt/anaconda3/envs/master-thesis/bin/python -c 'import nbformat; from pathlib import Path; paths=sorted(Path("notebooks/cement").glob("deterministic_*_npv.ipynb")); [nbformat.validate(nbformat.read(path, as_version=4)) for path in paths]; print(len(paths), "cement notebooks validated")'`
+- Result:
+  - Passed.
+- Notes:
+  - The first in-sandbox notebook execution attempt failed because Jupyter could not bind local kernel ports under the sandbox. The same `nbconvert --execute --inplace` command was rerun with approved elevated permissions and completed successfully.
+  - All nine deterministic cement notebooks validated as notebook format version 4.
+  - All nine notebooks contain executed code cells and rendered outputs.
+
+### Reproducibility notes
+
+- No raw data, generated figures, generated CSVs, or numerical result files were changed.
+- Cement code imports now use the sector package path, for example `from cement.cement_npv_deterministic import calculate_deterministic_cement_result`.
+- The deterministic notebooks can be rerun with the same `jupyter nbconvert --execute --inplace notebooks/cement/deterministic_*_npv.ipynb` workflow.
+
+### Next suggested step
+
+Add cement deterministic summary/export scripts that aggregate these technology-level results for comparison figures and CSV outputs.
+
 ## 2026-06-09 11:34 — Move cement emissions conversion into parameters
 
 ### User request
