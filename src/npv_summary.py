@@ -70,6 +70,31 @@ def mean_npv_million_eur(
     return values
 
 
+def mean_metric(
+    results_by_item: Mapping[str, Mapping[str, object]],
+    labels: Mapping[str, str],
+    metric_column: str,
+    scale: float = 1.0,
+) -> dict[str, float]:
+    """Calculate mean values for a selected metric column.
+
+    `scale` converts stored model units into display units. For example,
+    `npv_eur` uses `scale=1_000_000` for million EUR, while normalized
+    `npv_eur_per_mwh` and `npv_eur_per_t` use `scale=1`.
+    """
+
+    if scale == 0:
+        raise ValueError("scale must not be zero.")
+
+    values: dict[str, float] = {}
+    for item, results in results_by_item.items():
+        if metric_column not in results:
+            raise KeyError(f"{item!r} results do not contain {metric_column!r}.")
+        values[labels.get(item, item)] = float(np.mean(results[metric_column]) / scale)
+
+    return values
+
+
 def deterministic_npv_million_eur(
     results_by_item: Mapping[str, Mapping[str, object]],
     labels: Mapping[str, str],
@@ -83,6 +108,28 @@ def deterministic_npv_million_eur(
             raise KeyError(f"{item!r} results do not contain {npv_column!r}.")
         values[labels.get(item, item)] = float(
             np.asarray(results[npv_column]).item() / 1_000_000
+        )
+
+    return values
+
+
+def deterministic_metric(
+    results_by_item: Mapping[str, Mapping[str, object]],
+    labels: Mapping[str, str],
+    metric_column: str,
+    scale: float = 1.0,
+) -> dict[str, float]:
+    """Calculate deterministic values for a selected one-row metric column."""
+
+    if scale == 0:
+        raise ValueError("scale must not be zero.")
+
+    values: dict[str, float] = {}
+    for item, results in results_by_item.items():
+        if metric_column not in results:
+            raise KeyError(f"{item!r} results do not contain {metric_column!r}.")
+        values[labels.get(item, item)] = float(
+            np.asarray(results[metric_column]).item() / scale
         )
 
     return values

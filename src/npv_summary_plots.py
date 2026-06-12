@@ -38,6 +38,7 @@ def plot_mean_npv_technology_bars(
     upper_values_million_eur: Mapping[str, float] | None = None,
     sample_size: int | None = None,
     random_seed: int | None = None,
+    x_axis_label: str = "NPV (million EUR)",
 ) -> Path | None:
     """Plot a horizontal positive/negative NPV bar chart.
 
@@ -127,7 +128,7 @@ def plot_mean_npv_technology_bars(
     ax.invert_yaxis()
     ax.axvline(0, color="#bbbbbb", linewidth=1.1)
     ax.set_title(title, fontsize=14, color="#444444", pad=12)
-    ax.set_xlabel("NPV (million EUR)", fontsize=9, color="#5a5a5a")
+    ax.set_xlabel(x_axis_label, fontsize=9, color="#5a5a5a")
     ax.grid(axis="x", color="#e6e6e6", linewidth=0.8)
     ax.set_axisbelow(True)
 

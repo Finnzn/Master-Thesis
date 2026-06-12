@@ -30,7 +30,9 @@ from electricity.electricity_npv_monte_carlo import (
 )
 from npv_summary import (
     dated_csv_path,
+    deterministic_metric,
     deterministic_npv_million_eur,
+    mean_metric,
     mean_npv_million_eur,
     npv_ranking_dataframe,
     save_dataframe_csv,
@@ -98,6 +100,37 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
 EXPORT_SIMULATION_ID_RENAME = {"run_id": "simulation_id"}
 EXPORT_SORT_COLUMNS = ("simulation_id", "technology")
 
+ELECTRICITY_NPV_SCALE_OPTIONS = {
+    "MEUR": {
+        "metric_column": "npv_eur",
+        "scale": 1_000_000.0,
+        "summary_column": "npv_m_eur",
+        "axis_label": "NPV (million EUR)",
+        "title_unit": "MEUR",
+        "file_suffix": "",
+        "ranking_label": "NPV",
+    },
+    "EUR/MWh": {
+        "metric_column": "npv_eur_per_mwh",
+        "scale": 1.0,
+        "summary_column": "npv_eur_per_mwh",
+        "axis_label": "NPV (EUR/MWh)",
+        "title_unit": "EUR/MWh",
+        "file_suffix": "_per_MWh",
+        "ranking_label": "NPV per MWh",
+    },
+}
+
+
+def _electricity_npv_scale_config(npv_scale: str) -> Mapping[str, object]:
+    """Return display/export settings for one electricity NPV scale."""
+
+    if npv_scale not in ELECTRICITY_NPV_SCALE_OPTIONS:
+        valid_scales = ", ".join(ELECTRICITY_NPV_SCALE_OPTIONS)
+        raise ValueError(f"Unknown npv_scale {npv_scale!r}. Use one of: {valid_scales}.")
+
+    return ELECTRICITY_NPV_SCALE_OPTIONS[npv_scale]
+
 
 def _with_electricity_display_labels(ranking_summary):
     """Return a ranking summary copy with human-readable technology labels.
@@ -139,6 +172,32 @@ def electricity_npv_distribution_summary_million_eur(
     return summary
 
 
+def electricity_npv_distribution_summary(
+    results_by_technology: Mapping[str, Mapping[str, object]],
+    labels: Mapping[str, str] = ELECTRICITY_TECHNOLOGY_LABELS,
+    npv_scale: str = "MEUR",
+) -> dict[str, dict[str, float]]:
+    """Calculate mean, median, and percentile NPV summaries for one scale."""
+
+    config = _electricity_npv_scale_config(npv_scale)
+    metric_column = str(config["metric_column"])
+    scale = float(config["scale"])
+
+    summary: dict[str, dict[str, float]] = {}
+    for technology, results in results_by_technology.items():
+        if metric_column not in results:
+            raise KeyError(f"{technology!r} results do not contain {metric_column!r}.")
+        label = labels.get(technology, technology)
+        values = np.asarray(results[metric_column], dtype=float) / scale
+        summary[label] = {
+            "mean": float(values.mean()),
+            "median": float(np.median(values)),
+            "p05": float(np.percentile(values, 5)),
+            "p95": float(np.percentile(values, 95)),
+        }
+    return summary
+
+
 def _distribution_stat(
     summary: Mapping[str, Mapping[str, float]],
     statistic: str,
@@ -173,6 +232,27 @@ def calculate_mean_electricity_npv_million_eur(
     )
 
 
+def calculate_mean_electricity_npv(
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    random_seed: int = DEFAULT_RANDOM_SEED,
+    technologies: tuple[str, ...] | None = None,
+    npv_scale: str = "MEUR",
+) -> dict[str, float]:
+    """Calculate mean simulated NPV by electricity technology for one scale."""
+
+    config = _electricity_npv_scale_config(npv_scale)
+    return mean_metric(
+        results_by_item=simulate_electricity_results(
+            sample_size=sample_size,
+            random_seed=random_seed,
+            technologies=technologies,
+        ),
+        labels=ELECTRICITY_TECHNOLOGY_LABELS,
+        metric_column=str(config["metric_column"]),
+        scale=float(config["scale"]),
+    )
+
+
 def calculate_deterministic_electricity_npv_million_eur(
     technologies: tuple[str, ...] | None = None,
 ) -> dict[str, float]:
@@ -190,12 +270,30 @@ def calculate_deterministic_electricity_npv_million_eur(
     )
 
 
+def calculate_deterministic_electricity_npv(
+    technologies: tuple[str, ...] | None = None,
+    npv_scale: str = "MEUR",
+) -> dict[str, float]:
+    """Calculate deterministic NPV by electricity technology for one scale."""
+
+    config = _electricity_npv_scale_config(npv_scale)
+    return deterministic_metric(
+        results_by_item=calculate_deterministic_electricity_results(
+            technologies=technologies
+        ),
+        labels=ELECTRICITY_TECHNOLOGY_LABELS,
+        metric_column=str(config["metric_column"]),
+        scale=float(config["scale"]),
+    )
+
+
 def save_electricity_mean_npv_figure(
     output_dir: Path,
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
     run_date: date | None = None,
     sector_name: str = "Electricity",
+    npv_scale: str = "MEUR",
 ) -> Path:
     """Save the simulated mean NPV comparison figure for electricity.
 
@@ -209,22 +307,24 @@ def save_electricity_mean_npv_figure(
         sample_size=sample_size,
         random_seed=random_seed,
     )
-    summary = electricity_npv_distribution_summary_million_eur(results)
+    config = _electricity_npv_scale_config(npv_scale)
+    summary = electricity_npv_distribution_summary(results, npv_scale=npv_scale)
     values = _distribution_stat(summary, "mean")
     output_path = dated_figure_path(
         output_dir=output_dir,
-        stem=f"Mean_NPV_{sector_name}",
+        stem=f"Mean_NPV{config['file_suffix']}_{sector_name}",
         run_date=run_date,
     )
     return plot_mean_npv_technology_bars(
         values_million_eur=values,
         output_path=output_path,
-        title="Monte Carlo mean NPV by electricity technology",
+        title=f"Monte Carlo mean {config['ranking_label']} by electricity technology",
         median_values_million_eur=_distribution_stat(summary, "median"),
         lower_values_million_eur=_distribution_stat(summary, "p05"),
         upper_values_million_eur=_distribution_stat(summary, "p95"),
         sample_size=sample_size,
         random_seed=random_seed,
+        x_axis_label=str(config["axis_label"]),
     )
 
 
@@ -232,19 +332,22 @@ def save_electricity_deterministic_npv_figure(
     output_dir: Path,
     run_date: date | None = None,
     sector_name: str = "Electricity",
+    npv_scale: str = "MEUR",
 ) -> Path:
     """Save the deterministic NPV comparison figure for electricity."""
 
-    values = calculate_deterministic_electricity_npv_million_eur()
+    config = _electricity_npv_scale_config(npv_scale)
+    values = calculate_deterministic_electricity_npv(npv_scale=npv_scale)
     output_path = dated_figure_path(
         output_dir=output_dir,
-        stem=f"Deterministic_NPV_{sector_name}",
+        stem=f"Deterministic_NPV{config['file_suffix']}_{sector_name}",
         run_date=run_date,
     )
     return plot_mean_npv_technology_bars(
         values_million_eur=values,
         output_path=output_path,
-        title="Deterministic NPV (MEUR)",
+        title=f"Deterministic {config['ranking_label']} ({config['title_unit']})",
+        x_axis_label=str(config["axis_label"]),
     )
 
 
@@ -259,6 +362,7 @@ def save_electricity_mean_npv_outputs(
     save_ranking_outputs: bool = True,
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
+    npv_scale: str = "MEUR",
 ) -> tuple[Path, ...]:
     """Save mean NPV figure plus raw-input, processed-output, and ranking outputs.
 
@@ -268,14 +372,15 @@ def save_electricity_mean_npv_outputs(
     """
 
     output_date = run_date or date.today()
-    stem = f"Mean_NPV_{sector_name}"
+    config = _electricity_npv_scale_config(npv_scale)
+    stem = f"Mean_NPV{config['file_suffix']}_{sector_name}"
     # Generate the Monte Carlo results once. Reusing this object prevents the
     # figure and CSVs from accidentally representing different random draws.
     results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
     )
-    summary = electricity_npv_distribution_summary_million_eur(results)
+    summary = electricity_npv_distribution_summary(results, npv_scale=npv_scale)
     values = _distribution_stat(summary, "mean")
     figure_path = plot_mean_npv_technology_bars(
         values_million_eur=values,
@@ -284,12 +389,13 @@ def save_electricity_mean_npv_outputs(
             stem=stem,
             run_date=output_date,
         ),
-        title="Monte Carlo mean NPV by electricity technology",
+        title=f"Monte Carlo mean {config['ranking_label']} by electricity technology",
         median_values_million_eur=_distribution_stat(summary, "median"),
         lower_values_million_eur=_distribution_stat(summary, "p05"),
         upper_values_million_eur=_distribution_stat(summary, "p95"),
         sample_size=sample_size,
         random_seed=random_seed,
+        x_axis_label=str(config["axis_label"]),
     )
     raw_csv_path = save_results_csv(
         results_by_item=results,
@@ -320,6 +426,7 @@ def save_electricity_mean_npv_outputs(
         ranking, ranking_summary = calculate_electricity_npv_rankings_from_results(
             results=results,
             sector_name=sector_name,
+            npv_scale=npv_scale,
         )
         output_paths.extend(
             save_electricity_npv_ranking_outputs(
@@ -333,6 +440,7 @@ def save_electricity_mean_npv_outputs(
                 random_seed=random_seed,
                 save_ranking_csv=save_ranking_csv,
                 save_ranking_plots=save_ranking_plots,
+                npv_scale=npv_scale,
             )
         )
 
@@ -342,6 +450,7 @@ def save_electricity_mean_npv_outputs(
 def calculate_electricity_npv_rankings_from_results(
     results: Mapping[str, Mapping[str, object]],
     sector_name: str = "Electricity",
+    npv_scale: str = "MEUR",
 ):
     """Calculate raw and summary NPV rank tables from electricity results.
 
@@ -350,9 +459,11 @@ def calculate_electricity_npv_rankings_from_results(
     keeps rankings aligned with the figure and CSVs.
     """
 
+    config = _electricity_npv_scale_config(npv_scale)
     ranking = npv_ranking_dataframe(
         results_by_item=results,
         sector=sector_name,
+        npv_column=str(config["metric_column"]),
     )
     ranking_summary = summarize_npv_rankings(ranking)
     return ranking, ranking_summary
@@ -363,6 +474,7 @@ def calculate_electricity_npv_rankings(
     random_seed: int = DEFAULT_RANDOM_SEED,
     technologies: tuple[str, ...] | None = None,
     sector_name: str = "Electricity",
+    npv_scale: str = "MEUR",
 ):
     """Run electricity Monte Carlo simulations and return NPV ranking tables.
 
@@ -378,6 +490,7 @@ def calculate_electricity_npv_rankings(
     return calculate_electricity_npv_rankings_from_results(
         results=results,
         sector_name=sector_name,
+        npv_scale=npv_scale,
     )
 
 
@@ -392,6 +505,7 @@ def save_electricity_npv_ranking_outputs(
     random_seed: int | None = None,
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
+    npv_scale: str = "MEUR",
 ) -> tuple[Path, ...]:
     """Save electricity NPV ranking CSVs and/or plots.
 
@@ -401,6 +515,7 @@ def save_electricity_npv_ranking_outputs(
     """
 
     output_date = run_date or date.today()
+    config = _electricity_npv_scale_config(npv_scale)
     output_paths: list[Path] = []
     if save_ranking_csv:
         # Raw ranking stores one row per technology and simulation, so it can be
@@ -410,7 +525,7 @@ def save_electricity_npv_ranking_outputs(
                 dataframe=ranking,
                 output_path=dated_csv_path(
                     output_dir=raw_data_dir,
-                    stem=f"NPV_Ranking_{sector_name}_raw",
+                    stem=f"NPV_Ranking{config['file_suffix']}_{sector_name}_raw",
                     run_date=output_date,
                 ),
             )
@@ -422,7 +537,7 @@ def save_electricity_npv_ranking_outputs(
                 dataframe=ranking_summary,
                 output_path=dated_csv_path(
                     output_dir=processed_data_dir,
-                    stem=f"NPV_Ranking_{sector_name}_summary",
+                    stem=f"NPV_Ranking{config['file_suffix']}_{sector_name}_summary",
                     run_date=output_date,
                 ),
             )
@@ -433,10 +548,10 @@ def save_electricity_npv_ranking_outputs(
                 ranking_summary=_with_electricity_display_labels(ranking_summary),
                 output_path=dated_figure_path(
                     output_dir=figure_dir,
-                    stem=f"Average_NPV_Rank_{sector_name}",
+                    stem=f"Average_NPV_Rank{config['file_suffix']}_{sector_name}",
                     run_date=output_date,
                 ),
-                title="Monte Carlo NPV Ranking",
+                title=f"Monte Carlo {config['ranking_label']} Ranking",
                 random_seed=random_seed,
             )
         )
@@ -456,6 +571,7 @@ def generate_electricity_npv_rankings(
     save_ranking_outputs: bool = True,
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
+    npv_scale: str = "MEUR",
 ):
     """Return electricity NPV ranking DataFrames and optionally save outputs.
 
@@ -468,6 +584,7 @@ def generate_electricity_npv_rankings(
         random_seed=random_seed,
         technologies=technologies,
         sector_name=sector_name,
+        npv_scale=npv_scale,
     )
     output_paths: tuple[Path, ...] = ()
     if save_ranking_outputs and (save_ranking_csv or save_ranking_plots):
@@ -483,6 +600,7 @@ def generate_electricity_npv_rankings(
             random_seed=random_seed,
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
+            npv_scale=npv_scale,
         )
 
     return ranking, ranking_summary, output_paths
@@ -494,6 +612,7 @@ def save_electricity_deterministic_npv_outputs(
     processed_data_dir: Path,
     run_date: date | None = None,
     sector_name: str = "Electricity",
+    npv_scale: str = "MEUR",
 ) -> tuple[Path, Path, Path]:
     """Save deterministic NPV figure plus raw-input and processed-output CSVs.
 
@@ -502,11 +621,14 @@ def save_electricity_deterministic_npv_outputs(
     """
 
     output_date = run_date or date.today()
-    stem = f"Deterministic_NPV_{sector_name}"
+    config = _electricity_npv_scale_config(npv_scale)
+    stem = f"Deterministic_NPV{config['file_suffix']}_{sector_name}"
     results = calculate_deterministic_electricity_results()
-    values = deterministic_npv_million_eur(
+    values = deterministic_metric(
         results_by_item=results,
         labels=ELECTRICITY_TECHNOLOGY_LABELS,
+        metric_column=str(config["metric_column"]),
+        scale=float(config["scale"]),
     )
     figure_path = plot_mean_npv_technology_bars(
         values_million_eur=values,
@@ -515,7 +637,8 @@ def save_electricity_deterministic_npv_outputs(
             stem=stem,
             run_date=output_date,
         ),
-        title="Deterministic NPV (MEUR)",
+        title=f"Deterministic {config['ranking_label']} ({config['title_unit']})",
+        x_axis_label=str(config["axis_label"]),
     )
     raw_csv_path = save_results_csv(
         results_by_item=results,
@@ -554,6 +677,7 @@ def save_electricity_npv_outputs(
     save_ranking_outputs: bool = True,
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
+    npv_scale: str = "MEUR",
 ) -> tuple[Path, ...]:
     """Save simulated mean and deterministic electricity NPV outputs.
 
@@ -573,6 +697,7 @@ def save_electricity_npv_outputs(
             save_ranking_outputs=save_ranking_outputs,
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
+            npv_scale=npv_scale,
         ),
         *save_electricity_deterministic_npv_outputs(
             figure_dir=figure_dir,
@@ -580,6 +705,7 @@ def save_electricity_npv_outputs(
             processed_data_dir=processed_data_dir,
             run_date=run_date,
             sector_name=sector_name,
+            npv_scale=npv_scale,
         ),
     )
 
@@ -590,6 +716,7 @@ def save_electricity_npv_figures(
     random_seed: int = DEFAULT_RANDOM_SEED,
     run_date: date | None = None,
     sector_name: str = "Electricity",
+    npv_scale: str = "MEUR",
 ) -> tuple[Path, Path]:
     """Save both simulated mean and deterministic electricity NPV figures.
 
@@ -603,11 +730,13 @@ def save_electricity_npv_figures(
             random_seed=random_seed,
             run_date=run_date,
             sector_name=sector_name,
+            npv_scale=npv_scale,
         ),
         save_electricity_deterministic_npv_figure(
             output_dir=output_dir,
             run_date=run_date,
             sector_name=sector_name,
+            npv_scale=npv_scale,
         ),
     )
 
@@ -676,6 +805,12 @@ def parse_args() -> argparse.Namespace:
         default="both",
         help="Which Monte Carlo NPV ranking outputs to save.",
     )
+    parser.add_argument(
+        "--npv-scale",
+        choices=tuple(ELECTRICITY_NPV_SCALE_OPTIONS),
+        default="MEUR",
+        help="NPV scale used for comparison figures and ranking outputs.",
+    )
     return parser.parse_args()
 
 
@@ -699,6 +834,7 @@ def main() -> None:
                 sample_size=args.sample_size,
                 random_seed=args.random_seed,
                 sector_name=args.sector_name,
+                npv_scale=args.npv_scale,
             )
         elif args.kind == "mean":
             output_paths = (
@@ -707,6 +843,7 @@ def main() -> None:
                     sample_size=args.sample_size,
                     random_seed=args.random_seed,
                     sector_name=args.sector_name,
+                    npv_scale=args.npv_scale,
                 ),
             )
         else:
@@ -714,6 +851,7 @@ def main() -> None:
                 save_electricity_deterministic_npv_figure(
                     output_dir=args.output_dir,
                     sector_name=args.sector_name,
+                    npv_scale=args.npv_scale,
                 ),
             )
 
@@ -722,6 +860,7 @@ def main() -> None:
                 sample_size=args.sample_size,
                 random_seed=args.random_seed,
                 sector_name=args.sector_name,
+                npv_scale=args.npv_scale,
             )
             output_paths = (
                 *output_paths,
@@ -735,6 +874,7 @@ def main() -> None:
                     random_seed=args.random_seed,
                     save_ranking_csv=save_ranking_csv,
                     save_ranking_plots=save_ranking_plots,
+                    npv_scale=args.npv_scale,
                 ),
             )
     elif args.kind == "all":
@@ -748,6 +888,7 @@ def main() -> None:
             save_ranking_outputs=save_ranking_outputs,
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
+            npv_scale=args.npv_scale,
         )
     elif args.kind == "mean":
         output_paths = save_electricity_mean_npv_outputs(
@@ -760,6 +901,7 @@ def main() -> None:
             save_ranking_outputs=save_ranking_outputs,
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
+            npv_scale=args.npv_scale,
         )
     else:
         output_paths = save_electricity_deterministic_npv_outputs(
@@ -767,6 +909,7 @@ def main() -> None:
             raw_data_dir=args.raw_data_dir,
             processed_data_dir=args.processed_data_dir,
             sector_name=args.sector_name,
+            npv_scale=args.npv_scale,
         )
 
     for output_path in output_paths:

@@ -1,3 +1,58 @@
+## 2026-06-12 12:12 — Add normalized NPV summary and ranking workflows
+
+### User request
+
+Keep the existing total NPV comparison, but add a parallel normalized workflow so figures, rankings, CSV outputs, and summary notebooks can compare electricity in `EUR/MWh` and cement in `EUR/t`. Use the thesis workflow skill and keep the implementation clean and lean.
+
+### Files changed (if needed)
+
+- `src/npv_summary.py` — added generic metric summary helpers for mean and deterministic values.
+- `src/npv_summary_plots.py` — added a configurable x-axis label to the NPV bar plot helper.
+- `src/electricity/electricity_npv_summary_figures.py` — added electricity NPV scale options, normalized `EUR/MWh` figures, rankings, CSV stems, and CLI support via `--npv-scale`.
+- `src/cement/cement_npv_summary_figures.py` — added cement NPV scale options, normalized `EUR/t` figures, rankings, CSV stems, and CLI support via `--npv-scale`.
+- `notebooks/electricity/electricity_summary.ipynb` — added `NPV_SCALE = "MEUR"` setting with optional `"EUR/MWh"` mode and re-executed the notebook.
+- `notebooks/cement/cement_summary.ipynb` — added `NPV_SCALE = "MEUR"` setting with optional `"EUR/t"` mode and re-executed the notebook.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Preserved `MEUR` as the default total-NPV workflow.
+- Added scale metadata per sector so the same result arrays can be summarized by total NPV or normalized NPV without changing model assumptions.
+- Added reusable `mean_metric` and `deterministic_metric` helpers for arbitrary result columns and display scales.
+- Kept existing million-EUR helper functions for backward compatibility.
+- Added per-unit ranking support by passing `npv_eur_per_mwh` or `npv_eur_per_t` into the existing generic ranking helper.
+- Added normalized output filenames such as:
+  - `Mean_NPV_per_MWh_Electricity`
+  - `NPV_Ranking_per_MWh_Electricity`
+  - `Mean_NPV_per_t_Cement`
+  - `NPV_Ranking_per_t_Cement`
+- Added `--npv-scale MEUR|EUR/MWh` to the electricity summary CLI.
+- Added `--npv-scale MEUR|EUR/t` to the cement summary CLI.
+- Updated the summary notebooks so changing one `NPV_SCALE` variable switches the mean table, deterministic table, mean figure, and ranking calculation together.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/electricity/electricity_npv_summary_figures.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/npv_summary.py src/npv_summary_plots.py src/electricity/electricity_npv_summary_figures.py src/cement/cement_npv_summary_figures.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... four-scale output smoke test ... PY`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/electricity/electricity_summary.ipynb notebooks/cement/cement_summary.ipynb`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind mean --sample-size 5 --random-seed 4 --npv-scale EUR/MWh --output-dir /private/tmp/masterthesis_cli_norm/electricity/figures --raw-data-dir /private/tmp/masterthesis_cli_norm/electricity/raw --processed-data-dir /private/tmp/masterthesis_cli_norm/electricity/processed --ranking-output both`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m cement.cement_npv_summary_figures --kind mean --sample-size 5 --random-seed 4 --npv-scale EUR/t --output-dir /private/tmp/masterthesis_cli_norm/cement/figures --raw-data-dir /private/tmp/masterthesis_cli_norm/cement/raw --processed-data-dir /private/tmp/masterthesis_cli_norm/cement/processed --ranking-output both`
+  - `/opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... summary notebook structure and execution validation ... PY`
+- Result:
+  - Passed.
+- Notes:
+  - The first notebook execution attempt failed inside the sandbox because Jupyter could not bind local kernel ports. The same command succeeded after approval to run outside the sandbox.
+  - The smoke test generated temporary total and normalized outputs for electricity and cement in `/private/tmp`.
+
+### Reproducibility notes
+
+- No raw data, model assumptions, parameter values, or existing project output files in `figures/` or `data/` were changed.
+- Existing total-NPV output behavior remains the default because `npv_scale="MEUR"` is used unless another scale is requested.
+- Normalized outputs are generated from existing model result columns, so the change affects presentation, ranking metric selection, and export naming, not the underlying NPV calculations.
+
 ## 2026-06-09 17:11 — Align cement summary notebook with electricity summary structure
 
 ### User request
