@@ -1,3 +1,100 @@
+## 2026-06-12 12:58 — Verify cross-sector outputs and export cement lifetime
+
+### User request
+
+Run a check that the project still works after the electricity lifetime change, assess whether `lifetime_years` should also be included in cement raw CSV exports for sector consistency, and explain what changed with the new electricity lifetimes.
+
+### Files changed (if needed)
+
+- `src/cement/cement_npv_deterministic.py` — added `lifetime_years` to deterministic cement result rows.
+- `src/cement/cement_npv_monte_carlo.py` — added `lifetime_years` to Monte Carlo cement result rows.
+- `src/cement/cement_npv_summary_figures.py` — added `lifetime_years` to cement raw-input CSV exports.
+- `CHANGELOG.md` — added this verification and consistency entry.
+
+### What was implemented
+
+- Added the existing cement lifetime assumption (`LIFETIME_CEMENT_YEARS = 25`) to cement result dictionaries.
+- Added `lifetime_years` to `CEMENT_RAW_INPUT_COLUMNS`, matching the electricity raw CSV export pattern.
+- Did not change cement NPV calculations, cement assumptions, or cement figures; the change only makes the existing lifetime input visible in raw CSV exports.
+- Rechecked electricity and cement deterministic, Monte Carlo, ranking, and CLI output paths.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... cross-sector lifetime, per-output, and ranking invariant checks ... PY`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind all --sample-size 10 --random-seed 13 --npv-scale EUR/MWh --ranking-output both --output-dir /private/tmp/masterthesis_cross_sector_check/electricity/figures --raw-data-dir /private/tmp/masterthesis_cross_sector_check/electricity/raw --processed-data-dir /private/tmp/masterthesis_cross_sector_check/electricity/processed`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m cement.cement_npv_summary_figures --kind all --sample-size 10 --random-seed 13 --npv-scale EUR/t --ranking-output both --output-dir /private/tmp/masterthesis_cross_sector_check/cement/figures --raw-data-dir /private/tmp/masterthesis_cross_sector_check/cement/raw --processed-data-dir /private/tmp/masterthesis_cross_sector_check/cement/processed`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... exported CSV lifetime and normalized ranking metric validation ... PY`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... deterministic old-25-year versus new-lifetime comparison ... PY`
+- Result:
+  - Passed.
+- Notes:
+  - Temporary cross-sector outputs were generated in `/private/tmp/masterthesis_cross_sector_check`.
+  - Electricity raw exports contain technology-specific lifetimes; cement raw exports now contain 25 years for all cement technologies.
+  - Normalized ranking CSVs were checked against `npv_eur_per_mwh` and `npv_eur_per_t` from processed exports.
+
+### Reproducibility notes
+
+- Cement numerical results are unchanged; only the raw export schema now includes the cement lifetime input.
+- Electricity results remain changed from the previous entry because electricity now uses technology-specific lifetimes.
+- No raw data or project output files in `figures/` or `data/` were changed.
+
+## 2026-06-12 12:40 — Add technology-specific electricity lifetimes
+
+### User request
+
+Use the thesis workflow skill and update the electricity sector so asset lifetime is technology-specific. Use 30 years for PV, coal, CCGT, and CCS variants; 25 years for wind and biogas; and 45 years for nuclear. Keep the change consistent across deterministic, Monte Carlo, plotting, rankings, and CSV exports.
+
+### Files changed (if needed)
+
+- `src/electricity/electricity_parameters.py` — added technology-specific lifetime parameters and registered them with each electricity technology.
+- `src/electricity/electricity_npv_deterministic.py` — changed deterministic NPV and lifetime-output calculations to use the selected technology lifetime.
+- `src/electricity/electricity_npv_monte_carlo.py` — changed Monte Carlo NPV and lifetime-output calculations to use the selected technology lifetime.
+- `src/electricity/electricity_npv_summary_figures.py` — added `lifetime_years` to raw electricity CSV exports.
+- `notebooks/electricity/electricity_summary.ipynb` — re-executed the electricity summary notebook with the new lifetime assumptions.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Removed the single global electricity lifetime from active calculation paths.
+- Added these technology lifetimes:
+  - hard coal: 30 years
+  - hard coal + CCS: 30 years
+  - CCGT: 30 years
+  - CCGT + CCS: 30 years
+  - nuclear: 45 years
+  - offshore wind: 25 years
+  - onshore wind: 25 years
+  - PV: 30 years
+  - biogas: 25 years
+- Stored lifetime in `ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS` next to full-load hours.
+- Used `lifetime_years` in both:
+  - the NPV discount horizon;
+  - the `lifetime_output_mwh` denominator used for `npv_eur_per_mwh`.
+- Added `lifetime_years` to electricity raw-input CSV exports so generated outputs show which lifetime was used.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/electricity/electricity_parameters.py src/electricity/electricity_npv_deterministic.py src/electricity/electricity_npv_monte_carlo.py src/electricity/electricity_npv_summary_figures.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... lifetime, deterministic, Monte Carlo, and ranking validation ... PY`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m electricity.electricity_npv_summary_figures --kind all --sample-size 10 --random-seed 5 --npv-scale EUR/MWh --ranking-output both --output-dir /private/tmp/masterthesis_lifetime_cli/figures --raw-data-dir /private/tmp/masterthesis_lifetime_cli/raw --processed-data-dir /private/tmp/masterthesis_lifetime_cli/processed`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... exported CSV lifetime and ranking metric validation ... PY`
+  - `MPLCONFIGDIR=/private/tmp/masterthesis_mpl PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/electricity/electricity_summary.ipynb`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+- Result:
+  - Passed.
+- Notes:
+  - The CLI smoke test generated temporary electricity total/deterministic/ranking outputs in `/private/tmp/masterthesis_lifetime_cli`.
+  - The CSV validation confirmed raw exports include `lifetime_years`, processed exports use `annual_output_mwh * lifetime_years`, and `EUR/MWh` ranking CSV values match `npv_eur_per_mwh`.
+
+### Reproducibility notes
+
+- This changes electricity NPV results and electricity normalized NPV results because the discount horizon and lifetime-output denominator are now technology-specific.
+- No cement code, raw data, or project output CSV/figure files were changed.
+- The electricity summary notebook was refreshed. The individual single-technology electricity notebooks will use the new lifetimes when re-executed, but they were not re-executed in this focused change to avoid a broad notebook-output diff.
+
 ## 2026-06-12 12:12 — Add normalized NPV summary and ranking workflows
 
 ### User request

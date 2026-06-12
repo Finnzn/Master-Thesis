@@ -231,6 +231,7 @@ def _calculate_cement_cash_flow_result(
     """Calculate cement cash flows and NPV from absolute technology arrays."""
 
     annual_output_t = ANNUAL_CEMENT_OUTPUT_T.value
+    lifetime_years = LIFETIME_CEMENT_YEARS.value
     capex_eur_per_t = values["capex_eur_per_t"]
     fixed_opex_eur_per_t = values["fixed_opex_eur_per_t"]
     variable_opex_eur_per_t = values["variable_opex_eur_per_t"]
@@ -286,10 +287,10 @@ def _calculate_cement_cash_flow_result(
     npv_eur = calculate_npv(
         initial_capex_eur=initial_capex_eur,
         annual_net_cash_flow_eur=annual_net_cash_flow_eur,
-        lifetime_years=int(LIFETIME_CEMENT_YEARS.value),
+        lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
     )
-    lifetime_output_t = annual_output_t * LIFETIME_CEMENT_YEARS.value
+    lifetime_output_t = annual_output_t * lifetime_years
     npv_eur_per_t = npv_eur / lifetime_output_t
 
     result = {
@@ -298,6 +299,7 @@ def _calculate_cement_cash_flow_result(
         "technology_type": np.full(size, technology_type),
         "retrofit_bau_mode": np.full(size, bau_mode),
         "annual_output_t": np.full(size, annual_output_t),
+        "lifetime_years": np.full(size, lifetime_years),
         "capex_eur_per_t": capex_eur_per_t,
         "fixed_opex_eur_per_t": fixed_opex_eur_per_t,
         "variable_opex_eur_per_t": variable_opex_eur_per_t,

@@ -66,6 +66,7 @@ CEMENT_RAW_INPUT_COLUMNS = (
     "technology_type",
     "retrofit_bau_mode",
     "annual_output_t",
+    "lifetime_years",
     "capex_eur_per_t",
     "fixed_opex_eur_per_t",
     "variable_opex_eur_per_t",

@@ -65,6 +65,7 @@ ELECTRICITY_RAW_INPUT_COLUMNS = (
     "technology",
     "annual_output_mwh",
     "full_load_hours_per_year",
+    "lifetime_years",
     "capex_eur_per_kw",
     "fixed_opex_eur_per_kw_year",
     "variable_opex_eur_per_mwh",

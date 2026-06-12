@@ -17,13 +17,6 @@ from typing import Mapping
 from distributions import FixedParameter, TriangularDistribution, UniformDistribution
 
 
-# Economic lifetime used for all electricity technologies in this comparison.
-LIFETIME_ELECTRICITY_YEARS = FixedParameter(
-    value=25.0,
-    unit="years",
-    description="Economic lifetime of electricity-sector assets.",
-)
-
 # Electricity revenue is calculated from this fixed retail price and the
 # normalized annual output.
 RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
@@ -87,6 +80,12 @@ HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
     description="Full-load hours for the hard coal technology.",
 )
 
+HARD_COAL_LIFETIME_YEARS = FixedParameter(
+    value=30.0,
+    unit="years",
+    description="Economic lifetime for the hard coal technology.",
+)
+
 
 # Hard coal with CCS technology parameters. CCS raises CAPEX/OPEX and fuel use,
 # but lowers residual emissions compared with unabated hard coal.
@@ -131,6 +130,12 @@ HARD_COAL_CCS_FULL_LOAD_HOURS = FixedParameter(
     value=4_100.0,
     unit="h/year",
     description="Average full-load hours for the hard coal with CCS technology.",
+)
+
+HARD_COAL_CCS_LIFETIME_YEARS = FixedParameter(
+    value=30.0,
+    unit="years",
+    description="Economic lifetime for the hard coal with CCS technology.",
 )
 
 
@@ -181,6 +186,12 @@ CCGT_FULL_LOAD_HOURS = FixedParameter(
     description="Average full-load hours for the CCGT technology.",
 )
 
+CCGT_LIFETIME_YEARS = FixedParameter(
+    value=30.0,
+    unit="years",
+    description="Economic lifetime for the CCGT technology.",
+)
+
 
 # CCGT with CCS technology parameters. As with hard coal CCS, the model captures
 # higher costs and lower residual emissions relative to the unabated plant.
@@ -225,6 +236,12 @@ CCGT_CCS_FULL_LOAD_HOURS = FixedParameter(
     value=4_650.0,
     unit="h/year",
     description="Average full-load hours for the CCGT with CCS technology.",
+)
+
+CCGT_CCS_LIFETIME_YEARS = FixedParameter(
+    value=30.0,
+    unit="years",
+    description="Economic lifetime for the CCGT with CCS technology.",
 )
 
 
@@ -273,6 +290,12 @@ NUCLEAR_FULL_LOAD_HOURS = FixedParameter(
     description="Average full-load hours for the nuclear technology.",
 )
 
+NUCLEAR_LIFETIME_YEARS = FixedParameter(
+    value=45.0,
+    unit="years",
+    description="Economic lifetime for the nuclear technology.",
+)
+
 
 # Offshore wind technology parameters. Fuel consumption and direct emissions are
 # fixed at zero, so its uncertainty comes mainly from CAPEX/OPEX and full-load hours.
@@ -315,6 +338,12 @@ WIND_OFFSHORE_FULL_LOAD_HOURS = FixedParameter(
     value=3_850.0,
     unit="h/year",
     description="Average full-load hours for the offshore wind technology.",
+)
+
+WIND_OFFSHORE_LIFETIME_YEARS = FixedParameter(
+    value=25.0,
+    unit="years",
+    description="Economic lifetime for the offshore wind technology.",
 )
 
 
@@ -361,6 +390,12 @@ WIND_ONSHORE_FULL_LOAD_HOURS = FixedParameter(
     description="Average full-load hours for the onshore wind technology.",
 )
 
+WIND_ONSHORE_LIFETIME_YEARS = FixedParameter(
+    value=25.0,
+    unit="years",
+    description="Economic lifetime for the onshore wind technology.",
+)
+
 
 # PV technology parameters. PV has zero modelled fuel cost, variable OPEX, and
 # direct emissions in this setup; the low full-load hours drive required capacity.
@@ -401,6 +436,12 @@ PV_FULL_LOAD_HOURS = FixedParameter(
     value=1_107.5,
     unit="h/year",
     description="Average full-load hours for the PV technology.",
+)
+
+PV_LIFETIME_YEARS = FixedParameter(
+    value=30.0,
+    unit="years",
+    description="Economic lifetime for the PV technology.",
 )
 
 
@@ -448,6 +489,12 @@ BIOGAS_FULL_LOAD_HOURS = FixedParameter(
     description="Average full-load hours for the biogas technology.",
 )
 
+BIOGAS_LIFETIME_YEARS = FixedParameter(
+    value=25.0,
+    unit="years",
+    description="Economic lifetime for the biogas technology.",
+)
+
 
 # Parameter registries.
 #
@@ -455,7 +502,6 @@ BIOGAS_FULL_LOAD_HOURS = FixedParameter(
 # technology constant one by one. Adding a new electricity technology therefore
 # means adding its assumptions above and registering the same standard keys here.
 ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
-    "lifetime_electricity_years": LIFETIME_ELECTRICITY_YEARS,
     "retail_price_electricity_eur_per_mwh": RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
     "annual_electricity_output_mwh": ANNUAL_ELECTRICITY_OUTPUT_MWH,
 }
@@ -464,34 +510,43 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     str,
     Mapping[str, FixedParameter],
 ] = {
-    # Full-load hours are stored separately because they are needed to size the
-    # plant before CAPEX and fixed OPEX can be calculated.
+    # Full-load hours size the plant before CAPEX and fixed OPEX are calculated.
+    # Lifetime controls the NPV discount horizon and lifetime-output denominator.
     "hard_coal": {
         "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
+        "lifetime_years": HARD_COAL_LIFETIME_YEARS,
     },
     "hard_coal_ccs": {
         "full_load_hours_per_year": HARD_COAL_CCS_FULL_LOAD_HOURS,
+        "lifetime_years": HARD_COAL_CCS_LIFETIME_YEARS,
     },
     "ccgt": {
         "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
+        "lifetime_years": CCGT_LIFETIME_YEARS,
     },
     "ccgt_ccs": {
         "full_load_hours_per_year": CCGT_CCS_FULL_LOAD_HOURS,
+        "lifetime_years": CCGT_CCS_LIFETIME_YEARS,
     },
     "nuclear": {
         "full_load_hours_per_year": NUCLEAR_FULL_LOAD_HOURS,
+        "lifetime_years": NUCLEAR_LIFETIME_YEARS,
     },
     "wind_offshore": {
         "full_load_hours_per_year": WIND_OFFSHORE_FULL_LOAD_HOURS,
+        "lifetime_years": WIND_OFFSHORE_LIFETIME_YEARS,
     },
     "wind_onshore": {
         "full_load_hours_per_year": WIND_ONSHORE_FULL_LOAD_HOURS,
+        "lifetime_years": WIND_ONSHORE_LIFETIME_YEARS,
     },
     "pv": {
         "full_load_hours_per_year": PV_FULL_LOAD_HOURS,
+        "lifetime_years": PV_LIFETIME_YEARS,
     },
     "biogas": {
         "full_load_hours_per_year": BIOGAS_FULL_LOAD_HOURS,
+        "lifetime_years": BIOGAS_LIFETIME_YEARS,
     },
 }
 

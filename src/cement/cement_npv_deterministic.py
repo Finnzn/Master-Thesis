@@ -162,6 +162,7 @@ def calculate_deterministic_cement_result(
     values = _deterministic_cement_technology_values(technology)
 
     annual_output_t = ANNUAL_CEMENT_OUTPUT_T.value
+    lifetime_years = LIFETIME_CEMENT_YEARS.value
     capex_eur_per_t = values["capex_eur_per_t"]
     fixed_opex_eur_per_t = values["fixed_opex_eur_per_t"]
     variable_opex_eur_per_t = values["variable_opex_eur_per_t"]
@@ -204,11 +205,11 @@ def calculate_deterministic_cement_result(
         calculate_npv(
             initial_capex_eur=np.array([initial_capex_eur]),
             annual_net_cash_flow_eur=np.array([annual_net_cash_flow_eur]),
-            lifetime_years=int(LIFETIME_CEMENT_YEARS.value),
+            lifetime_years=int(lifetime_years),
             discount_rate=INTEREST_RATE.value,
         )[0]
     )
-    lifetime_output_t = annual_output_t * LIFETIME_CEMENT_YEARS.value
+    lifetime_output_t = annual_output_t * lifetime_years
     npv_eur_per_t = npv_eur / lifetime_output_t
 
     result = {
@@ -220,6 +221,7 @@ def calculate_deterministic_cement_result(
             else "absolute"
         ],
         "annual_output_t": [annual_output_t],
+        "lifetime_years": [lifetime_years],
         "capex_eur_per_t": [capex_eur_per_t],
         "fixed_opex_eur_per_t": [fixed_opex_eur_per_t],
         "variable_opex_eur_per_t": [variable_opex_eur_per_t],

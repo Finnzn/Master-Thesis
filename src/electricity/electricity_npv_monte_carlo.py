@@ -29,7 +29,6 @@ from electricity.electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,
-    LIFETIME_ELECTRICITY_YEARS,
     RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
@@ -126,6 +125,7 @@ def simulate_electricity_technology_npv(
         size=size,
         rng=generator,
     )
+    lifetime_years = technology_fixed_parameters["lifetime_years"].value
     capacity_mw = annual_output_mwh / full_load_hours
     capacity_kw = capacity_mw * 1_000.0
 
@@ -220,10 +220,10 @@ def simulate_electricity_technology_npv(
     npv_eur = calculate_npv(
         initial_capex_eur=initial_capex_eur,
         annual_net_cash_flow_eur=annual_net_cash_flow_eur,
-        lifetime_years=int(LIFETIME_ELECTRICITY_YEARS.value),
+        lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
     )
-    lifetime_output_mwh = annual_output_mwh * LIFETIME_ELECTRICITY_YEARS.value
+    lifetime_output_mwh = annual_output_mwh * lifetime_years
     npv_eur_per_mwh = npv_eur / lifetime_output_mwh
 
     # Return both sampled inputs and derived outputs so CSV exports are traceable.
@@ -233,6 +233,7 @@ def simulate_electricity_technology_npv(
         "technology": np.full(size, technology),
         "annual_output_mwh": np.full(size, annual_output_mwh),
         "full_load_hours_per_year": full_load_hours,
+        "lifetime_years": np.full(size, lifetime_years),
         "capacity_mw": capacity_mw,
         "capacity_kw": capacity_kw,
         "capex_eur_per_kw": capex_eur_per_kw,

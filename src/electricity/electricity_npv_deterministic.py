@@ -18,7 +18,6 @@ from electricity.electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,
-    LIFETIME_ELECTRICITY_YEARS,
     RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
@@ -86,6 +85,7 @@ def calculate_deterministic_electricity_result(
     full_load_hours = representative_value(
         fixed_parameters["full_load_hours_per_year"]
     )
+    lifetime_years = representative_value(fixed_parameters["lifetime_years"])
     capacity_kw = calculate_capacity_kw(
         annual_electricity_output_mwh=annual_output_mwh,
         full_load_hours_per_year=full_load_hours,
@@ -135,11 +135,11 @@ def calculate_deterministic_electricity_result(
         calculate_npv(
             initial_capex_eur=np.array([initial_capex_eur]),
             annual_net_cash_flow_eur=np.array([annual_net_cash_flow_eur]),
-            lifetime_years=int(LIFETIME_ELECTRICITY_YEARS.value),
+            lifetime_years=int(lifetime_years),
             discount_rate=INTEREST_RATE.value,
         )[0]
     )
-    lifetime_output_mwh = annual_output_mwh * LIFETIME_ELECTRICITY_YEARS.value
+    lifetime_output_mwh = annual_output_mwh * lifetime_years
     npv_eur_per_mwh = npv_eur / lifetime_output_mwh
 
     # Keep the same output keys as the Monte Carlo result for shared export helpers.
@@ -148,6 +148,7 @@ def calculate_deterministic_electricity_result(
         "technology": [technology],
         "annual_output_mwh": [annual_output_mwh],
         "full_load_hours_per_year": [full_load_hours],
+        "lifetime_years": [lifetime_years],
         "capex_eur_per_kw": [capex_eur_per_kw],
         "fixed_opex_eur_per_kw_year": [fixed_opex_eur_per_kw_year],
         "variable_opex_eur_per_mwh": [variable_opex_eur_per_mwh],
