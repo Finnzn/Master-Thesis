@@ -3078,6 +3078,52 @@ Fix broken Monte Carlo notebook imports, check notebooks and source code connect
 ### Next suggested step
 
 Create the same model separation for future sectors: sector parameter file, sector-specific physical/capacity calculations, sector Monte Carlo runner, sector deterministic runner, and shared summary/export code.
+## 2026-06-15 13:20 — Document sensitivity dashboard and stop server
+
+### User request
+
+Update the README and stop the running dashboard.
+
+### Files changed (if needed)
+
+- `README.md` — added the sensitivity dashboard to the repository structure,
+  documented the sensitivity helper module, added dashboard launch commands, and
+  summarized the dashboard metrics, tornado color meaning, saved-figure behavior,
+  and deterministic scenario interpretation.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added a README section explaining how to run `sensitivity_dashboard.py` with
+  Streamlit from the repository root or with the thesis Conda environment.
+- Documented that the dashboard supports total NPV in `MEUR` and normalized NPV
+  in `EUR/t` or `EUR/MWh`.
+- Documented that green/red tornado bars indicate better/worse impact on the
+  selected NPV metric, while the `+x%` or `-x%` label shows input direction.
+- Stopped the Streamlit process that was listening on port `8501`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `sed -n '45,150p' README.md`
+  - `kill 30823`
+  - `lsof -iTCP:8501 -sTCP:LISTEN`
+- Result:
+  - Passed.
+- Notes:
+  - `lsof` returned no listener on port `8501` after stopping the dashboard.
+
+### Reproducibility notes
+
+- No model assumptions, calculations, data files, generated figures, or
+  numerical results were changed.
+- The README now records the command needed to restart the dashboard.
+
+### Next suggested step
+
+When the dashboard design stabilizes, add a short screenshot or example figure
+reference to the README so future readers know what the tool produces.
+
 ## 2026-06-15 12:28 — Audit and improve dashboard tornado chart
 
 ### User request

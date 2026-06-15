@@ -61,6 +61,7 @@ MasterThesis/
 ├── figures/              # Plots and figures for reports and presentations
 ├── docs/                 # Notes, references, and documentation
 ├── tests/                # Optional tests for code validation
+├── sensitivity_dashboard.py # Streamlit sensitivity analysis dashboard
 ├── README.md             # Project overview
 ├── requirements.txt      # Python dependencies
 └── .gitignore            # Files and folders ignored by Git
@@ -76,12 +77,46 @@ electricity-sector calculations.
 - `src/general_parameters.py` stores shared assumptions such as carbon price,
   discount rate, and fuel-price distributions.
 - `src/npv_finance.py` contains the sector-independent NPV formula.
+- `src/sensitivity_analysis.py` contains deterministic one-factor-at-a-time
+  sensitivity calculations and tornado-chart plotting for the dashboard.
 - `src/npv_summary.py` converts simulation outputs into summary tables, rankings,
   and CSV files.
 - `src/npv_summary_plots.py` contains reusable plotting functions for NPV bar
   charts and ranking figures.
 - `src/electricity/` contains electricity-sector assumptions, deterministic NPV
   calculations, Monte Carlo simulations, and output-generation scripts.
+- `src/cement/` contains cement-sector assumptions, deterministic NPV
+  calculations, Monte Carlo simulations, and output-generation scripts.
+
+## Sensitivity Dashboard
+
+The Streamlit dashboard provides an interactive deterministic sensitivity
+analysis for the cement and electricity sectors. It lets you select a sector,
+technology, NPV metric, and scenario inputs, then generates a tornado diagram
+showing one-factor-at-a-time impacts.
+
+To run the dashboard from the repository root:
+
+```bash
+PYTHONPATH=src streamlit run sensitivity_dashboard.py
+```
+
+If you use the thesis Conda environment directly:
+
+```bash
+/opt/anaconda3/envs/master-thesis/bin/streamlit run sensitivity_dashboard.py
+```
+
+The dashboard supports total NPV in `MEUR` and normalized NPV in `EUR/t` for
+cement or `EUR/MWh` for electricity. Green bars indicate changes that improve
+the selected NPV metric, red bars indicate changes that worsen it, and the
+`+x%` or `-x%` labels show which input movement caused the impact. Downloaded or
+in-app saved dashboard figures can be written to `figures/`.
+
+The dashboard is a deterministic scenario tool. It does not change stored model
+assumptions, and it currently varies annual production/generation consistently
+with the normalized deterministic plant-size setup rather than holding capacity
+fixed.
 
 To regenerate the electricity-sector figures and CSV outputs, run:
 
