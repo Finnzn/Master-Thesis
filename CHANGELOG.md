@@ -1,3 +1,49 @@
+## 2026-06-15 10:27 — Correct cement CCS fuel-consumption change range
+
+### User request
+
+Correct the cement CCS fuel-consumption reduction range because CCS should range from `-130%` to `0%`, not from `0%` to `+130%`.
+
+### Files changed (if needed)
+
+- `src/cement/cement_parameters.py` — changed `CCS_CEMENT_FUEL_REDUCTION_DISTRIBUTION` from `0.0` to `1.30` into `-1.30` to `0.0`, and clarified that negative reduction values represent fuel-consumption increases.
+- `CHANGELOG.md` — added this scientific-assumption correction entry.
+
+### What was implemented
+
+- Updated the CCS cement fuel-consumption change range to `[-1.30, 0.0]`.
+- Kept the existing retrofit formula unchanged:
+  - `fuel_consumption = BAU_fuel_consumption * (1 - fuel_consumption_reduction_fraction)`.
+- With the corrected range, CCS fuel use is now between `1.0x` and `2.3x` BAU instead of between `-0.3x` and `1.0x` BAU.
+- This removes impossible negative CCS fuel-consumption and negative fuel-cost draws.
+
+### Verification (if needed)
+
+- Commands run:
+  - `env PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `env PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... deterministic CCS before/after checks ... PY`
+  - `env PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... 10,000-draw CCS Monte Carlo fuel checks ... PY`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/mpl-cache PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache /opt/anaconda3/envs/master-thesis/bin/python -m cement.cement_npv_summary_figures --kind all --sample-size 10 --random-seed 13 --npv-scale EUR/t --ranking-output both --output-dir /private/tmp/masterthesis_ccs_fuel_check/figures --raw-data-dir /private/tmp/masterthesis_ccs_fuel_check/raw --processed-data-dir /private/tmp/masterthesis_ccs_fuel_check/processed`
+- Result:
+  - Passed.
+- Notes:
+  - Deterministic CCS fuel reduction changed from `+0.65` to `-0.65`.
+  - Deterministic CCS fuel consumption changed from `0.2135` to `1.0065 MWh_th/t`.
+  - Deterministic CCS annual fuel cost changed from `2.585 MEUR/year` to `12.189 MEUR/year`.
+  - Deterministic CCS NPV changed from `632.024 MEUR` to `529.512 MEUR`.
+  - Deterministic CCS normalized NPV changed from `25.281 EUR/t` to `21.180 EUR/t`.
+  - In a 10,000-draw CCS smoke run, fuel consumption and annual fuel cost were always non-negative after the correction.
+
+### Reproducibility notes
+
+- This is a scientific-assumption correction and changes cement CCS deterministic, Monte Carlo, ranking, figure, and CSV results.
+- Existing generated cement outputs in `data/`, `figures/`, and cement notebooks are now stale until regenerated.
+- Temporary verification outputs were written only to `/private/tmp/masterthesis_ccs_fuel_check`.
+
+### Next suggested step
+
+Regenerate the cement summary outputs and notebooks before interpreting CCS against the other cement technologies.
+
 ## 2026-06-15 09:45 — Clean normalized electricity NPV schema and ranking metadata
 
 ### User request

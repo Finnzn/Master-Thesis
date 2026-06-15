@@ -349,8 +349,8 @@ WASTE_HEAT_RECOVERY_CEMENT_EMISSIONS_REDUCTION = FixedParameter(
 
 
 # CCS is a retrofit measure. Positive reduction fractions lower the BAU value,
-# while the negative electricity reduction bound represents an electricity
-# consumption increase in later retrofit calculations.
+# while negative reduction fractions represent consumption increases in later
+# retrofit calculations.
 CCS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=55.0,
     upper_bound=185.0,
@@ -373,10 +373,10 @@ CCS_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
 )
 
 CCS_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
-    lower_bound=0.0,
-    upper_bound=1.30,
+    lower_bound=-1.30,
+    upper_bound=0.0,
     unit="fraction",
-    description="Uniform distribution for CCS fuel-consumption reduction relative to BAU.",
+    description="Uniform distribution for CCS fuel-consumption reduction relative to BAU; negative values represent increases.",
 )
 
 CCS_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION = UniformDistribution(
