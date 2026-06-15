@@ -3078,3 +3078,189 @@ Fix broken Monte Carlo notebook imports, check notebooks and source code connect
 ### Next suggested step
 
 Create the same model separation for future sectors: sector parameter file, sector-specific physical/capacity calculations, sector Monte Carlo runner, sector deterministic runner, and shared summary/export code.
+## 2026-06-15 12:28 — Audit and improve dashboard tornado chart
+
+### User request
+
+Check whether the dashboard sensitivity analysis is correct, improve the tornado
+plot readability after legend/label overlap, consider additional sensitivity
+variables, and think about whether other plot designs would make sense.
+
+### Files changed (if needed)
+
+- `src/sensitivity_analysis.py` — moved the tornado legend below the plot,
+  expanded the chart margin for input-change labels, renamed legend entries to
+  clarify that colors mean better/worse NPV impact, and added missing technical
+  drivers to the one-factor-at-a-time sensitivity list.
+- `sensitivity_dashboard.py` — added full-load hours as an editable electricity
+  input so electricity capacity sizing can be inspected directly.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Confirmed that the dashboard base-case NPV calculation reproduces the existing
+  deterministic model for tested cement and electricity cases.
+- Improved the tornado chart layout by moving the legend out of the top-right
+  plotting area and giving the `+x%`/`-x%` labels more horizontal room.
+- Added sensitivity rows for variables already present in the deterministic
+  cash-flow equation:
+  - cement: fuel use, electricity use, and direct emissions;
+  - electricity: full-load hours, fuel use, and direct emissions.
+- Kept green/red as economic direction:
+  - green is better for the selected NPV metric;
+  - red is worse for the selected NPV metric.
+
+### Verification (if needed)
+
+- Commands run:
+  - `/opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/sensitivity_analysis.py sensitivity_dashboard.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `/opt/anaconda3/envs/master-thesis/bin/streamlit run sensitivity_dashboard.py --server.headless true --server.port 8501`
+- Result:
+  - Passed.
+- Notes:
+  - The smoke test asserted that dashboard base-case NPV equals deterministic
+    module NPV for cement BAU and electricity hard coal.
+  - Expanded total and specific sensitivity plots were generated under
+    `/private/tmp` for cement BAU and electricity hard coal.
+  - Streamlit is running at `http://localhost:8501` with the refreshed code.
+
+### Reproducibility notes
+
+- No thesis parameter values or deterministic NPV formulas were changed.
+- The dashboard remains a deterministic one-factor-at-a-time scenario tool.
+- The current annual output sensitivity changes both output and required plant
+  size/capacity because this matches the normalized deterministic model setup;
+  it is not yet a pure utilization/sales-volume sensitivity with capacity held
+  fixed.
+
+### Next suggested step
+
+Add a second sensitivity mode that varies utilization/output while holding
+installed capacity fixed, then compare that with the current normalized
+plant-size interpretation.
+
+## 2026-06-15 11:59 — Clarify dashboard tornado direction and normalized metrics
+
+### User request
+
+Clarify whether the tornado chart's green and red bars represent `+10%` or
+`-10%` input changes, and add a way to view sensitivity results as normalized
+`EUR/t` or `EUR/MWh` instead of only total NPV.
+
+### Files changed (if needed)
+
+- `src/sensitivity_analysis.py` — added selectable total/specific NPV metrics,
+  explicit tornado input-change labels, and metric-specific axis labels.
+- `sensitivity_dashboard.py` — added an NPV metric selector, normalized headline
+  metrics, metric-aware graph filenames, and sensitivity-table columns that show
+  whether the favorable/unfavorable result came from `+x%` or `-x%`.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Kept the tornado colors as economic direction:
+  - green means the changed input improves the selected NPV metric;
+  - red means the changed input worsens the selected NPV metric.
+- Added `+x%` and `-x%` labels next to each tornado bar so the input movement
+  that produced each impact is visible directly on the chart.
+- Added a dashboard selector for:
+  - total NPV in `MEUR`;
+  - specific NPV in `EUR/t` for cement;
+  - specific NPV in `EUR/MWh` for electricity.
+- Updated the sensitivity table to show favorable and unfavorable input-change
+  directions alongside their impacts in the selected unit.
+
+### Verification (if needed)
+
+- Commands run:
+  - `/opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/sensitivity_analysis.py sensitivity_dashboard.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python sensitivity_dashboard.py`
+- Result:
+  - Passed.
+- Notes:
+  - The smoke test generated total and specific sensitivity plots for cement
+    BAU and electricity PV under `/private/tmp`.
+  - The smoke test confirmed direction labels such as `+10%` and `-10%` appear
+    in the generated sensitivity tables.
+  - Bare-mode Streamlit execution completed successfully; expected Streamlit
+    context warnings and sandboxed PyArrow CPU-probe warnings were printed
+    outside a real browser session.
+
+### Reproducibility notes
+
+- No thesis parameter values or deterministic NPV formulas were changed.
+- Normalized dashboard metrics are calculated as `NPV / lifetime output` for
+  the current scenario.
+- The running dashboard server is still available at `http://localhost:8501`.
+
+### Next suggested step
+
+Review whether normalized sensitivity for changes to annual output and lifetime
+should divide by the changed scenario's lifetime output, as implemented now, or
+by the original base-case lifetime output for a pure numerator-only comparison.
+
+## 2026-06-15 11:36 — Add sensitivity analysis dashboard
+
+### User request
+
+Create a sensitivity analysis dashboard with separate cement and electricity tabs,
+technology selection, editable prices/lifetime/interest-rate style inputs, and
+a savable tornado-style base sensitivity graph.
+
+### Files changed (if needed)
+
+- `src/sensitivity_analysis.py` — added reusable deterministic sensitivity
+  calculations, tornado-table generation, and Matplotlib tornado plotting.
+- `sensitivity_dashboard.py` — added a Streamlit dashboard with Cement and
+  Electricity tabs, technology selectors, scenario input controls, chart
+  downloads, saving to `figures/`, and a sensitivity-values table.
+- `requirements.txt` — added `streamlit` as the dashboard dependency.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Built an interactive deterministic sensitivity dashboard around the existing
+  deterministic NPV models rather than changing sector parameter assumptions.
+- Added one-factor-at-a-time tornado analysis using the current scenario as the
+  base case and a configurable percentage variation.
+- Included editable controls for annual output, lifetime, interest rate, sales
+  price, investment cost, OPEX, fuel price/use, emissions, carbon price, and
+  cement electricity price/use.
+- Added graph download and graph saving to `figures/` for the currently selected
+  sector, technology, and scenario.
+
+### Verification (if needed)
+
+- Commands run:
+  - `/opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/sensitivity_analysis.py sensitivity_dashboard.py`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `/opt/anaconda3/envs/master-thesis/bin/python -m pip install streamlit`
+  - `/opt/anaconda3/envs/master-thesis/bin/streamlit run sensitivity_dashboard.py --server.headless true --server.port 8501`
+  - `env PYTHONPATH=src MPLCONFIGDIR=/private/tmp/matplotlib-cache /opt/anaconda3/envs/master-thesis/bin/python sensitivity_dashboard.py`
+- Result:
+  - Passed.
+- Notes:
+  - The smoke test calculated cement BAU and electricity PV sensitivity tables
+    and wrote test PNGs under `/private/tmp`.
+  - Matplotlib printed font-cache warnings in the sandboxed shell, but the plots
+    were generated successfully.
+  - The bare-mode Streamlit script execution completed successfully; expected
+    Streamlit context warnings and sandboxed PyArrow CPU-probe warnings were
+    printed outside a real browser session.
+  - Streamlit is running at `http://localhost:8501`.
+
+### Reproducibility notes
+
+- No thesis parameter values or deterministic NPV formulas were changed.
+- The dashboard recalculates deterministic scenario NPVs from existing base-case
+  inputs and explicit user edits only.
+- Saved dashboard figures are written to `figures/` when the in-app save button
+  is pressed.
+
+### Next suggested step
+
+Review the tornado input list and decide whether technology-specific parameters
+such as full-load hours, capture-rate assumptions, or retrofit reduction
+fractions should also be exposed in the dashboard.
