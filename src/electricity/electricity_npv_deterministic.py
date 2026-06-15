@@ -173,7 +173,6 @@ def calculate_deterministic_electricity_result(
         "npv_eur": [npv_eur],
         "lifetime_output_mwh": [lifetime_output_mwh],
         "npv_eur_per_mwh": [npv_eur_per_mwh],
-        "npv_million_eur_per_mwh": [npv_eur_per_mwh / 1_000_000],
     }
 
 

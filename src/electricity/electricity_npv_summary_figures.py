@@ -93,7 +93,6 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "npv_eur",
     "lifetime_output_mwh",
     "npv_eur_per_mwh",
-    "npv_million_eur_per_mwh",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
@@ -104,6 +103,7 @@ EXPORT_SORT_COLUMNS = ("simulation_id", "technology")
 ELECTRICITY_NPV_SCALE_OPTIONS = {
     "MEUR": {
         "metric_column": "npv_eur",
+        "metric_unit": "EUR",
         "scale": 1_000_000.0,
         "summary_column": "npv_m_eur",
         "axis_label": "NPV (million EUR)",
@@ -113,6 +113,7 @@ ELECTRICITY_NPV_SCALE_OPTIONS = {
     },
     "EUR/MWh": {
         "metric_column": "npv_eur_per_mwh",
+        "metric_unit": "EUR/MWh",
         "scale": 1.0,
         "summary_column": "npv_eur_per_mwh",
         "axis_label": "NPV (EUR/MWh)",
@@ -465,6 +466,8 @@ def calculate_electricity_npv_rankings_from_results(
         results_by_item=results,
         sector=sector_name,
         npv_column=str(config["metric_column"]),
+        metric_column=str(config["metric_column"]),
+        metric_unit=str(config["metric_unit"]),
     )
     ranking_summary = summarize_npv_rankings(ranking)
     return ranking, ranking_summary

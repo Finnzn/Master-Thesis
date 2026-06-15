@@ -255,7 +255,6 @@ def simulate_electricity_technology_npv(
         "npv_eur": npv_eur,
         "lifetime_output_mwh": np.full(size, lifetime_output_mwh),
         "npv_eur_per_mwh": npv_eur_per_mwh,
-        "npv_million_eur_per_mwh": npv_eur_per_mwh / 1_000_000,
     }
 
 

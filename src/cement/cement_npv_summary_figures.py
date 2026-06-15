@@ -108,6 +108,7 @@ EXPORT_SORT_COLUMNS = ("simulation_id", "technology")
 CEMENT_NPV_SCALE_OPTIONS = {
     "MEUR": {
         "metric_column": "npv_eur",
+        "metric_unit": "EUR",
         "scale": 1_000_000.0,
         "summary_column": "npv_m_eur",
         "axis_label": "NPV (million EUR)",
@@ -117,6 +118,7 @@ CEMENT_NPV_SCALE_OPTIONS = {
     },
     "EUR/t": {
         "metric_column": "npv_eur_per_t",
+        "metric_unit": "EUR/t",
         "scale": 1.0,
         "summary_column": "npv_eur_per_t",
         "axis_label": "NPV (EUR/t)",
@@ -458,6 +460,8 @@ def calculate_cement_npv_rankings_from_results(
         results_by_item=results,
         sector=sector_name,
         npv_column=str(config["metric_column"]),
+        metric_column=str(config["metric_column"]),
+        metric_unit=str(config["metric_unit"]),
     )
     ranking_summary = summarize_npv_rankings(ranking)
     return ranking, ranking_summary

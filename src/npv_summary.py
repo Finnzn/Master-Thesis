@@ -191,6 +191,8 @@ def npv_ranking_dataframe(
     simulation_id_column: str = "run_id",
     technology_column: str = "technology",
     npv_column: str = "npv_eur",
+    metric_column: str | None = None,
+    metric_unit: str = "",
 ) -> pd.DataFrame:
     """Rank technologies by NPV within each Monte Carlo simulation.
 
@@ -220,6 +222,8 @@ def npv_ranking_dataframe(
                 "simulation_id": results[simulation_id_column],
                 "sector": sector,
                 "technology": technology_values,
+                "metric_column": metric_column or npv_column,
+                "metric_unit": metric_unit,
                 "npv": results[npv_column],
             }
         )
@@ -227,7 +231,15 @@ def npv_ranking_dataframe(
 
     if not frames:
         return pd.DataFrame(
-            columns=["simulation_id", "sector", "technology", "npv", "rank"]
+            columns=[
+                "simulation_id",
+                "sector",
+                "technology",
+                "metric_column",
+                "metric_unit",
+                "npv",
+                "rank",
+            ]
         )
 
     ranking = pd.concat(frames, ignore_index=True)
@@ -239,7 +251,17 @@ def npv_ranking_dataframe(
         ascending=False,
     )
     return (
-        ranking[["simulation_id", "sector", "technology", "npv", "rank"]]
+        ranking[
+            [
+                "simulation_id",
+                "sector",
+                "technology",
+                "metric_column",
+                "metric_unit",
+                "npv",
+                "rank",
+            ]
+        ]
         .sort_values(["sector", "simulation_id", "rank", "technology"])
         .reset_index(drop=True)
     )
@@ -263,6 +285,8 @@ def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
             columns=[
                 "sector",
                 "technology",
+                "metric_column",
+                "metric_unit",
                 "average_rank",
                 "median_rank",
                 "std_rank",
@@ -304,6 +328,21 @@ def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
         .sort_values(["sector", "average_rank", "technology"])
         .reset_index(drop=True)
     )
+    metadata_columns = [
+        column
+        for column in ("metric_column", "metric_unit")
+        if column in ranking.columns
+    ]
+    if metadata_columns:
+        metadata = ranking.groupby(["sector", "technology"], as_index=False)[
+            metadata_columns
+        ].first()
+        summary = summary.merge(metadata, on=["sector", "technology"], how="left")
+        leading_columns = ["sector", "technology", *metadata_columns]
+        summary = summary[
+            leading_columns
+            + [column for column in summary.columns if column not in leading_columns]
+        ]
     return summary.merge(rank_counts, on=["sector", "technology"], how="left")
 
 
