@@ -321,7 +321,6 @@ def _calculate_cement_cash_flow_result(
         "npv_eur": npv_eur,
         "lifetime_output_t": np.full(size, lifetime_output_t),
         "npv_eur_per_t": npv_eur_per_t,
-        "npv_million_eur_per_t": npv_eur_per_t / 1_000_000,
     }
 
     result[fuel_price_key] = fuel_price_eur_per_mwh_th

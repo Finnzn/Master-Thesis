@@ -3310,3 +3310,45 @@ a savable tornado-style base sensitivity graph.
 Review the tornado input list and decide whether technology-specific parameters
 such as full-load hours, capture-rate assumptions, or retrofit reduction
 fractions should also be exposed in the dashboard.
+
+## 2026-06-23 12:40 — Remove misleading cement normalized MEUR/t output
+
+### User request
+
+Clarify the cement retrofit interpretation, remove the misleading million-euro-per-ton
+cement output if needed, and provide clear project-improvement recommendations.
+
+### Files changed (if needed)
+
+- `src/cement/cement_npv_deterministic.py` — removed `npv_million_eur_per_t`
+  from deterministic cement result mappings.
+- `src/cement/cement_npv_monte_carlo.py` — removed `npv_million_eur_per_t`
+  from Monte Carlo cement result mappings.
+- `src/cement/cement_npv_summary_figures.py` — removed
+  `npv_million_eur_per_t` from processed cement CSV export columns.
+- `CHANGELOG.md` — added this entry.
+
+### What was implemented
+
+- Kept the existing cement retrofit methodology unchanged: retrofit technologies
+  are still resolved as whole post-retrofit plant systems by combining sampled
+  BAU assumptions with sampled retrofit changes.
+- Removed the confusing `npv_million_eur_per_t` field from reusable source-code
+  outputs and current cement processed CSV exports. Normalized cement NPV remains
+  available as `npv_eur_per_t`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m py_compile src/cement/cement_npv_deterministic.py src/cement/cement_npv_monte_carlo.py src/cement/cement_npv_summary_figures.py`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+  - `rg -n "npv_million_eur_per_t" src`
+- Result:
+  - Passed.
+
+### Reproducibility notes
+
+- No model assumptions, formulas, sampled distributions, or retrofit calculations
+  were changed.
+- Existing notebooks may still contain old saved outputs or hard-coded references
+  to `npv_million_eur_per_t`; reusable source outputs no longer expose it.

@@ -243,7 +243,6 @@ def calculate_deterministic_cement_result(
         "npv_eur": [npv_eur],
         "lifetime_output_t": [lifetime_output_t],
         "npv_eur_per_t": [npv_eur_per_t],
-        "npv_million_eur_per_t": [npv_eur_per_t / 1_000_000],
     }
 
     for retrofit_key in (

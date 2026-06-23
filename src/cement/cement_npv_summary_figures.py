@@ -97,7 +97,6 @@ CEMENT_PROCESSED_OUTPUT_COLUMNS = (
     "npv_eur",
     "lifetime_output_t",
     "npv_eur_per_t",
-    "npv_million_eur_per_t",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
