@@ -3352,3 +3352,244 @@ cement output if needed, and provide clear project-improvement recommendations.
   were changed.
 - Existing notebooks may still contain old saved outputs or hard-coded references
   to `npv_million_eur_per_t`; reusable source outputs no longer expose it.
+
+## 2026-06-24 — Add isolated CO2-price and discount-rate scenario notebook
+
+### User request
+
+Create a quick notebook following the sector summary-notebook logic, with separate
+electricity and cement views for low, medium, and high CO2-price and discount-rate
+scenarios, without changing the reusable `src/` code.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` — added an isolated Monte Carlo
+  scenario notebook with two cross-sector figures and editable scenario values.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added one CO2-price scenario figure and one discount-rate scenario figure.
+- Each figure contains separate electricity and cement panels and compares low,
+  medium, and high scenarios for every technology.
+- Reused one Monte Carlo simulation per sector across all scenarios so scenario
+  differences reflect only the changed CO2 price or discount rate.
+- Kept the current shared values of `80 EUR/tCO2` and `8%` as the medium cases.
+- Added editable low/high defaults of `40/120 EUR/tCO2` and `4%/12%`, explicitly
+  documented as notebook-only sensitivity assumptions.
+- Added a switch between total NPV in million EUR and sector-specific NPV in
+  EUR/MWh or EUR/t.
+- Kept all calculations and plotting logic inside the notebook; no `src/` files
+  or generated data/figure folders were changed.
+
+### Verification (if needed)
+
+- Commands run:
+  - Notebook JSON validation and code-cell compilation.
+  - Executed the notebook with the project Python environment.
+- Result:
+  - Passed.
+- Notes:
+  - The executed notebook copy was written only to
+    `/private/tmp/masterthesis_scenario_notebook/executed.ipynb`.
+
+### Reproducibility notes
+
+- Rerun `notebooks/co2_discount_rate_scenarios.ipynb` from any directory inside
+  the repository.
+- The notebook defaults to 10,000 draws with random seed 42 and does not save
+  outputs.
+- Change only the settings cell to use alternative scenario values or normalized
+  NPV units.
+
+### Next suggested step
+
+Review whether the low/high scenario assumptions should be replaced with values
+from a cited policy or literature source.
+
+## 2026-06-24 — Improve scenario plot layout and CCS label spacing
+
+### User request
+
+Remove the dash-like marks after technology names, move the low/medium/high
+scenario legend out of the plot area, and consistently display spaces around the
+plus sign in the hard-coal CCS label.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` — removed visible y-axis tick
+  marks and moved the shared scenario legend above both sector panels.
+- `src/electricity/electricity_npv_summary_figures.py` — changed the shared
+  display label from `Hard coal+CCS` to `Hard coal + CCS`.
+- `notebooks/electricity/plot_hard_coal_ccs_npv.ipynb` — aligned the notebook
+  heading and plot-title source text with the shared label style.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Disabled left-side y ticks so technology labels no longer appear to end in a
+  dash.
+- Replaced the in-axis legend with one figure-level legend centered above the
+  electricity and cement panels.
+- Reserved top layout space for the title and legend so neither overlaps the
+  plots.
+- Standardized the electricity summary display label as `Hard coal + CCS`.
+
+### Verification (if needed)
+
+- Commands run:
+  - Notebook JSON validation and Python code-cell compilation.
+  - Executed the scenario notebook with the project Python environment.
+  - Searched source and notebook code for remaining `Hard coal+CCS` labels.
+- Result:
+  - Passed.
+- Notes:
+  - The scenario notebook executed without errors and rendered both figures.
+  - Visual inspection confirmed that y-axis tick marks are hidden, the legend is
+    outside the axes, and the shared label displays as `Hard coal + CCS`.
+
+### Reproducibility notes
+
+- No model assumptions, simulations, or numerical outputs were changed.
+- Existing saved outputs in previously executed notebooks can retain the old
+  label until those notebooks are rerun.
+- The scenario notebook still writes no figures or data files.
+
+### Next suggested step
+
+Rerun the electricity summary notebook if its stored output cells should display
+the updated `Hard coal + CCS` label immediately.
+
+## 2026-06-24 — Analyze sector and technology scenario behavior
+
+### User request
+
+Provide an in-depth interpretation of both sectors and every technology under
+the current assumptions and the notebook's CO2-price and discount-rate
+scenarios, including why nuclear remains negative at the low discount rate.
+
+### Files changed (if needed)
+
+- `CHANGELOG.md` — documented the completed analytical review.
+
+### What was implemented
+
+- Reproduced the scenario notebook's 10,000-draw, seed-42 Monte Carlo setup.
+- Calculated technology-level mean CAPEX, annual revenues and costs, annual net
+  cash flow, mean and median NPV, positive-NPV probability, and scenario NPVs.
+- Compared cement retrofit whole-plant NPVs against BAU and electricity CCS
+  technologies against their unabated counterparts.
+- Quantified nuclear's low-discount-rate result and identified its approximate
+  mean break-even discount rate and required CAPEX or electricity-price change.
+
+### Verification (if needed)
+
+- Commands run:
+  - Temporary Python analysis using the existing electricity and cement
+    simulation modules and shared NPV function.
+- Result:
+  - Passed.
+- Notes:
+  - Temporary analysis code and outputs were kept under `/private/tmp`.
+
+### Reproducibility notes
+
+- No model code, parameter assumptions, notebooks, figures, or numerical output
+  files were changed for this analysis.
+- Reported scenario values use 10,000 draws, random seed 42, CO2 prices of
+  40/80/120 EUR/tCO2, and discount rates of 4%/8%/12%.
+- Each sensitivity changes one variable at a time; the notebook does not model a
+  combined low-low or high-high scenario.
+
+### Next suggested step
+
+Add incremental-versus-BAU and incremental-versus-unabated comparison tables to
+the scenario notebook so the economic value of retrofit and CCS choices is
+visible alongside total plant NPV.
+
+## 2026-06-24 — Add explicit scenario NPV scale selector and assess abatement costs
+
+### User request
+
+Add NPV-scale selection to the scenario notebook and assess whether cement
+abatement cost would add useful information beyond NPV for a thesis about how
+technology-development uncertainty shapes carbon-capture demand.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` — replaced the less visible
+  internal NPV mode with an explicit `NPV_SCALE` selector matching the summary
+  notebook terminology.
+- `CHANGELOG.md` — documented the implementation and analytical assessment.
+
+### What was implemented
+
+- Added `NPV_SCALE_OPTIONS = ("MEUR", "specific")` and an editable `NPV_SCALE`
+  setting.
+- Kept `MEUR` as the default and retained normalized output as EUR/MWh for
+  electricity and EUR/t for cement.
+- Displayed the selected scale when the settings cell runs.
+- Calculated exploratory levelized direct-abatement costs for cement
+  technologies relative to BAU using annualized CAPEX and operating costs,
+  excluding carbon payments from the numerator.
+
+### Verification (if needed)
+
+- Commands run:
+  - Notebook JSON validation and Python code-cell compilation.
+  - Executed the scenario notebook at both supported NPV scales.
+  - Temporary 100,000-draw cement abatement-cost analysis with random seed 42.
+- Result:
+  - Passed.
+- Notes:
+  - Both `MEUR` and `specific` modes executed without errors and rendered two
+    scenario figures each.
+
+### Reproducibility notes
+
+- No source-code assumptions or model formulas were changed.
+- Exploratory abatement-cost calculations were not added to the notebook in this
+  task; they were used to determine whether the metric adds distinct insight.
+- Abatement-cost estimates compare direct stack emissions with BAU and exclude
+  indirect electricity emissions.
+
+### Next suggested step
+
+Add a dedicated cement marginal-abatement-cost and abatement-depth section that
+reports both EUR/tCO2 avoided and the share of BAU direct emissions avoided.
+
+## 2026-06-24 — Define electricity abatement-cost counterfactuals
+
+### User request
+
+Explain how an electricity-sector abatement-cost curve would be constructed and
+whether it requires a BAU reference.
+
+### Files changed (if needed)
+
+- `CHANGELOG.md` — documented the methodological clarification.
+
+### What was implemented
+
+- Distinguished a system-wide electricity marginal abatement cost curve from
+  pairwise technology comparisons.
+- Identified coal, CCGT, and the grid mix as alternative counterfactuals with
+  different interpretations.
+- Recommended pairwise `coal + CCS versus coal` and `CCGT + CCS versus CCGT`
+  avoided-cost calculations for the thesis's carbon-capture-demand question.
+
+### Verification (if needed)
+
+- Result:
+  - Analytical clarification only; no model execution was required.
+
+### Reproducibility notes
+
+- No model assumptions, code, notebooks, figures, or numerical outputs were
+  changed.
+
+### Next suggested step
+
+Define whether the electricity analysis should represent plant replacement,
+new-build technology choice, or displacement of an observed grid mix before
+constructing an electricity abatement curve.

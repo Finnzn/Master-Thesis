@@ -48,7 +48,7 @@ from npv_summary_plots import (
 
 ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
     "hard_coal": "Hard coal",
-    "hard_coal_ccs": "Hard coal+CCS",
+    "hard_coal_ccs": "Hard coal + CCS",
     "ccgt": "CCGT",
     "ccgt_ccs": "CCGT + CCS",
     "nuclear": "Nuclear",
