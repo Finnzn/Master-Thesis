@@ -259,12 +259,25 @@ def build_sensitivity_table(
     inputs: ScenarioInputs,
     variation_fraction: float,
     metric: str = METRIC_TOTAL,
+    included_attributes: Iterable[str] | None = None,
 ) -> pd.DataFrame:
-    """Calculate one-factor-at-a-time tornado values around a scenario."""
+    """Calculate one-factor-at-a-time tornado values around a scenario.
+
+    When ``included_attributes`` is provided, only parameters whose ScenarioInputs
+    attribute is listed are included. The default remains all sector parameters.
+    """
 
     base_metric_value = calculate_metric_value(sector, inputs, metric)
+    selected_attributes = (
+        None if included_attributes is None else set(included_attributes)
+    )
     rows = []
     for parameter in SENSITIVITY_PARAMETERS[sector]:
+        if (
+            selected_attributes is not None
+            and parameter.attribute not in selected_attributes
+        ):
+            continue
         base_value = getattr(inputs, parameter.attribute)
         low_value = max(parameter.minimum, base_value * (1.0 - variation_fraction))
         high_value = max(parameter.minimum, base_value * (1.0 + variation_fraction))
@@ -307,6 +320,25 @@ def build_sensitivity_table(
                     abs(high_impact),
                 ),
             }
+        )
+
+    if not rows:
+        return pd.DataFrame(
+            columns=[
+                "parameter",
+                "base_value",
+                "low_value",
+                "high_value",
+                "low_metric_value",
+                "high_metric_value",
+                "low_impact",
+                "high_impact",
+                "favorable_impact",
+                "unfavorable_impact",
+                "favorable_change",
+                "unfavorable_change",
+                "max_abs_impact",
+            ]
         )
 
     return pd.DataFrame(rows).sort_values(

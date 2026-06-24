@@ -26,6 +26,30 @@ from distributions import (
 ParameterSpec = FixedParameter | ScaledBetaDistribution | TriangularDistribution | UniformDistribution
 
 
+def summarize_metric_signs(values: object) -> dict[str, int | float]:
+    """Count non-negative and negative values in one simulation metric.
+
+    Zero belongs to the non-negative group. The explicit finite-value check
+    prevents missing or infinite simulation results from silently disappearing
+    from both sign counts.
+    """
+
+    numeric_values = np.asarray(values, dtype=float)
+    if numeric_values.size == 0:
+        raise ValueError("values must contain at least one simulation result.")
+    if not np.all(np.isfinite(numeric_values)):
+        raise ValueError("values contain non-finite simulation results.")
+
+    non_negative_count = int(np.count_nonzero(numeric_values >= 0))
+    negative_count = int(np.count_nonzero(numeric_values < 0))
+    simulation_count = int(numeric_values.size)
+    return {
+        "non_negative_npv_count": non_negative_count,
+        "negative_npv_count": negative_count,
+        "non_negative_npv_share": non_negative_count / simulation_count,
+    }
+
+
 def representative_value(parameter: ParameterSpec) -> float:
     """Return the deterministic representative value for a parameter.
 

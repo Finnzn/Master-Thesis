@@ -21,11 +21,11 @@ from sensitivity_analysis import (  # noqa: E402
     METRIC_TOTAL,
     SECTOR_DISPLAY_NAMES,
     SECTOR_UNITS,
+    SENSITIVITY_PARAMETERS,
     available_technologies,
     base_inputs,
     build_sensitivity_table,
     calculate_metric_value,
-    calculate_sector_npv,
     display_label,
     figure_to_png_bytes,
     metric_axis_label,
@@ -78,19 +78,28 @@ def render_sector_dashboard(sector: str) -> None:
         )
         metric = st.selectbox(
             "NPV metric",
-            [METRIC_TOTAL, METRIC_SPECIFIC],
+            [METRIC_SPECIFIC, METRIC_TOTAL],
             format_func=lambda value: format_metric_option(sector, value),
             key=f"{sector}_metric",
         )
+        included_attributes = build_parameter_checkboxes(sector)
         scenario_inputs = build_input_controls(sector, technology, defaults)
 
-    base_npv = calculate_sector_npv(sector, scenario_inputs)
     base_metric_value = calculate_metric_value(sector, scenario_inputs, metric)
+    if not included_attributes:
+        with figure_area:
+            st.warning(
+                "Select at least one variable under “Variables in sensitivity "
+                "analysis” to generate the tornado diagram."
+            )
+        return
+
     sensitivity_table = build_sensitivity_table(
         sector=sector,
         inputs=scenario_inputs,
         variation_fraction=variation_percent / 100.0,
         metric=metric,
+        included_attributes=included_attributes,
     )
     title = (
         f"Tornado Diagram: {SECTOR_DISPLAY_NAMES[sector]} "
@@ -143,6 +152,24 @@ def render_sector_dashboard(sector: str) -> None:
             )
 
     plt.close(fig)
+
+
+def build_parameter_checkboxes(sector: str) -> tuple[str, ...]:
+    """Render checkboxes and return the selected sensitivity attributes."""
+
+    selected = []
+    with st.expander("Variables in sensitivity analysis", expanded=True):
+        st.caption("Checked variables appear in the tornado chart.")
+        columns = st.columns(2)
+        for index, parameter in enumerate(SENSITIVITY_PARAMETERS[sector]):
+            included = columns[index % 2].checkbox(
+                parameter.label,
+                value=True,
+                key=f"{sector}_include_{parameter.attribute}",
+            )
+            if included:
+                selected.append(parameter.attribute)
+    return tuple(selected)
 
 
 def build_input_controls(sector: str, technology: str, defaults):

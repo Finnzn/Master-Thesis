@@ -3593,3 +3593,138 @@ whether it requires a BAU reference.
 Define whether the electricity analysis should represent plant replacement,
 new-build technology choice, or displacement of an observed grid mix before
 constructing an electricity abatement curve.
+
+## 2026-06-24 14:51 — Add NPV sign counts and improve project handover
+
+### User request
+
+Add a technology-summary metric counting simulations with NPV greater than or
+equal to zero versus negative NPV, assess whether the current source code
+supports it, and deep-dive the repository's clarity and usability for future
+users.
+
+### Files changed (if needed)
+
+- `src/npv_summary.py` — added reusable, validated simulation sign summaries.
+- `src/electricity/electricity_npv_summary_figures.py` — included NPV sign
+  counts and non-negative share in electricity distribution summaries.
+- `src/cement/cement_npv_summary_figures.py` — included the same metrics in
+  cement distribution summaries.
+- `notebooks/electricity/electricity_summary.ipynb` — displayed non-negative
+  count, negative count, and non-negative share for every technology.
+- `notebooks/cement/cement_summary.ipynb` — displayed the same metrics for
+  every cement technology.
+- `README.md` — added setup, smoke checks, workflow selection, cement output
+  generation, generated-data guidance, and basic validation instructions.
+- `docs/HANDOVER.md` — added a practical architecture, workflow, output,
+  scientific-convention, risk, and safe-change guide.
+- `requirements.txt` — documented the Python 3.10 minimum.
+- `CHANGELOG.md` — documented this work.
+
+### What was implemented
+
+- Confirmed that each Monte Carlo result mapping retains its full
+  simulation-level NPV array, so sign counts require no model or simulation
+  changes.
+- Classified exactly zero as non-negative, as requested.
+- Added `non_negative_npv_count`, `negative_npv_count`, and
+  `non_negative_npv_share`; rejected empty or non-finite arrays rather than
+  silently producing incomplete counts.
+- Reused the same helper in both sectors and both NPV scales. Positive scaling
+  does not change an NPV's sign.
+- Audited repository structure, runtime assumptions, notebook roles, ignored
+  outputs, generated-data volume, validation coverage, and handover risks.
+- Documented that the default 100,000-draw workflows can create large outputs
+  and that the current ignored generated CSVs occupy roughly 1.5 GB.
+- Documented the main remaining risks: no automated test suite, lightly
+  constrained dependencies, `PYTHONPATH=src` execution, repeated notebook
+  presentation code, and untracked generated outputs.
+
+### Verification (if needed)
+
+- Commands run:
+  - `/opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src sensitivity_dashboard.py`
+  - Direct helper assertions and 25-draw electricity/cement sign-summary checks.
+  - 100-draw electricity and cement CLI smoke runs with temporary output
+    directories, `--no-data`, and no ranking outputs.
+  - JSON validation and code-cell compilation for both summary notebooks.
+  - Full execution of both summary notebooks to temporary notebook files.
+  - `git diff --check`
+- Result:
+  - Passed.
+- Notes:
+  - The machine's system Python 3.9 cannot import the project because the source
+    uses Python 3.10 union type syntax. The thesis Python 3.12 environment
+    completed all checks.
+
+### Reproducibility notes
+
+- No NPV formula, technology assumption, probability distribution, sample-size
+  default, random seed, or scientific scenario was changed.
+- Notebook verification outputs and smoke-test figures were written only under
+  `/tmp`; tracked figures and ignored simulation CSVs were not regenerated or
+  deleted.
+- Stored outputs were cleared from the two modified summary notebooks so their
+  previously displayed tables do not contradict the new source until users run
+  all cells.
+- Existing uncommitted sensitivity-analysis changes and figures were preserved
+  and not modified as part of this task.
+
+### Next suggested step
+
+Add a small automated test suite for finance calculations, sign counts, shared
+simulation IDs, and deterministic representative values before final archival.
+
+## 2026-06-24 14:57 — Show NPV sign counts in technology notebooks
+
+### User request
+
+Make the non-negative and negative NPV simulation metrics visible in the
+technology-specific plotting notebooks as well as the sector summary notebooks.
+
+### Files changed (if needed)
+
+- `notebooks/electricity/plot_*_npv.ipynb` — added the sign-count table to all
+  nine electricity technology Monte Carlo notebooks.
+- `notebooks/cement/plot_*_npv.ipynb` — added the sign-count table to all nine
+  cement technology Monte Carlo notebooks.
+- `README.md` — documented that technology notebooks show these metrics.
+- `CHANGELOG.md` — documented this extension.
+
+### What was implemented
+
+- Imported the shared `summarize_metric_signs()` helper in every
+  technology-specific plotting notebook.
+- Added a two-row table for non-negative NPV (`NPV >= 0`) and negative NPV
+  (`NPV < 0`), including simulation count and simulation share.
+- Used total NPV in million EUR as the sign input. The sign is identical for the
+  normalized EUR/MWh or EUR/t metric because those values differ only by a
+  positive scale factor.
+- Cleared stored notebook outputs so older tables do not remain visible beside
+  the new source until the notebooks are rerun.
+
+### Verification (if needed)
+
+- Commands run:
+  - JSON validation and code-cell compilation for all 18 technology notebooks.
+  - Full temporary execution of `notebooks/electricity/plot_pv_npv.ipynb`.
+  - Full temporary execution of `notebooks/cement/plot_ccs_npv.ipynb`.
+  - `/opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src`
+  - `git diff --check`
+- Result:
+  - Passed.
+- Notes:
+  - Both representative executed notebooks displayed the category, count, and
+    share columns correctly.
+
+### Reproducibility notes
+
+- No simulation assumptions, NPV formulas, sample-size defaults, or random
+  seeds changed.
+- Verification notebooks were written under `/tmp`; no data CSVs or figures
+  were regenerated.
+
+### Next suggested step
+
+Run all technology notebooks before final archival if stored rendered outputs
+are desired in the repository.

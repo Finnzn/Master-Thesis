@@ -36,6 +36,7 @@ from npv_summary import (
     npv_ranking_dataframe,
     save_dataframe_csv,
     save_results_csv,
+    summarize_metric_signs,
     summarize_npv_rankings,
 )
 from npv_summary_plots import (
@@ -186,6 +187,7 @@ def cement_npv_distribution_summary_million_eur(
             "median": float(np.median(npv_million_eur)),
             "p05": float(np.percentile(npv_million_eur, 5)),
             "p95": float(np.percentile(npv_million_eur, 95)),
+            **summarize_metric_signs(npv_million_eur),
         }
     return summary
 
@@ -212,6 +214,7 @@ def cement_npv_distribution_summary(
             "median": float(np.median(values)),
             "p05": float(np.percentile(values, 5)),
             "p95": float(np.percentile(values, 95)),
+            **summarize_metric_signs(values),
         }
     return summary
 
