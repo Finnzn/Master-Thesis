@@ -285,7 +285,7 @@ NUCLEAR_EMISSIONS = FixedParameter(
 )
 
 NUCLEAR_FULL_LOAD_HOURS = FixedParameter(
-    value=5_300.0,
+    value=7_900.0,
     unit="h/year",
     description="Average full-load hours for the nuclear technology.",
 )
