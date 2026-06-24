@@ -3728,3 +3728,86 @@ technology-specific plotting notebooks as well as the sector summary notebooks.
 
 Run all technology notebooks before final archival if stored rendered outputs
 are desired in the repository.
+
+## 2026-06-24 15:10 — Assess fuel-use and emissions dependence
+
+### User request
+
+Assess whether independently sampling fuel consumption and direct emissions is
+appropriate in the electricity and cement Monte Carlo models.
+
+### Files changed (if needed)
+
+- `CHANGELOG.md` — documented the model-design assessment.
+
+### What was implemented
+
+- Inspected electricity and cement parameter definitions and Monte Carlo
+  sampling paths.
+- Confirmed that fuel consumption and emissions are sampled independently in
+  the current model.
+- Recommended deriving unabated fossil-electricity emissions from sampled fuel
+  consumption and a fuel-specific carbon factor.
+- Recommended deriving CCS residual emissions from gross fuel-related emissions
+  and a sampled capture rate, with any capture-rate and energy-penalty
+  dependence stated explicitly.
+- Recommended decomposing cement emissions into combustion and process
+  components instead of imposing one generic correlation coefficient.
+
+### Verification (if needed)
+
+- Commands run:
+  - Temporary 10,000-draw electricity and cement simulations using random seed
+    42, followed by Pearson correlation checks.
+- Result:
+  - The sampled fuel-use/emissions correlations were approximately zero for all
+    checked technologies, confirming the independent-draw behavior.
+
+### Reproducibility notes
+
+- No source code, parameters, assumptions, notebooks, figures, or simulation
+  outputs were changed.
+- The diagnostic calculation was run in memory only.
+
+### Next suggested step
+
+Implement and compare a mechanistic emissions model first for hard coal and
+CCGT, then quantify its effect on NPV distributions and rankings before
+extending the approach to CCS and cement.
+
+## 2026-06-24 15:24 — Clarify independence assumption defensibility
+
+### User request
+
+Assess whether the thesis can retain separate sampling of fuel consumption and
+emissions as a simplifying assumption.
+
+### Files changed (if needed)
+
+- `CHANGELOG.md` — documented the methodological guidance.
+
+### What was implemented
+
+- Clarified that separate random draws imply statistical independence, not only
+  a computational simplification.
+- Assessed the assumption as potentially acceptable when explicitly disclosed,
+  justified by data limitations, and tested for material influence on results.
+- Distinguished the relatively weak case for independent sampling in unabated
+  coal and gas generation from the more defensible simplification in cement,
+  where process and combustion emissions are not represented separately.
+
+### Verification (if needed)
+
+- Result:
+  - Methodological assessment only; no model execution was required.
+
+### Reproducibility notes
+
+- No model assumptions, source code, notebooks, figures, or numerical outputs
+  were changed.
+
+### Next suggested step
+
+Run one coupled-versus-independent sensitivity comparison for coal and CCGT and
+report whether technology rankings or positive-NPV probabilities change
+materially.
