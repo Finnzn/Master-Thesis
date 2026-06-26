@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from sensitivity_analysis import (
+    METRIC_TOTAL,
     METRIC_SPECIFIC,
     available_technologies,
     base_inputs,
@@ -81,8 +82,9 @@ def _technology_label(technology: str) -> str:
 def standardized_sensitivity(
     sector: str,
     variation_fraction: float,
+    metric: str = METRIC_SPECIFIC,
 ) -> pd.DataFrame:
-    """Calculate equal-percentage specific-NPV sensitivity for all technologies."""
+    """Calculate equal-percentage NPV sensitivity for all technologies."""
 
     frames = []
     for technology in available_technologies(sector):
@@ -91,15 +93,16 @@ def standardized_sensitivity(
             sector=sector,
             inputs=inputs,
             variation_fraction=variation_fraction,
-            metric=METRIC_SPECIFIC,
+            metric=metric,
             included_attributes=SENSITIVITY_SCOPE[sector],
         ).copy()
         table.insert(0, "technology", technology)
         table.insert(0, "sector", sector)
-        table["base_specific_npv"] = calculate_metric_value(
+        table["metric"] = metric
+        table["base_metric_value"] = calculate_metric_value(
             sector,
             inputs,
-            METRIC_SPECIFIC,
+            metric,
         )
         # Round away floating-point noise so mathematically identical product
         # terms (for example fuel use and fuel price) receive the same rank.
@@ -122,8 +125,29 @@ def plot_sensitivity_heatmap(
     sector: str,
     variation_fraction: float,
     output_path: Path,
+    metric: str = METRIC_SPECIFIC,
 ) -> Path:
-    """Plot within-technology relative sensitivity for one sector."""
+    """Save a within-technology relative sensitivity heatmap for one sector."""
+
+    fig = build_sensitivity_heatmap_figure(
+        standardized=standardized,
+        sector=sector,
+        variation_fraction=variation_fraction,
+        metric=metric,
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+    return output_path
+
+
+def build_sensitivity_heatmap_figure(
+    standardized: pd.DataFrame,
+    sector: str,
+    variation_fraction: float,
+    metric: str = METRIC_SPECIFIC,
+) -> plt.Figure:
+    """Build a within-technology relative sensitivity heatmap for one sector."""
 
     sector_data = standardized.loc[standardized["sector"] == sector].copy()
     technologies = list(available_technologies(sector))
@@ -174,9 +198,10 @@ def plot_sensitivity_heatmap(
         fontsize=8,
     )
     variation_percent = variation_fraction * 100.0
+    metric_label = _metric_title_label(metric)
     ax.set_title(
         f"{sector.title()} technology-input sensitivity "
-        f"(specific NPV, ±{variation_percent:.0f}%)",
+        f"({metric_label}, ±{variation_percent:.0f}%)",
         loc="left",
         fontsize=13,
         color="#26345d",
@@ -201,22 +226,20 @@ def plot_sensitivity_heatmap(
         color="#555555",
     )
     fig.tight_layout(rect=(0, 0.04, 1, 1))
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, bbox_inches="tight")
-    plt.close(fig)
-    return output_path
+    return fig
 
 
 def generate_deep_dive(
     project_root: Path,
     output_dir: Path | None = None,
     variation_fraction: float = 0.20,
+    metric: str = METRIC_SPECIFIC,
 ) -> tuple[Path, ...]:
     """Save one standardized CSV and one heatmap per sector."""
 
     standardized = pd.concat(
         [
-            standardized_sensitivity(sector, variation_fraction)
+            standardized_sensitivity(sector, variation_fraction, metric=metric)
             for sector in ("cement", "electricity")
         ],
         ignore_index=True,
@@ -225,7 +248,11 @@ def generate_deep_dive(
     processed_dir = output_dir or project_root / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
     prefix = date.today().isoformat()
-    csv_path = processed_dir / f"{prefix}-Sensitivity_standardized_20pct.csv"
+    metric_suffix = _metric_filename_suffix(metric)
+    variation_suffix = _variation_filename_suffix(variation_fraction)
+    csv_path = processed_dir / (
+        f"{prefix}-Sensitivity_standardized_{metric_suffix}_{variation_suffix}.csv"
+    )
     standardized.to_csv(csv_path, index=False)
 
     figure_dir = project_root / "figures"
@@ -235,11 +262,43 @@ def generate_deep_dive(
             sector=sector,
             variation_fraction=variation_fraction,
             output_path=figure_dir
-            / f"{prefix}-Sensitivity_Heatmap_Standardized_{sector.title()}.png",
+            / (
+                f"{prefix}-Sensitivity_Heatmap_Standardized_"
+                f"{metric_suffix}_{variation_suffix}_{sector.title()}.png"
+            ),
+            metric=metric,
         )
         for sector in ("cement", "electricity")
     )
     return (csv_path, *figure_paths)
+
+
+def _metric_title_label(metric: str) -> str:
+    """Return a concise plot-title label for a sensitivity metric."""
+
+    if metric == METRIC_SPECIFIC:
+        return "specific NPV"
+    if metric == METRIC_TOTAL:
+        return "total NPV"
+    raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
+
+
+def _metric_filename_suffix(metric: str) -> str:
+    """Return a filename-safe label for a sensitivity metric."""
+
+    if metric == METRIC_SPECIFIC:
+        return "Specific"
+    if metric == METRIC_TOTAL:
+        return "Total"
+    raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
+
+
+def _variation_filename_suffix(variation_fraction: float) -> str:
+    """Return a filename-safe percentage label for an input variation."""
+
+    variation_percent = variation_fraction * 100.0
+    label = f"{variation_percent:g}".replace(".", "p")
+    return f"{label}pct"
 
 
 def main() -> None:
@@ -262,11 +321,18 @@ def main() -> None:
         default=0.20,
         help="Equal relative one-at-a-time input movement.",
     )
+    parser.add_argument(
+        "--metric",
+        choices=(METRIC_SPECIFIC, METRIC_TOTAL),
+        default=METRIC_SPECIFIC,
+        help="NPV metric used for the one-at-a-time sensitivity calculation.",
+    )
     args = parser.parse_args()
     paths = generate_deep_dive(
         project_root=args.project_root,
         output_dir=args.output_dir,
         variation_fraction=args.variation,
+        metric=args.metric,
     )
     for path in paths:
         print(path)

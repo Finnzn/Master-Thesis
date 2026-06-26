@@ -3811,3 +3811,97 @@ emissions as a simplifying assumption.
 Run one coupled-versus-independent sensitivity comparison for coal and CCGT and
 report whether technology rankings or positive-NPV probabilities change
 materially.
+
+## 2026-06-26 09:45 — Add selectable sensitivity heatmap notebook
+
+### User request
+
+Create a user-friendly notebook for the sensitivity heatmap, similar to the
+scenario notebook, with a selectable total-NPV or specific-NPV metric.
+
+### Files changed (if needed)
+
+- `src/sensitivity_deep_dive.py` — added metric selection to the standardized
+  heatmap workflow and exposed a notebook-friendly heatmap figure builder.
+- `notebooks/sensitivity_heatmap.ipynb` — added an editable notebook for
+  calculating, displaying, and optionally saving cement and electricity
+  sensitivity heatmaps.
+- `CHANGELOG.md` — documented the change.
+
+### What was implemented
+
+- Added `metric` support to `standardized_sensitivity()`, `plot_sensitivity_heatmap()`,
+  and `generate_deep_dive()`.
+- Preserved specific NPV as the default heatmap metric for existing behavior.
+- Added `--metric specific|total` to the sensitivity deep-dive CLI.
+- Added inline notebook heatmap display through `build_sensitivity_heatmap_figure()`.
+- Added optional notebook saving of the standardized CSV and heatmap PNG files.
+- Made saved sensitivity filenames include both the selected NPV metric and the
+  selected variation percentage.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m py_compile src/sensitivity_deep_dive.py src/sensitivity_analysis.py`
+  - Notebook JSON/code-cell compile check for `notebooks/sensitivity_heatmap.ipynb`
+- Result:
+  - Source and notebook code cells compiled successfully.
+  - Full heatmap execution could not be run in the current bare Python
+    environment because `matplotlib` is not installed there.
+
+### Reproducibility notes
+
+- The notebook displays outputs inline by default and writes no CSV or figure
+  files unless `SAVE_OUTPUTS = True`.
+- No raw data, model parameters, or generated thesis figures were overwritten.
+
+### Next suggested step
+
+Run `notebooks/sensitivity_heatmap.ipynb` in the thesis Jupyter environment once
+with `NPV_METRIC = METRIC_SPECIFIC` and once with `NPV_METRIC = METRIC_TOTAL` to
+inspect whether the normalized driver rankings differ materially.
+
+## 2026-06-26 09:51 — Align cross-sector notebook NPV metric controls
+
+### User request
+
+Make the NPV metric selection uniform between the scenario and sensitivity
+notebooks, while leaving the sector-specific summary notebooks unchanged.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` — replaced the local
+  `NPV_SCALE = "MEUR" / "specific"` setting with the shared
+  `NPV_METRIC = METRIC_TOTAL / METRIC_SPECIFIC` convention.
+- `CHANGELOG.md` — documented the follow-up alignment.
+
+### What was implemented
+
+- Imported `METRIC_TOTAL` and `METRIC_SPECIFIC` from `sensitivity_analysis`.
+- Updated the scenario notebook settings cell to use the same metric constants
+  as `notebooks/sensitivity_heatmap.ipynb`.
+- Updated scenario metric conversion and axis-label logic to read
+  `NPV_METRIC`.
+- Left the electricity and cement summary notebooks unchanged because their
+  sector-specific scale labels remain appropriate there.
+
+### Verification (if needed)
+
+- Commands run:
+  - Searched both cross-sector notebooks for leftover `NPV_SCALE` references.
+  - Compiled all code cells in `notebooks/co2_discount_rate_scenarios.ipynb`.
+  - Compiled all code cells in `notebooks/sensitivity_heatmap.ipynb`.
+- Result:
+  - No leftover `NPV_SCALE` references were found.
+  - Both notebooks' code cells compiled successfully.
+
+### Reproducibility notes
+
+- This is a naming/control alignment only.
+- No scenario values, model parameters, raw data, generated figures, or numerical
+  outputs were changed.
+
+### Next suggested step
+
+When running cross-sector notebooks, use `NPV_METRIC = METRIC_TOTAL` for total
+project NPV and `NPV_METRIC = METRIC_SPECIFIC` for sector-normalized NPV.
