@@ -3905,3 +3905,222 @@ notebooks, while leaving the sector-specific summary notebooks unchanged.
 
 When running cross-sector notebooks, use `NPV_METRIC = METRIC_TOTAL` for total
 project NPV and `NPV_METRIC = METRIC_SPECIFIC` for sector-normalized NPV.
+
+## 2026-06-26 10:11 — Add cement marginal abatement cost curve code
+
+### User request
+
+Create cement-specific code for a marginal abatement cost curve, using only
+direct technology abatement rather than CO2-price offsets, and explain the
+calculation for CCS and clinker substitution.
+
+### Files changed (if needed)
+
+- `src/cement/cement_macc.py` — added deterministic and simulated cement MACC
+  table builders, a MACC plotting function, and a CLI output generator.
+- `CHANGELOG.md` — documented the change.
+
+### What was implemented
+
+- Added cement MACC calculations relative to the BAU cement baseline.
+- Defined abatement potential as annual direct stack-emissions reduction:
+  `BAU emissions - technology emissions`.
+- Excluded cement revenue and carbon-price payments from the cost numerator.
+- Calculated annualized technology cost as annualized CAPEX plus fixed OPEX,
+  variable OPEX, fuel cost, and electricity cost.
+- Calculated MACC values as incremental annual cost versus BAU divided by annual
+  direct emissions avoided versus BAU.
+- Added a MACC bar plot where bar width is direct abatement potential and bar
+  height is abatement cost in EUR/tCO2.
+- Added deterministic and mean Monte Carlo modes.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m py_compile src/cement/cement_macc.py`
+  - Attempted deterministic and simulated MACC table smoke tests.
+- Result:
+  - The new module compiled successfully.
+  - Runtime smoke tests could not be completed in the current shell because the
+    available `python3` is Python 3.9.6, while the project requires Python >=
+    3.10 and existing project modules use Python 3.10 type-union syntax.
+
+### Reproducibility notes
+
+- No raw data, model parameters, generated figures, or numerical outputs were
+  changed.
+- The MACC generator writes CSV and PNG outputs only when called explicitly.
+- The calculation uses the shared thesis discount rate for annualized CAPEX.
+
+### Next suggested step
+
+Run `PYTHONPATH=src python -m cement.cement_macc` in the thesis Python 3.10+
+environment to generate the deterministic cement MACC CSV and figure, then run
+with `--simulated` if uncertainty bands or simulated mean values are needed.
+
+## 2026-06-26 10:21 — Stabilize simulated cement MACC statistics and labels
+
+### User request
+
+Check why simulated efficiency improvement showed an implausibly large negative
+abatement cost, add median/p05/p95 statistics, and improve MACC plot labels.
+
+### Files changed (if needed)
+
+- `src/cement/cement_macc.py` — revised simulated MACC statistics and label
+  placement.
+- `CHANGELOG.md` — documented the fix.
+
+### What was implemented
+
+- Changed the headline abatement-cost statistic to the aggregate ratio of mean
+  incremental annual cost to mean annual direct abatement.
+- Added draw-level abatement-cost p05, median, and p95 columns.
+- Kept the draw-level quantiles visible so technologies with small-abatement
+  tails remain transparent instead of hidden.
+- Reworked MACC labels to appear vertically above the zero line with leader
+  lines, improving readability for narrow bars.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m py_compile src/cement/cement_macc.py`
+- Result:
+  - The module compiled successfully.
+  - Full runtime checks remain blocked in the current shell because the
+    available Python is 3.9.6 and the project requires Python >= 3.10.
+
+### Reproducibility notes
+
+- No raw data, model parameters, or model formulas were changed.
+- The simulated efficiency-improvement issue was a summary-statistic problem:
+  averaging draw-level ratios allowed near-zero abatement draws to dominate the
+  reported mean.
+
+### Next suggested step
+
+Regenerate the simulated MACC output in the thesis Python 3.10+ environment and
+inspect the p05/median/p95 columns for technologies with low direct-abatement
+potential.
+
+## 2026-06-26 10:38 — Improve cement MACC label placement
+
+### User request
+
+Fix the cement MACC plot labels because they interfered with the title and make
+the direct-abatement-potential numbers easier to read.
+
+### Files changed (if needed)
+
+- `src/cement/cement_macc.py` — adjusted MACC plot label and width-number
+  placement.
+- `CHANGELOG.md` — documented the change.
+
+### What was implemented
+
+- Moved vertical technology labels closer to the zero line instead of placing
+  them near the top of the plot.
+- Added title padding and additional upper-axis room to prevent label-title
+  overlap.
+- Rotated the direct-abatement-potential numbers diagonally below the bars.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m py_compile src/cement/cement_macc.py`
+- Result:
+  - The module compiled successfully.
+
+### Reproducibility notes
+
+- Plot formatting only; no calculations, model assumptions, parameters, raw
+  data, or generated outputs were changed by this edit.
+
+### Next suggested step
+
+Regenerate the MACC figure in the thesis Python 3.10+ environment to visually
+inspect the updated label spacing.
+
+## 2026-06-26 10:42 — Align cement MACC labels and width values
+
+### User request
+
+Make all cement MACC technology labels equally far from the zero line and place
+direct-abatement-potential numbers closer to the zero line or, for negative-cost
+bars, closer to the bar.
+
+### Files changed (if needed)
+
+- `src/cement/cement_macc.py` — refined MACC label placement.
+- `CHANGELOG.md` — documented the change.
+
+### What was implemented
+
+- Set all technology labels to the same vertical distance above the zero line.
+- Kept leader lines from the zero line to each vertical technology label.
+- Placed diagonal abatement-potential numbers just below the zero line for
+  positive-cost bars.
+- Placed diagonal abatement-potential numbers just below negative-cost bars for
+  negative-cost bars.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m py_compile src/cement/cement_macc.py`
+- Result:
+  - The module compiled successfully.
+
+### Reproducibility notes
+
+- Plot formatting only; no calculations, model assumptions, parameters, raw
+  data, or generated outputs were changed by this edit.
+
+### Next suggested step
+
+Regenerate the MACC figure in the thesis Python 3.10+ environment to visually
+confirm the adjusted label positions.
+
+## 2026-06-26 10:45 — Add cement MACC notebook
+
+### User request
+
+Create a notebook for the cement marginal abatement cost curve that uses the
+existing source code.
+
+### Files changed (if needed)
+
+- `notebooks/cement/cement_macc.ipynb` — added a user-friendly notebook wrapper
+  around `src/cement/cement_macc.py`.
+- `CHANGELOG.md` — documented the notebook addition.
+
+### What was implemented
+
+- Added editable notebook settings for deterministic versus simulated MACC mode.
+- Added controls for sample size, random seed, retrofit BAU mode, selected
+  technologies, and optional output saving.
+- Displayed the MACC table inline.
+- Displayed the MACC plot inline using `plot_cement_macc()`.
+- Kept file writing optional through `SAVE_OUTPUTS = False` by default.
+
+### Verification (if needed)
+
+- Commands run:
+  - Notebook JSON and code-cell compile check for
+    `notebooks/cement/cement_macc.ipynb`.
+  - `python3 -m py_compile src/cement/cement_macc.py`
+- Result:
+  - The notebook JSON and code cells compiled successfully.
+  - The MACC source module compiled successfully.
+
+### Reproducibility notes
+
+- The notebook uses existing reusable source code rather than duplicating MACC
+  formulas.
+- No raw data, model parameters, generated figures, or numerical outputs were
+  changed by this notebook addition.
+- Outputs are written only if `SAVE_OUTPUTS = True`.
+
+### Next suggested step
+
+Run `notebooks/cement/cement_macc.ipynb` in the thesis Python 3.10+ Jupyter
+environment and inspect the deterministic and simulated modes.
