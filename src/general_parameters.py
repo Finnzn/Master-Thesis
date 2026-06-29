@@ -35,7 +35,7 @@ INTEREST_RATE = FixedParameter(
 )
 
 NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
-    value=8.0,
+    value=2.8,
     unit="EUR/MWh_th",
     description="Nuclear fuel price for uranium.",
 )
