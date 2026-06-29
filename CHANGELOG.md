@@ -1,3 +1,60 @@
+## 2026-06-29 11:12 — Add alternative-fuel share to cement fuel costs
+
+### User request
+
+Fix the alternative-fuels cement inconsistency where emissions reductions reflected a `25-60%` alternative-fuel share but fuel costs assumed `100%` alternative fuel use. Implement the share as a uniform distribution and calculate fuel cost as alternative share times alternative-fuel price plus fossil share times fossil-fuel price.
+
+### Files changed (if needed)
+
+- `src/cement/cement_parameters.py` — added `ALTERNATIVE_FUELS_CEMENT_SHARE_DISTRIBUTION` as a uniform `0.25-0.60` fraction and registered it with the alternative-fuels retrofit assumptions.
+- `src/cement/cement_npv_monte_carlo.py` — changed alternative-fuels Monte Carlo fuel pricing to use a blended effective price from sampled biofuel and coal prices.
+- `src/cement/cement_npv_deterministic.py` — changed deterministic alternative-fuels fuel pricing to use the representative blended price, with the uniform-share midpoint `0.425`.
+- `src/cement/cement_npv_summary_figures.py` — added the alternative-fuel share, fossil-fuel share, coal-price, and biofuel-price fields to raw cement CSV exports.
+- `notebooks/cement/deterministic_alternative_fuels_npv.ipynb` — refreshed executed outputs and added the fuel-share and component-price fields to displayed input tables.
+- `notebooks/cement/plot_alternative_fuels_npv.ipynb` — refreshed executed outputs and added the fuel-share and component-price fields to the retrofit/input summary.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Added an explicit alternative-fuel share parameter for the cement alternative-fuels retrofit.
+- Kept the existing alternative-fuels emissions-reduction distribution unchanged at `0.03-0.17`, now consistent with partial fuel substitution.
+- Updated fuel-price calculations for alternative fuels:
+  - `fuel_price_eur_per_mwh_th = alternative_fuel_share_fraction * biofuel_price_eur_per_mwh_th + (1 - alternative_fuel_share_fraction) * coal_price_eur_per_mwh_th`.
+- Kept `fuel_price_eur_per_mwh_th` as the effective blended fuel price so existing summaries, sensitivity analysis, and downstream cash-flow code continue to use one fuel-price column.
+- Added traceability fields to cement outputs: `alternative_fuel_share_fraction`, `fossil_fuel_share_fraction`, `coal_price_eur_per_mwh_th`, and `biofuel_price_eur_per_mwh_th`. Non-applicable share fields are `NaN` for technologies other than alternative fuels.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src/cement/cement_parameters.py src/cement/cement_npv_deterministic.py src/cement/cement_npv_monte_carlo.py`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... deterministic alternative-fuels blended-price and fuel-cost identity checks ... PY`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... 1,000-draw Monte Carlo share-bounds, blended-price, and fuel-cost identity checks ... PY`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... deterministic cement results, 200-draw cement simulation, and standardized cement sensitivity smoke checks ... PY`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... deterministic and 100-draw simulated cement MACC smoke checks ... PY`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src MPLCONFIGDIR=/private/tmp/masterthesis_mpl /opt/anaconda3/envs/master-thesis/bin/python -m cement.cement_npv_summary_figures --kind all --sample-size 10 --random-seed 13 --npv-scale EUR/t --ranking-output both --output-dir /private/tmp/masterthesis_alt_fuel_share_check/figures --raw-data-dir /private/tmp/masterthesis_alt_fuel_share_check/raw --processed-data-dir /private/tmp/masterthesis_alt_fuel_share_check/processed`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src MPLCONFIGDIR=/private/tmp/masterthesis_mpl /opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --execute --inplace notebooks/cement/deterministic_alternative_fuels_npv.ipynb notebooks/cement/plot_alternative_fuels_npv.ipynb --ExecutePreprocessor.timeout=180`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ... deterministic and Monte Carlo fuel-share, fuel-cost, emissions, and CO2-cost identity checks ... PY`
+- Result:
+  - Passed.
+- Notes:
+  - Deterministic alternative-fuels share is `0.425`.
+  - Deterministic effective alternative-fuels price is `14.99575 EUR/MWh_th`, matching `0.425 * 18.9 + 0.575 * 12.11`.
+  - In the 1,000-draw smoke run, sampled alternative-fuel shares stayed within `0.25-0.60`, fuel and fossil shares summed to `1.0`, and fuel price/cost identities matched.
+  - CO2 emissions cost remains calculated from post-retrofit direct emissions: `annual_output_t * emissions_tco2_per_t * carbon_price_eur_per_t`.
+  - Deterministic alternative-fuels emissions cost is `43.2 MEUR/year`, matching `1,000,000 t/year * 0.54 tCO2/t * 80 EUR/tCO2`.
+  - An initial MACC smoke-check command used an incorrect local function name and then a stale display column name; the corrected `deterministic_cement_macc` and `simulated_cement_macc` checks passed.
+
+### Reproducibility notes
+
+- This is a scientific-assumption correction and changes cement alternative-fuels deterministic, Monte Carlo, sensitivity, MACC, ranking, figure, and CSV results.
+- Existing generated cement outputs and executed notebook outputs are stale until regenerated.
+- Temporary verification outputs were written only to `/private/tmp/masterthesis_alt_fuel_share_check`.
+- Regenerate cement notebooks and summary outputs before interpreting alternative fuels against other cement technologies.
+
+### Next suggested step
+
+Regenerate the cement summary figures, CSV outputs, and alternative-fuels notebooks so stored artifacts match the corrected fuel-share assumption.
+
 ## 2026-06-15 10:27 — Correct cement CCS fuel-consumption change range
 
 ### User request

@@ -124,10 +124,7 @@ def _representative_parameter_array(
 def cement_fuel_price_parameter(
     technology: str,
 ) -> ScaledBetaDistribution | UniformDistribution:
-    """Return the fuel-price source for a cement technology."""
-
-    if technology == "alternative_fuels":
-        return BIOFUEL_PRICE_DISTRIBUTION
+    """Return the fossil fuel-price source for a cement technology."""
 
     all_technologies = (
         set(CEMENT_TECHNOLOGY_DISTRIBUTIONS)
@@ -239,14 +236,14 @@ def _calculate_cement_cash_flow_result(
     electricity_consumption_mwh_per_t = values["electricity_consumption_mwh_per_t"]
     emissions_tco2_per_t = values["emissions_tco2_per_t"]
 
-    fuel_price_key = (
-        "biofuel_price_eur_per_mwh_th"
-        if technology == "alternative_fuels"
-        else "coal_price_eur_per_mwh_th"
-    )
     if market_values is None:
-        fuel_price_eur_per_mwh_th = _sample_parameter(
-            cement_fuel_price_parameter(technology),
+        coal_price_eur_per_mwh_th = _sample_parameter(
+            COAL_PRICE_DISTRIBUTION,
+            size=size,
+            rng=rng,
+        )
+        biofuel_price_eur_per_mwh_th = _sample_parameter(
+            BIOFUEL_PRICE_DISTRIBUTION,
             size=size,
             rng=rng,
         )
@@ -256,8 +253,24 @@ def _calculate_cement_cash_flow_result(
             rng=rng,
         )
     else:
-        fuel_price_eur_per_mwh_th = market_values[fuel_price_key]
+        coal_price_eur_per_mwh_th = market_values["coal_price_eur_per_mwh_th"]
+        biofuel_price_eur_per_mwh_th = market_values["biofuel_price_eur_per_mwh_th"]
         electricity_price_eur_per_mwh = market_values["electricity_price_eur_per_mwh"]
+    alternative_fuel_share_fraction = np.full(size, np.nan)
+    fossil_fuel_share_fraction = np.full(size, np.nan)
+    if technology == "alternative_fuels":
+        if retrofit_values is None:
+            raise ValueError("Alternative fuels requires retrofit share values.")
+        alternative_fuel_share_fraction = retrofit_values[
+            "alternative_fuel_share_fraction"
+        ]
+        fossil_fuel_share_fraction = 1.0 - alternative_fuel_share_fraction
+        fuel_price_eur_per_mwh_th = (
+            alternative_fuel_share_fraction * biofuel_price_eur_per_mwh_th
+            + fossil_fuel_share_fraction * coal_price_eur_per_mwh_th
+        )
+    else:
+        fuel_price_eur_per_mwh_th = coal_price_eur_per_mwh_th
 
     initial_capex_eur = annual_output_t * capex_eur_per_t
     annual_revenue_eur = annual_output_t * RETAIL_PRICE_CEMENT_EUR_PER_T.value
@@ -307,6 +320,10 @@ def _calculate_cement_cash_flow_result(
         "electricity_consumption_mwh_per_t": electricity_consumption_mwh_per_t,
         "emissions_tco2_per_t": emissions_tco2_per_t,
         "fuel_price_eur_per_mwh_th": fuel_price_eur_per_mwh_th,
+        "coal_price_eur_per_mwh_th": coal_price_eur_per_mwh_th,
+        "biofuel_price_eur_per_mwh_th": biofuel_price_eur_per_mwh_th,
+        "alternative_fuel_share_fraction": alternative_fuel_share_fraction,
+        "fossil_fuel_share_fraction": fossil_fuel_share_fraction,
         "electricity_price_eur_per_mwh": electricity_price_eur_per_mwh,
         "cement_price_eur_per_t": np.full(size, RETAIL_PRICE_CEMENT_EUR_PER_T.value),
         "carbon_price_eur_per_t": np.full(size, CARBON_PRICE_EUR_PER_T.value),
@@ -322,8 +339,6 @@ def _calculate_cement_cash_flow_result(
         "lifetime_output_t": np.full(size, lifetime_output_t),
         "npv_eur_per_t": npv_eur_per_t,
     }
-
-    result[fuel_price_key] = fuel_price_eur_per_mwh_th
 
     if bau_values is not None:
         for parameter_name, baseline_value in bau_values.items():

@@ -223,7 +223,8 @@ CLINKER_SUBSTITUTION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistributi
 
 
 # Alternative fuels are a retrofit measure. CAPEX is represented as an increase
-# relative to BAU, and fuel/electricity reductions are fixed at zero.
+# relative to BAU, fuel/electricity reductions are fixed at zero, and the fuel
+# price is blended from fossil and alternative fuel shares in the NPV model.
 ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
     upper_bound=2.0,
@@ -253,6 +254,13 @@ ALTERNATIVE_FUELS_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
     description="Electricity-consumption reduction for alternative fuels retrofit relative to BAU.",
+)
+
+ALTERNATIVE_FUELS_CEMENT_SHARE_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.25,
+    upper_bound=0.60,
+    unit="fraction",
+    description="Uniform distribution for alternative fuel share in thermal fuel demand.",
 )
 
 ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -510,6 +518,7 @@ CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "electricity_consumption_reduction_fraction": (
             ALTERNATIVE_FUELS_CEMENT_ELECTRICITY_REDUCTION
         ),
+        "alternative_fuel_share_fraction": ALTERNATIVE_FUELS_CEMENT_SHARE_DISTRIBUTION,
         "emissions_reduction_fraction": (
             ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION
         ),

@@ -52,15 +52,7 @@ ParameterSpec = (
 def cement_fuel_price_parameter(
     technology: str,
 ) -> ScaledBetaDistribution | UniformDistribution:
-    """Return the deterministic fuel-price source for a cement technology.
-
-    Cement BAU and most cement technologies use the shared coal thermal fuel
-    price assumption. The alternative-fuels retrofit uses the biofuel price
-    assumption that was added with that retrofit technology.
-    """
-
-    if technology == "alternative_fuels":
-        return BIOFUEL_PRICE_DISTRIBUTION
+    """Return the deterministic fossil fuel-price source for a cement technology."""
 
     all_technologies = (
         set(CEMENT_TECHNOLOGY_DISTRIBUTIONS)
@@ -148,6 +140,15 @@ def _deterministic_cement_technology_values(technology: str) -> dict[str, float]
         "electricity_consumption_reduction_fraction": (
             retrofit_values["electricity_consumption_reduction_fraction"]
         ),
+        **(
+            {
+                "alternative_fuel_share_fraction": retrofit_values[
+                    "alternative_fuel_share_fraction"
+                ]
+            }
+            if "alternative_fuel_share_fraction" in retrofit_values
+            else {}
+        ),
         "emissions_reduction_fraction": (
             retrofit_values["emissions_reduction_fraction"]
         ),
@@ -169,9 +170,19 @@ def calculate_deterministic_cement_result(
     fuel_consumption_mwh_th_per_t = values["fuel_consumption_mwh_th_per_t"]
     electricity_consumption_mwh_per_t = values["electricity_consumption_mwh_per_t"]
     emissions_tco2_per_t = values["emissions_tco2_per_t"]
-    fuel_price_eur_per_mwh_th = representative_value(
-        cement_fuel_price_parameter(technology)
-    )
+    coal_price_eur_per_mwh_th = representative_value(COAL_PRICE_DISTRIBUTION)
+    biofuel_price_eur_per_mwh_th = representative_value(BIOFUEL_PRICE_DISTRIBUTION)
+    alternative_fuel_share_fraction = float("nan")
+    fossil_fuel_share_fraction = float("nan")
+    if technology == "alternative_fuels":
+        alternative_fuel_share_fraction = values["alternative_fuel_share_fraction"]
+        fossil_fuel_share_fraction = 1.0 - alternative_fuel_share_fraction
+        fuel_price_eur_per_mwh_th = (
+            alternative_fuel_share_fraction * biofuel_price_eur_per_mwh_th
+            + fossil_fuel_share_fraction * coal_price_eur_per_mwh_th
+        )
+    else:
+        fuel_price_eur_per_mwh_th = coal_price_eur_per_mwh_th
     electricity_price_eur_per_mwh = representative_value(
         ELECTRICITY_PRICE_DISTRIBUTION
     )
@@ -229,6 +240,10 @@ def calculate_deterministic_cement_result(
         "electricity_consumption_mwh_per_t": [electricity_consumption_mwh_per_t],
         "emissions_tco2_per_t": [emissions_tco2_per_t],
         "fuel_price_eur_per_mwh_th": [fuel_price_eur_per_mwh_th],
+        "coal_price_eur_per_mwh_th": [coal_price_eur_per_mwh_th],
+        "biofuel_price_eur_per_mwh_th": [biofuel_price_eur_per_mwh_th],
+        "alternative_fuel_share_fraction": [alternative_fuel_share_fraction],
+        "fossil_fuel_share_fraction": [fossil_fuel_share_fraction],
         "electricity_price_eur_per_mwh": [electricity_price_eur_per_mwh],
         "cement_price_eur_per_t": [RETAIL_PRICE_CEMENT_EUR_PER_T.value],
         "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
@@ -251,6 +266,7 @@ def calculate_deterministic_cement_result(
         "variable_opex_change_eur_per_t",
         "fuel_consumption_reduction_fraction",
         "electricity_consumption_reduction_fraction",
+        "alternative_fuel_share_fraction",
         "emissions_reduction_fraction",
     ):
         if retrofit_key in values:
