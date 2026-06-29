@@ -4181,3 +4181,42 @@ existing source code.
 
 Run `notebooks/cement/cement_macc.ipynb` in the thesis Python 3.10+ Jupyter
 environment and inspect the deterministic and simulated modes.
+
+## 2026-06-29 — Recalculate sector and technology interpretation after parameter updates
+
+### User request
+
+Redo the in-depth analysis of both sectors and all technologies after parameter
+updates, including normal conditions and the CO2-price and discount-rate
+scenario behavior.
+
+### Files changed (if needed)
+
+- `CHANGELOG.md` — documented the refreshed analytical check.
+
+### What was implemented
+
+- Re-ran the current electricity and cement Monte Carlo models with 100,000
+  draws and random seed 42.
+- Revalued the simulated cash flows under low, medium, and high CO2 prices and
+  discount rates.
+- Compared electricity CCS technologies against their unabated counterparts and
+  cement technologies against BAU.
+- Rechecked the nuclear low-discount-rate behavior under the updated
+  parameters.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src:src/electricity:src/cement /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+- Result:
+  - The current models executed successfully and produced refreshed NPV,
+    scenario, and incremental-comparison tables.
+
+### Reproducibility notes
+
+- No model code, notebooks, raw data, parameters, figures, or numerical output
+  files were changed.
+- The analysis used the current normal assumptions: 80 EUR/tCO2 carbon price,
+  8% discount rate, 100,000 Monte Carlo draws, random seed 42, and sampled
+  cement retrofit BAU mode.
