@@ -829,7 +829,7 @@ def main() -> None:
         raise ValueError("--sample-size must be positive.")
 
     # `--no-data` suppresses CSV exports but still allows ranking plots. This is
-    # useful when only figures need to be refreshed for a presentation or notebook.
+    # useful when only figures need to be refreshed for a report or notebook.
     save_ranking_outputs = args.ranking_output != "none"
     save_ranking_csv = args.ranking_output in ("csv", "both") and not args.no_data
     save_ranking_plots = args.ranking_output in ("plots", "both")

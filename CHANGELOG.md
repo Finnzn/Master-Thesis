@@ -1,3 +1,60 @@
+## 2026-07-10 12:44 — Add 14 pt specific-NPV midterm plots
+
+### User request
+
+Delete the obsolete presentation folder and references, then create a separate `Resized plots` folder for quickly regenerating the six midterm figures with all graph text at least 14 pt. The requested figures are the specific Monte Carlo NPV rankings for cement and electricity, plus Monte Carlo mean and deterministic bar charts for both sectors. The user clarified that the bar charts must also use specific NPV units.
+
+### Files changed (if needed)
+
+- `presentations/` — removed obsolete deck scripts, deck files, and copied presentation assets.
+- `Resized plots/generate_resized_plots.py` — added a focused generator for the six 14 pt specific-NPV figures.
+- `Resized plots/generate_resized_plots.sh` — added a convenience wrapper that uses Python 3.12 when available.
+- `src/npv_summary_plots.py` — added optional plot font-size controls while preserving existing default plotting behavior.
+- `src/electricity/electricity_npv_summary_figures.py` — updated one comment to remove presentation-specific wording.
+- `README.md` and `docs/HANDOVER.md` — removed presentation-specific wording.
+- `requirements.txt` — removed deck/PDF dependencies that were only needed by the deleted presentation workflow.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Generated six 14 pt midterm PNG figures in `Resized plots/`:
+  - `2026-07-10-Average_NPV_Rank_per_t_Cement_14pt.png`
+  - `2026-07-10-Average_NPV_Rank_per_MWh_Electricity_14pt.png`
+  - `2026-07-10-Mean_NPV_per_t_Cement_14pt.png`
+  - `2026-07-10-Deterministic_NPV_per_t_Cement_14pt.png`
+  - `2026-07-10-Mean_NPV_per_MWh_Electricity_14pt.png`
+  - `2026-07-10-Deterministic_NPV_per_MWh_Electricity_14pt.png`
+- Kept chart content and model assumptions unchanged; only the output unit selection, file names, font sizes, and layout scale were adjusted for the midterm figures.
+- Switched all four bar charts to specific NPV units after clarification:
+  - cement: `EUR/t`
+  - electricity: `EUR/MWh`
+- Removed the initially generated total-NPV 14 pt bar-chart PNGs from `Resized plots/`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache /opt/anaconda3/bin/python3.12 "Resized plots/generate_resized_plots.py"`
+  - `"Resized plots/generate_resized_plots.sh"`
+  - `python3 -m compileall -q src "Resized plots/generate_resized_plots.py"`
+  - `sips -g pixelWidth -g pixelHeight "Resized plots"/*.png`
+  - `rg -n "presentation|Presentation|presentations|presnetation|python-pptx|pptx|pypdf" .`
+- Result:
+  - Passed.
+- Notes:
+  - The system `python3` is Python 3.9.6, which cannot import the project because the source uses Python 3.10+ type-union syntax. The generator wrapper therefore prefers `/opt/anaconda3/bin/python3.12` when available.
+  - The six generated figures were visually inspected for obvious clipping, overlap, and layout issues after increasing text size.
+
+### Reproducibility notes
+
+- Regenerate the six midterm figures with:
+  - `"Resized plots/generate_resized_plots.sh"`
+- The generator uses the project defaults: `100,000` Monte Carlo samples and random seed `42`.
+- Existing figures in `figures/` were not overwritten.
+
+### Next suggested step
+
+Insert the specific 14 pt PNGs from `Resized plots/` into the midterm slides at their intended final display size without scaling them down.
+
 ## 2026-06-29 11:12 — Add alternative-fuel share to cement fuel costs
 
 ### User request
@@ -305,7 +362,7 @@ Keep the existing total NPV comparison, but add a parallel normalized workflow s
 
 - No raw data, model assumptions, parameter values, or existing project output files in `figures/` or `data/` were changed.
 - Existing total-NPV output behavior remains the default because `npv_scale="MEUR"` is used unless another scale is requested.
-- Normalized outputs are generated from existing model result columns, so the change affects presentation, ranking metric selection, and export naming, not the underlying NPV calculations.
+- Normalized outputs are generated from existing model result columns, so the change affects plotting, ranking metric selection, and export naming, not the underlying NPV calculations.
 
 ## 2026-06-09 17:11 — Align cement summary notebook with electricity summary structure
 
@@ -3695,7 +3752,7 @@ users.
   and that the current ignored generated CSVs occupy roughly 1.5 GB.
 - Documented the main remaining risks: no automated test suite, lightly
   constrained dependencies, `PYTHONPATH=src` execution, repeated notebook
-  presentation code, and untracked generated outputs.
+  plotting code, and untracked generated outputs.
 
 ### Verification (if needed)
 

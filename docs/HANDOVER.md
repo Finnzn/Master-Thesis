@@ -75,7 +75,7 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 
 ## Output Contract
 
-- `figures/`: presentation-ready dated PNG files.
+- `figures/`: thesis-ready dated PNG files.
 - `data/raw/`: sampled or representative inputs exported by a run.
 - `data/processed/`: derived costs, cash flow, NPV, and summary CSVs.
 - `results/`: reserved for other numerical outputs.
@@ -122,7 +122,7 @@ jupyter lab
 
 The summary notebooks are the preferred human-readable overview. The many
 technology-specific notebooks are useful for inspecting detailed inputs and
-distributions, but they duplicate presentation code and should not become the
+distributions, but they duplicate plotting code and should not become the
 only implementation of a model rule.
 
 Stored notebook outputs may reflect an older run. When results matter, restart
@@ -147,7 +147,7 @@ the kernel and run all cells.
 ## Safe Change Checklist
 
 1. Identify whether the change is an assumption, calculation, summary, or
-   presentation change.
+   plotting change.
 2. Change the smallest shared source module that owns that behavior.
 3. Run `python -m compileall -q src sensitivity_dashboard.py`.
 4. Run both sector workflows with a small sample size if shared code changed.

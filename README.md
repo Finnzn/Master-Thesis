@@ -84,7 +84,7 @@ MasterThesis/
 │   ├── raw/              # Raw data, usually not tracked by Git
 │   └── processed/        # Cleaned or processed data
 ├── results/              # Simulation results, usually not tracked by Git
-├── figures/              # Plots and figures for reports and presentations
+├── figures/              # Plots and figures for reports
 ├── docs/                 # Handover and workflow documentation
 ├── tests/                # Reserved for automated tests
 ├── sensitivity_dashboard.py # Streamlit sensitivity analysis dashboard

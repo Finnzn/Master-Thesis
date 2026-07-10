@@ -2,7 +2,7 @@
 
 The calculation modules produce dictionaries and DataFrames; this module turns
 those summaries into thesis-ready figures. It does not calculate NPV or rankings
-itself, which keeps visual presentation separate from model logic.
+itself, which keeps visual styling separate from model logic.
 """
 
 from __future__ import annotations
@@ -14,6 +14,19 @@ from typing import Mapping
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import pandas as pd
+
+
+def _plot_font_size(
+    base_size: float,
+    scale: float,
+    minimum_font_size: float | None,
+) -> float:
+    """Scale one plot font size while optionally enforcing a minimum."""
+
+    scaled_size = base_size * scale
+    if minimum_font_size is None:
+        return scaled_size
+    return max(minimum_font_size, scaled_size)
 
 
 def dated_figure_path(
@@ -39,6 +52,8 @@ def plot_mean_npv_technology_bars(
     sample_size: int | None = None,
     random_seed: int | None = None,
     x_axis_label: str = "NPV (million EUR)",
+    base_font_size: float = 9.0,
+    minimum_font_size: float | None = None,
 ) -> Path | None:
     """Plot a horizontal positive/negative NPV bar chart.
 
@@ -90,8 +105,14 @@ def plot_mean_npv_technology_bars(
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    figure_height = max(5.0, 0.52 * len(values) + 1.7)
-    figure_width = 9.5 if has_uncertainty else 7.5
+    font_scale = base_font_size / 9.0
+    label_font_size = _plot_font_size(9.0, font_scale, minimum_font_size)
+    tick_font_size = _plot_font_size(8.0, font_scale, minimum_font_size)
+    title_font_size = _plot_font_size(14.0, font_scale, minimum_font_size)
+    note_font_size = _plot_font_size(8.5, font_scale, minimum_font_size)
+    legend_font_size = _plot_font_size(8.0, font_scale, minimum_font_size)
+    figure_height = max(5.0 * font_scale, 0.52 * font_scale * len(values) + 1.7 * font_scale)
+    figure_width = (9.5 if has_uncertainty else 7.5) * font_scale
     fig, ax = plt.subplots(figsize=(figure_width, figure_height), dpi=160)
     y_positions = list(range(len(labels)))
     ax.barh(y_positions, values, color=colors, height=0.42, label="Mean")
@@ -124,11 +145,11 @@ def plot_mean_npv_technology_bars(
         )
 
     ax.set_yticks(list(y_positions))
-    ax.set_yticklabels(labels, fontsize=9, color="#5a5a5a")
+    ax.set_yticklabels(labels, fontsize=label_font_size, color="#5a5a5a")
     ax.invert_yaxis()
     ax.axvline(0, color="#bbbbbb", linewidth=1.1)
-    ax.set_title(title, fontsize=14, color="#444444", pad=12)
-    ax.set_xlabel(x_axis_label, fontsize=9, color="#5a5a5a")
+    ax.set_title(title, fontsize=title_font_size, color="#444444", pad=12 * font_scale)
+    ax.set_xlabel(x_axis_label, fontsize=label_font_size, color="#5a5a5a")
     ax.grid(axis="x", color="#e6e6e6", linewidth=0.8)
     ax.set_axisbelow(True)
 
@@ -160,13 +181,13 @@ def plot_mean_npv_technology_bars(
             -0.12,
             f"{note}Bars show mean NPV; whiskers show simulated 5th-95th percentiles.",
             transform=ax.transAxes,
-            fontsize=8.5,
+            fontsize=note_font_size,
             color="#5a5a5a",
         )
         ax.legend(
             loc="upper left",
             bbox_to_anchor=(1.01, 1.0),
-            fontsize=8,
+            fontsize=legend_font_size,
             frameon=False,
         )
     else:
@@ -179,7 +200,7 @@ def plot_mean_npv_technology_bars(
                     label,
                     va="center",
                     ha="left",
-                    fontsize=9,
+                    fontsize=label_font_size,
                     color="#333333",
                 )
             else:
@@ -189,11 +210,11 @@ def plot_mean_npv_technology_bars(
                     label,
                     va="center",
                     ha="right",
-                    fontsize=9,
+                    fontsize=label_font_size,
                     color="#333333",
                 )
 
-    ax.tick_params(axis="x", colors="#7a7a7a", labelsize=8)
+    ax.tick_params(axis="x", colors="#7a7a7a", labelsize=tick_font_size)
     ax.tick_params(axis="y", left=False)
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -216,6 +237,8 @@ def plot_average_rank_bars(
     output_path: Path | None,
     title: str = "Monte Carlo NPV Ranking",
     random_seed: int | None = None,
+    base_font_size: float = 9.0,
+    minimum_font_size: float | None = None,
 ) -> Path | None:
     """Plot an average-rank chart with rank-frequency counts.
 
@@ -260,17 +283,25 @@ def plot_average_rank_bars(
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    figure_height = max(5.6, 0.58 * len(labels) + 2.2)
+    font_scale = base_font_size / 9.0
+    label_font_size = _plot_font_size(9.0, font_scale, minimum_font_size)
+    tick_font_size = _plot_font_size(8.0, font_scale, minimum_font_size)
+    panel_title_font_size = _plot_font_size(12.0, font_scale, minimum_font_size)
+    annotation_font_size = _plot_font_size(8.5, font_scale, minimum_font_size)
+    heatmap_value_font_size = _plot_font_size(7.2, font_scale, minimum_font_size)
+    suptitle_font_size = _plot_font_size(15.0, font_scale, minimum_font_size)
+    figure_note_font_size = _plot_font_size(8.5, font_scale, minimum_font_size)
+    figure_height = max(5.6 * font_scale, 0.58 * font_scale * len(labels) + 2.2 * font_scale)
     if rank_count_columns:
         fig, (ax, count_ax) = plt.subplots(
             1,
             2,
-            figsize=(14.0, figure_height),
+            figsize=(14.0 * font_scale, figure_height),
             dpi=160,
             gridspec_kw={"width_ratios": [1.65, 1.45], "wspace": 0.12},
         )
     else:
-        fig, ax = plt.subplots(figsize=(8.2, figure_height), dpi=160)
+        fig, ax = plt.subplots(figsize=(8.2 * font_scale, figure_height), dpi=160)
         count_ax = None
 
     y_positions = range(len(labels))
@@ -278,13 +309,13 @@ def plot_average_rank_bars(
     ax.barh(y_positions, average_ranks, color=bar_color, height=0.42)
 
     ax.set_yticks(list(y_positions))
-    ax.set_yticklabels(labels, fontsize=9, color="#5a5a5a")
+    ax.set_yticklabels(labels, fontsize=label_font_size, color="#5a5a5a")
     ax.invert_yaxis()
-    ax.set_title("Average rank", fontsize=12, color="#4d4d4d", pad=10)
-    ax.set_xlabel("Mean rank across simulations (1 = highest NPV)", fontsize=9, color="#5a5a5a")
+    ax.set_title("Average rank", fontsize=panel_title_font_size, color="#4d4d4d", pad=10 * font_scale)
+    ax.set_xlabel("Mean rank across simulations (1 = highest NPV)", fontsize=label_font_size, color="#5a5a5a")
 
     max_rank = max(max(average_ranks), len(rank_count_columns))
-    label_space = 3.8
+    label_space = 3.8 * font_scale
     ax.set_xlim(0, max_rank + label_space)
     ax.set_xticks(range(1, int(max_rank) + 1))
     ax.grid(axis="x", color="#e6e6e6", linewidth=0.8)
@@ -303,11 +334,11 @@ def plot_average_rank_bars(
             label,
             va="center",
             ha="left",
-            fontsize=8.5,
+            fontsize=annotation_font_size,
             color="#333333",
         )
 
-    ax.tick_params(axis="x", colors="#7a7a7a", labelsize=8)
+    ax.tick_params(axis="x", colors="#7a7a7a", labelsize=tick_font_size)
     ax.tick_params(axis="y", left=False)
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -331,20 +362,20 @@ def plot_average_rank_bars(
             ["#f7f9fc", "#d9e5f6", bar_color],
         )
         count_ax.imshow(rank_counts, aspect="auto", cmap=count_cmap)
-        count_ax.set_title("Number of simulations by rank", fontsize=12, color="#4d4d4d", pad=10)
+        count_ax.set_title("Number of simulations by rank", fontsize=panel_title_font_size, color="#4d4d4d", pad=10 * font_scale)
         count_ax.set_xticks(range(len(rank_numbers)))
         count_ax.set_xticklabels(
             [
                 f"{rank}\n(best)" if rank == 1 else f"{rank}\n(worst)" if rank == max(rank_numbers) else str(rank)
                 for rank in rank_numbers
             ],
-            fontsize=8,
+            fontsize=tick_font_size,
             color="#5a5a5a",
         )
         count_ax.set_yticks(list(y_positions))
         count_ax.set_yticklabels([])
         count_ax.tick_params(axis="both", length=0)
-        count_ax.set_xlabel("Rank reached in a simulation", fontsize=9, color="#5a5a5a")
+        count_ax.set_xlabel("Rank reached in a simulation", fontsize=label_font_size, color="#5a5a5a")
 
         max_count = int(rank_counts.to_numpy().max())
         for y_position, row in enumerate(rank_counts.to_numpy()):
@@ -356,7 +387,7 @@ def plot_average_rank_bars(
                     f"{count:,}",
                     ha="center",
                     va="center",
-                    fontsize=7.2,
+                    fontsize=heatmap_value_font_size,
                     color=text_color,
                 )
 
@@ -364,7 +395,7 @@ def plot_average_rank_bars(
             spine.set_visible(False)
         count_ax.set_facecolor("white")
 
-    fig.suptitle(title, fontsize=15, color="#444444", y=0.98)
+    fig.suptitle(title, fontsize=suptitle_font_size, color="#444444", y=0.98)
     fig.text(
         0.012,
         0.025,
@@ -374,7 +405,7 @@ def plot_average_rank_bars(
             f"Sample size: {n_simulations:,} simulations"
             f"{f'; random seed: {random_seed}' if random_seed is not None else ''}."
         ),
-        fontsize=8.5,
+        fontsize=figure_note_font_size,
         color="#5a5a5a",
     )
     fig.subplots_adjust(

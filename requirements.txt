@@ -8,5 +8,3 @@ openpyxl
 scikit-learn
 SALib
 streamlit
-python-pptx
-pypdf
