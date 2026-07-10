@@ -1,3 +1,37 @@
+## 2026-07-10 14:16 — Remove Excel plot export workflow
+
+### User request
+
+Delete all Excel plot related things because they are no longer needed.
+
+### Files changed (if needed)
+
+- `src/export_npv_chart_workbook.py` — removed the Excel workbook exporter.
+- `Excel plots/` — deleted the generated Excel plot workbook folder.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Removed the Excel-specific source module.
+- Removed the generated Excel workbook artifacts.
+- Confirmed no active Excel plot/export references remain outside historical `CHANGELOG.md` entries.
+
+### Verification (if needed)
+
+- Commands run:
+  - `find . -maxdepth 3 \( -iname '*excel*' -o -iname '*NPV_chart_data*' \) -print`
+  - `rg -n "Excel plots|export_npv_chart_workbook|NPV_chart_data|editable Excel|Excel workbook|Cement specific ranking|Electricity specific ranking" . --glob '!CHANGELOG.md'`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m compileall -q src`
+- Result:
+  - Passed.
+- Notes:
+  - Previous changelog entries mentioning Excel were intentionally left unchanged to preserve project history.
+
+### Reproducibility notes
+
+- The standard PNG figure workflow remains unchanged.
+- The Excel workbook export workflow is no longer available.
+
 ## 2026-07-10 13:58 — Extend cement specific NPV axis to show full whisker
 
 ### User request
