@@ -1,3 +1,260 @@
+## 2026-07-10 13:54 — Apply fixed midterm NPV axes and Excel ranking exports
+
+### User request
+
+Use the thesis workflow skill. Apply explicit x-axis bounds for the midterm NPV plots: electricity specific charts from `-150` to `+50 EUR/MWh`, cement specific charts from `-250` or `-200` to `+50 EUR/t` depending on the electrolysis uncertainty whisker, cement total charts with `200`-unit scale guidance and visible `+2000 MEUR`, and electricity total charts with `1000`-unit scale guidance and visible `+1000 MEUR`. Use the same scaling for deterministic charts. Check whether notebooks use the shared plotting before changing them. Create a separate Excel plot folder and include the specific ranking plots in the Excel workbook, without the ranking matrix if needed.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added fixed presentation axis configuration for the NPV bar-chart pairs.
+- `src/cement/cement_npv_summary_figures.py` — applied the fixed cement axes to both Monte Carlo mean and deterministic figure-only exports.
+- `src/electricity/electricity_npv_summary_figures.py` — applied the fixed electricity axes to both Monte Carlo mean and deterministic figure-only exports.
+- `src/export_npv_chart_workbook.py` — exports the editable Excel workbook to `Excel plots/`, records axis limits/units, and adds specific ranking chart sheets.
+- `Excel plots/2026-07-10-NPV_chart_data.xlsx` — regenerated workbook with four NPV chart sheets plus two specific ranking sheets.
+- `figures/2026-07-10-*.png` — regenerated eight standard, non-resized NPV bar charts.
+- `Resized plots/` — removed the obsolete resized-output workflow from disk.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Fixed electricity specific axes at `-150` to `+50 EUR/MWh` for both Monte Carlo mean and deterministic charts.
+- Fixed cement specific axes at `-250` to `+50 EUR/t` for both Monte Carlo mean and deterministic charts because the electrolysis uncertainty whisker falls below `-200`.
+- Fixed total cement axes to show through `+2000 MEUR`; the workbook records `200` as the suggested Excel major unit, while PNG labels use readable `1000` intervals to avoid overlap.
+- Fixed total electricity axes to show through `+1000 MEUR` with `1000`-unit ticks.
+- Added native Excel ranking sheets for specific NPV:
+  - `Cement specific ranking`
+  - `Electricity specific ranking`
+- Omitted the ranking matrix from the Excel ranking sheets, keeping average rank, probability rank 1, and probability top 3.
+- Checked notebooks before editing:
+  - `notebooks/cement/cement_summary.ipynb` and `notebooks/electricity/electricity_summary.ipynb` import the shared plotting helper.
+  - The individual technology notebooks use local `matplotlib` plotting cells, so no notebook-local plotting was changed.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m compileall -q src`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m cement.cement_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale MEUR`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m cement.cement_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale EUR/t`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m electricity.electricity_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale MEUR`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m electricity.electricity_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale EUR/MWh`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m export_npv_chart_workbook`
+  - Workbook validation with `openpyxl` for sheet names, axis limits, major units, and chart counts.
+- Result:
+  - Passed.
+- Notes:
+  - Workbook sheets are `Cement MEUR`, `Cement EUR per t`, `Electricity MEUR`, `Electricity EUR per MWh`, `Cement specific ranking`, and `Electricity specific ranking`.
+  - Visual inspection confirmed the specific charts and the cement total chart use the requested bounds without the previous unreadable dense tick labels.
+
+### Reproducibility notes
+
+- Regenerate the PNG figures with the sector figure CLIs using `--no-data --ranking-output none --kind all`.
+- Regenerate the editable Excel workbook with:
+  - `PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m export_npv_chart_workbook`
+- Notebook-local plotting remains unchanged until explicitly approved.
+
+## 2026-07-10 13:45 — Regenerate standard NPV plots and replace resized workflow with Excel chart workbook
+
+### User request
+
+Regenerate the non-resized deterministic and Monte Carlo mean NPV plots for both specific and non-specific NPV in both sectors, so the x-axis scales can be checked. Then scrap the resized-plot workflow because the resized images looked bad, and provide a way to resize/edit the figures more easily, preferably via PowerPoint or Excel-native plotting.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added a reusable shared tick helper and kept shared x-axis limit/tick support for NPV bar charts.
+- `src/cement/cement_npv_summary_figures.py` — changed the standard figure-only cement workflow so Monte Carlo mean and deterministic NPV figures share one x-axis range and tick set for each NPV scale.
+- `src/electricity/electricity_npv_summary_figures.py` — changed the standard figure-only electricity workflow so Monte Carlo mean and deterministic NPV figures share one x-axis range and tick set for each NPV scale.
+- `src/export_npv_chart_workbook.py` — added an Excel workbook exporter with source values and editable Excel bar charts.
+- `figures/2026-07-10-*.png` — regenerated eight standard, non-resized NPV bar charts.
+- `figures/2026-07-10-NPV_chart_data.xlsx` — added an Excel workbook with four sheets and two editable charts per sheet.
+- `Resized plots/` — removed the previous resized-plot workflow and generated resized figures.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Regenerated these standard figures in `figures/`:
+  - `2026-07-10-Mean_NPV_Cement.png`
+  - `2026-07-10-Deterministic_NPV_Cement.png`
+  - `2026-07-10-Mean_NPV_per_t_Cement.png`
+  - `2026-07-10-Deterministic_NPV_per_t_Cement.png`
+  - `2026-07-10-Mean_NPV_Electricity.png`
+  - `2026-07-10-Deterministic_NPV_Electricity.png`
+  - `2026-07-10-Mean_NPV_per_MWh_Electricity.png`
+  - `2026-07-10-Deterministic_NPV_per_MWh_Electricity.png`
+- For each sector and scale, the Monte Carlo mean and deterministic bar charts now use the same x-axis limits and tick positions.
+- Created `figures/2026-07-10-NPV_chart_data.xlsx` with sheets:
+  - `Cement MEUR`
+  - `Cement EUR per t`
+  - `Electricity MEUR`
+  - `Electricity EUR per MWh`
+- Each Excel sheet includes shared x-axis limits, Monte Carlo mean/median/P05/P95 values, deterministic values, and two editable native Excel bar charts.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m compileall -q src`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m cement.cement_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale MEUR`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m cement.cement_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale EUR/t`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m electricity.electricity_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale MEUR`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m electricity.electricity_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale EUR/MWh`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m export_npv_chart_workbook`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 - <<'PY' ... load workbook and print sheet/chart counts ... PY`
+- Result:
+  - Passed.
+- Notes:
+  - The workbook validation found four sheets and two Excel charts per sheet.
+  - Visual inspection confirmed the cement specific Monte Carlo and deterministic figures now use matching x-axis tick labels.
+
+### Reproducibility notes
+
+- Regenerate the standard PNGs with the sector figure CLIs using `--no-data --ranking-output none --kind all`.
+- Regenerate the Excel chart workbook with:
+  - `PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m export_npv_chart_workbook`
+- This is a plotting/export correction only; the NPV calculations, assumptions, random seed, and sample size are unchanged.
+
+### Next suggested step
+
+Use `figures/2026-07-10-NPV_chart_data.xlsx` to copy editable Excel charts into PowerPoint, then resize and format them natively in Office.
+
+## 2026-07-10 13:37 — Share x-axis scales across deterministic and Monte Carlo NPV bars
+
+### User request
+
+Make the x-axis scale uniform for the deterministic NPV and Monte Carlo mean NPV bar charts. The scale should be uniform within each sector, but does not need to be uniform between cement and electricity.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added reusable shared-axis-limit support and optional x-axis tick control to the mean/deterministic NPV bar-chart helper.
+- `Resized plots/generate_resized_plots.py` — computes one sector-specific x-axis range from Monte Carlo percentile bounds plus deterministic values, then applies that same range and tick set to both bar charts for the sector.
+- `Resized plots/*.png` — regenerated the PowerPoint-sized NPV bar-chart PNGs with shared sector scales.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Cement deterministic and Monte Carlo mean NPV bar charts now share the same `EUR/t` x-axis limits and tick labels.
+- Electricity deterministic and Monte Carlo mean NPV bar charts now share the same `EUR/MWh` x-axis limits and tick labels.
+- The shared ranges include the Monte Carlo `5th-95th` percentile whiskers and the deterministic values so neither plot silently clips relevant values.
+- Tick labels were reduced to a readable common subset because the deterministic chart box is narrower and must still keep text at least `14 pt`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m compileall -q src "Resized plots/generate_resized_plots.py"`
+  - `"Resized plots/generate_resized_plots.sh"`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache /opt/anaconda3/bin/python3.12 - <<'PY' ... print shared cement/electricity axis limits ... PY`
+- Result:
+  - Passed.
+- Notes:
+  - Shared cement limits are approximately `-282.18` to `61.43 EUR/t`.
+  - Shared electricity limits are approximately `-132.61` to `24.49 EUR/MWh`.
+  - Visual inspection confirmed the deterministic and Monte Carlo bar charts now use matching sector tick labels without overlap.
+
+### Reproducibility notes
+
+- Regenerate the resized figures with:
+  - `"Resized plots/generate_resized_plots.sh"`
+- This is a plotting-scale correction only; the NPV calculations, assumptions, random seed, and sample size are unchanged.
+
+### Next suggested step
+
+Use each deterministic/Monte Carlo bar-chart pair together only within the same sector, since cement and electricity intentionally keep different units and scales.
+
+## 2026-07-10 13:30 — Restore ranking annotations and add SVG ranking exports
+
+### User request
+
+Improve the PowerPoint-sized ranking plots because removing the descriptions after each ranking bar cut away too much information, and image quality was worse than desired.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — compacted ranking annotation text, added more annotation space for single-panel ranking plots, and preserved optional compact-ranking controls.
+- `Resized plots/generate_resized_plots.py` — restored ranking annotations for the PowerPoint-sized ranking plots and exported ranking plots as both PNG and SVG.
+- `Resized plots/*.png` and `Resized plots/*.svg` — regenerated the PowerPoint-sized ranking plots and refreshed the PNG outputs.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Restored the after-bar ranking descriptions using a compact format:
+  - `avg ... | #1 ... | T3 ...`
+- Kept the rank-frequency heatmap removed from the PowerPoint-sized ranking plots because it cannot fit at `26.04 x 13.74 cm` with 14 pt cell text without overlap.
+- Added SVG ranking exports:
+  - `2026-07-10-Average_NPV_Rank_per_t_Cement_14pt.svg`
+  - `2026-07-10-Average_NPV_Rank_per_MWh_Electricity_14pt.svg`
+- Kept PNG ranking exports for compatibility.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m compileall -q src "Resized plots/generate_resized_plots.py"`
+  - `"Resized plots/generate_resized_plots.sh"`
+  - `sips -g pixelWidth -g pixelHeight -g dpiWidth -g dpiHeight "Resized plots"/*.png`
+  - `grep -n "<svg" "Resized plots/2026-07-10-Average_NPV_Rank_per_t_Cement_14pt.svg" "Resized plots/2026-07-10-Average_NPV_Rank_per_MWh_Electricity_14pt.svg"`
+- Result:
+  - Passed.
+- Notes:
+  - Visual inspection confirmed that the ranking annotations fit without clipping in the regenerated PNG previews.
+  - The SVG ranking files report dimensions of `738 x 389.28 pt`, matching the requested `26.04 x 13.74 cm`.
+
+### Reproducibility notes
+
+- Regenerate all resized midterm figures with:
+  - `"Resized plots/generate_resized_plots.sh"`
+- Use the SVG ranking plots in PowerPoint when possible for sharper rendering.
+- The underlying NPV calculations, ranking results, random seed, and sample size are unchanged.
+
+### Next suggested step
+
+Use the SVG files for the ranking slides and keep PNGs as fallback only if PowerPoint has trouble with SVG rendering.
+
+## 2026-07-10 13:24 — Resize 14 pt midterm plots to PowerPoint dimensions
+
+### User request
+
+Regenerate the `Resized plots` figures so they insert into PowerPoint at the intended final dimensions without needing to shrink them. The requested sizes were:
+
+- deterministic NPV bar charts: `13.92 cm` wide by `12.22 cm` high
+- Monte Carlo NPV bar charts: `17.34 cm` wide by `12.22 cm` high
+- ranking charts: `26.04 cm` wide by `13.74 cm` high
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added optional exact figure-size, DPI, tight-bounding-box, title/footer, legend, and compact-ranking controls while preserving the existing default plot behavior.
+- `Resized plots/generate_resized_plots.py` — converted the requested centimeter dimensions to inches, saved the PowerPoint exports at `300 dpi`, disabled tight bounding boxes, removed internal titles/footers from the slide-sized figures, and used compact ranking charts for readability.
+- `Resized plots/*.png` — regenerated the six specific 14 pt PowerPoint-sized figures.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Regenerated the deterministic bar charts at approximately `1644 x 1442 px` with `300 dpi`, matching `13.92 x 12.22 cm`.
+- Regenerated the Monte Carlo bar charts at approximately `2048 x 1442 px` with `300 dpi`, matching `17.34 x 12.22 cm`.
+- Regenerated the ranking charts at approximately `3075 x 1622 px` with `300 dpi`, matching `26.04 x 13.74 cm`.
+- Kept all six figures as specific NPV outputs:
+  - cement: `EUR/t`
+  - electricity: `EUR/MWh`
+- Simplified the PowerPoint ranking charts to average-rank bar charts only. The previous two-panel ranking plot with rank-frequency heatmap cell counts cannot fit into `26.04 x 13.74 cm` with all graph text at `14 pt` without severe label overlap.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m compileall -q src "Resized plots/generate_resized_plots.py"`
+  - `"Resized plots/generate_resized_plots.sh"`
+  - `sips -g pixelWidth -g pixelHeight -g dpiWidth -g dpiHeight "Resized plots"/*.png`
+- Result:
+  - Passed.
+- Notes:
+  - The regenerated PNGs report `300 dpi` metadata.
+  - Visual inspection showed the compact ranking charts and bar charts fit at the requested dimensions without the earlier title/footer/heatmap overlap.
+
+### Reproducibility notes
+
+- Regenerate the PowerPoint-sized figures with:
+  - `"Resized plots/generate_resized_plots.sh"`
+- The generated files remain in `Resized plots/` and do not overwrite `figures/`.
+- The underlying NPV calculations, assumptions, random seed, and sample size are unchanged.
+
+### Next suggested step
+
+Insert the PNGs into PowerPoint at their native size; add slide titles and any explanatory legend/caption as PowerPoint text boxes at `14 pt` or larger.
+
 ## 2026-07-10 12:44 — Add 14 pt specific-NPV midterm plots
 
 ### User request

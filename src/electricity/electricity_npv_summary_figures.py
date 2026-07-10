@@ -42,6 +42,7 @@ from npv_summary import (
 )
 from npv_summary_plots import (
     dated_figure_path,
+    fixed_npv_bar_axis_config,
     plot_average_rank_bars,
     plot_mean_npv_technology_bars,
 )
@@ -730,22 +731,57 @@ def save_electricity_npv_figures(
     This is used for figure-only runs, especially when `--no-data` is supplied.
     """
 
-    return (
-        save_electricity_mean_npv_figure(
-            output_dir=output_dir,
-            sample_size=sample_size,
-            random_seed=random_seed,
-            run_date=run_date,
-            sector_name=sector_name,
-            npv_scale=npv_scale,
-        ),
-        save_electricity_deterministic_npv_figure(
-            output_dir=output_dir,
-            run_date=run_date,
-            sector_name=sector_name,
-            npv_scale=npv_scale,
-        ),
+    config = _electricity_npv_scale_config(npv_scale)
+    output_date = run_date or date.today()
+    simulated_results = simulate_electricity_results(
+        sample_size=sample_size,
+        random_seed=random_seed,
     )
+    simulated_summary = electricity_npv_distribution_summary(
+        simulated_results,
+        npv_scale=npv_scale,
+    )
+    mean_values = _distribution_stat(simulated_summary, "mean")
+    deterministic_values = calculate_deterministic_electricity_npv(
+        npv_scale=npv_scale
+    )
+    x_axis_limits, x_axis_ticks = fixed_npv_bar_axis_config(
+        sector="electricity",
+        npv_scale=npv_scale,
+        distribution_summary=simulated_summary,
+        deterministic_values=deterministic_values,
+    )
+
+    mean_path = plot_mean_npv_technology_bars(
+        values_million_eur=mean_values,
+        output_path=dated_figure_path(
+            output_dir=output_dir,
+            stem=f"Mean_NPV{config['file_suffix']}_{sector_name}",
+            run_date=output_date,
+        ),
+        title=f"Monte Carlo mean {config['ranking_label']} by electricity technology",
+        median_values_million_eur=_distribution_stat(simulated_summary, "median"),
+        lower_values_million_eur=_distribution_stat(simulated_summary, "p05"),
+        upper_values_million_eur=_distribution_stat(simulated_summary, "p95"),
+        sample_size=sample_size,
+        random_seed=random_seed,
+        x_axis_label=str(config["axis_label"]),
+        x_axis_limits=x_axis_limits,
+        x_axis_ticks=x_axis_ticks,
+    )
+    deterministic_path = plot_mean_npv_technology_bars(
+        values_million_eur=deterministic_values,
+        output_path=dated_figure_path(
+            output_dir=output_dir,
+            stem=f"Deterministic_NPV{config['file_suffix']}_{sector_name}",
+            run_date=output_date,
+        ),
+        title=f"Deterministic {config['ranking_label']} ({config['title_unit']})",
+        x_axis_label=str(config["axis_label"]),
+        x_axis_limits=x_axis_limits,
+        x_axis_ticks=x_axis_ticks,
+    )
+    return mean_path, deterministic_path
 
 
 def _project_root() -> Path:

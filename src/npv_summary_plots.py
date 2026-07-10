@@ -8,6 +8,7 @@ itself, which keeps visual styling separate from model logic.
 from __future__ import annotations
 
 from datetime import date
+import math
 from pathlib import Path
 from typing import Mapping
 
@@ -27,6 +28,103 @@ def _plot_font_size(
     if minimum_font_size is None:
         return scaled_size
     return max(minimum_font_size, scaled_size)
+
+
+def shared_axis_limits(
+    *value_mappings: Mapping[str, float],
+    relative_margin: float = 0.12,
+    minimum_margin: float = 5.0,
+) -> tuple[float, float]:
+    """Return common x-axis limits for related value mappings."""
+
+    values = [
+        float(value)
+        for value_mapping in value_mappings
+        for value in value_mapping.values()
+    ]
+    if not values:
+        raise ValueError("At least one value is required for shared axis limits.")
+
+    lower = min(values)
+    upper = max(values)
+    max_abs_value = max(abs(lower), abs(upper))
+    margin = max(minimum_margin, relative_margin * max_abs_value)
+    if lower == upper:
+        margin = max(margin, abs(lower) * 0.2, 1.0)
+    return lower - margin, upper + margin
+
+
+def shared_axis_ticks(
+    axis_limits: tuple[float, float],
+    target_intervals: int = 5,
+) -> tuple[float, ...]:
+    """Return readable tick positions for shared axis limits."""
+
+    lower, upper = axis_limits
+    if lower >= upper:
+        raise ValueError("axis_limits must be an increasing (min, max) tuple.")
+    span = upper - lower
+    rough_step = span / target_intervals
+    magnitude = 10 ** math.floor(math.log10(rough_step))
+    normalized = rough_step / magnitude
+    if normalized <= 1:
+        step = magnitude
+    elif normalized <= 2:
+        step = 2 * magnitude
+    elif normalized <= 5:
+        step = 5 * magnitude
+    else:
+        step = 10 * magnitude
+
+    first_tick = math.ceil(lower / step) * step
+    ticks: list[float] = []
+    tick = first_tick
+    while tick <= upper:
+        ticks.append(round(tick, 10))
+        tick += step
+    if 0 not in ticks and lower < 0 < upper:
+        ticks.append(0.0)
+        ticks.sort()
+    return tuple(ticks)
+
+
+def fixed_npv_bar_axis_config(
+    sector: str,
+    npv_scale: str,
+    distribution_summary: Mapping[str, Mapping[str, float]],
+    deterministic_values: Mapping[str, float],
+) -> tuple[tuple[float, float], tuple[float, ...]]:
+    """Return presentation axis limits and ticks for NPV bar-chart pairs."""
+
+    sector_key = sector.lower()
+    p05_minimum = min(
+        min(values["p05"] for values in distribution_summary.values()),
+        min(deterministic_values.values()),
+    )
+
+    if sector_key == "cement" and npv_scale == "EUR/t":
+        lower = -250 if p05_minimum < -200 else -200
+        return (float(lower), 50.0), tuple(float(value) for value in range(lower, 51, 50))
+    if sector_key == "electricity" and npv_scale == "EUR/MWh":
+        return (-150.0, 50.0), (-150.0, -100.0, -50.0, 0.0, 50.0)
+    if sector_key == "cement" and npv_scale == "MEUR":
+        lower = math.floor(p05_minimum / 200) * 200
+        first_major_tick = math.ceil(lower / 1000) * 1000
+        return (float(lower), 2000.0), tuple(
+            float(value) for value in range(int(first_major_tick), 2001, 1000)
+        )
+    if sector_key == "electricity" and npv_scale == "MEUR":
+        lower = math.floor(p05_minimum / 1000) * 1000
+        return (float(lower), 1000.0), tuple(
+            float(value) for value in range(int(lower), 1001, 1000)
+        )
+
+    x_axis_limits = shared_axis_limits(
+        {label: values["p05"] for label, values in distribution_summary.items()},
+        {label: values["p95"] for label, values in distribution_summary.items()},
+        deterministic_values,
+    )
+    return x_axis_limits, shared_axis_ticks(x_axis_limits)
 
 
 def dated_figure_path(
@@ -54,6 +152,14 @@ def plot_mean_npv_technology_bars(
     x_axis_label: str = "NPV (million EUR)",
     base_font_size: float = 9.0,
     minimum_font_size: float | None = None,
+    figure_size_inches: tuple[float, float] | None = None,
+    dpi: int = 160,
+    tight_bbox: bool = True,
+    note_text: str | None = None,
+    show_legend: bool = True,
+    tight_layout_pad: float = 1.2,
+    x_axis_limits: tuple[float, float] | None = None,
+    x_axis_ticks: tuple[float, ...] | None = None,
 ) -> Path | None:
     """Plot a horizontal positive/negative NPV bar chart.
 
@@ -113,7 +219,9 @@ def plot_mean_npv_technology_bars(
     legend_font_size = _plot_font_size(8.0, font_scale, minimum_font_size)
     figure_height = max(5.0 * font_scale, 0.52 * font_scale * len(values) + 1.7 * font_scale)
     figure_width = (9.5 if has_uncertainty else 7.5) * font_scale
-    fig, ax = plt.subplots(figsize=(figure_width, figure_height), dpi=160)
+    if figure_size_inches is not None:
+        figure_width, figure_height = figure_size_inches
+    fig, ax = plt.subplots(figsize=(figure_width, figure_height), dpi=dpi)
     y_positions = list(range(len(labels)))
     ax.barh(y_positions, values, color=colors, height=0.42, label="Mean")
 
@@ -148,12 +256,19 @@ def plot_mean_npv_technology_bars(
     ax.set_yticklabels(labels, fontsize=label_font_size, color="#5a5a5a")
     ax.invert_yaxis()
     ax.axvline(0, color="#bbbbbb", linewidth=1.1)
-    ax.set_title(title, fontsize=title_font_size, color="#444444", pad=12 * font_scale)
+    if title:
+        ax.set_title(title, fontsize=title_font_size, color="#444444", pad=12 * font_scale)
     ax.set_xlabel(x_axis_label, fontsize=label_font_size, color="#5a5a5a")
     ax.grid(axis="x", color="#e6e6e6", linewidth=0.8)
     ax.set_axisbelow(True)
 
-    if has_uncertainty:
+    if x_axis_limits is not None:
+        lower_limit, upper_limit = x_axis_limits
+        if lower_limit >= upper_limit:
+            raise ValueError("x_axis_limits must be an increasing (min, max) tuple.")
+        ax.set_xlim(lower_limit, upper_limit)
+        margin = 0.04 * (upper_limit - lower_limit)
+    elif has_uncertainty:
         max_abs_value = max(
             max(abs(value) for value in lower_values),
             max(abs(value) for value in upper_values),
@@ -164,6 +279,8 @@ def plot_mean_npv_technology_bars(
         max_abs_value = max(abs(value) for value in values)
         margin = max(25.0, 0.16 * max_abs_value)
         ax.set_xlim(min(values) - margin, max(values) + margin)
+    if x_axis_ticks is not None:
+        ax.set_xticks(x_axis_ticks)
 
     if has_uncertainty:
         # The note records reproducibility context without putting it in the title.
@@ -176,20 +293,27 @@ def plot_mean_npv_technology_bars(
             note_parts.append(f"random seed: {random_seed}")
         note = "; ".join(note_parts)
         note = f"{note}. " if note else ""
-        ax.text(
-            0,
-            -0.12,
-            f"{note}Bars show mean NPV; whiskers show simulated 5th-95th percentiles.",
-            transform=ax.transAxes,
-            fontsize=note_font_size,
-            color="#5a5a5a",
+        display_note = (
+            note_text
+            if note_text is not None
+            else f"{note}Bars show mean NPV; whiskers show simulated 5th-95th percentiles."
         )
-        ax.legend(
-            loc="upper left",
-            bbox_to_anchor=(1.01, 1.0),
-            fontsize=legend_font_size,
-            frameon=False,
-        )
+        if display_note:
+            ax.text(
+                0,
+                -0.12,
+                display_note,
+                transform=ax.transAxes,
+                fontsize=note_font_size,
+                color="#5a5a5a",
+            )
+        if show_legend:
+            ax.legend(
+                loc="upper left",
+                bbox_to_anchor=(1.01, 1.0),
+                fontsize=legend_font_size,
+                frameon=False,
+            )
     else:
         for y_position, value in zip(y_positions, values):
             label = f"{value:.0f}"
@@ -223,11 +347,12 @@ def plot_mean_npv_technology_bars(
     fig.patch.set_edgecolor("#d0d0d0")
     fig.patch.set_linewidth(1.0)
     ax.set_facecolor("white")
-    fig.tight_layout(pad=1.2)
+    fig.tight_layout(pad=tight_layout_pad)
     if output_path is None:
         return None
 
-    fig.savefig(output_path, bbox_inches="tight")
+    save_kwargs = {"bbox_inches": "tight"} if tight_bbox else {}
+    fig.savefig(output_path, **save_kwargs)
     plt.close(fig)
     return output_path
 
@@ -239,6 +364,13 @@ def plot_average_rank_bars(
     random_seed: int | None = None,
     base_font_size: float = 9.0,
     minimum_font_size: float | None = None,
+    figure_size_inches: tuple[float, float] | None = None,
+    dpi: int = 160,
+    tight_bbox: bool = True,
+    note_text: str | None = None,
+    tight_layout_pad: float | None = None,
+    show_rank_counts: bool = True,
+    show_rank_annotations: bool = True,
 ) -> Path | None:
     """Plot an average-rank chart with rank-frequency counts.
 
@@ -279,6 +411,8 @@ def plot_average_rank_bars(
         ],
         key=lambda column: int(column.removeprefix("rank_").removesuffix("_count")),
     )
+    if not show_rank_counts:
+        rank_count_columns = []
 
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -293,15 +427,21 @@ def plot_average_rank_bars(
     figure_note_font_size = _plot_font_size(8.5, font_scale, minimum_font_size)
     figure_height = max(5.6 * font_scale, 0.58 * font_scale * len(labels) + 2.2 * font_scale)
     if rank_count_columns:
+        figure_width = 14.0 * font_scale
+        if figure_size_inches is not None:
+            figure_width, figure_height = figure_size_inches
         fig, (ax, count_ax) = plt.subplots(
             1,
             2,
-            figsize=(14.0 * font_scale, figure_height),
-            dpi=160,
+            figsize=(figure_width, figure_height),
+            dpi=dpi,
             gridspec_kw={"width_ratios": [1.65, 1.45], "wspace": 0.12},
         )
     else:
-        fig, ax = plt.subplots(figsize=(8.2 * font_scale, figure_height), dpi=160)
+        figure_width = 8.2 * font_scale
+        if figure_size_inches is not None:
+            figure_width, figure_height = figure_size_inches
+        fig, ax = plt.subplots(figsize=(figure_width, figure_height), dpi=dpi)
         count_ax = None
 
     y_positions = range(len(labels))
@@ -315,28 +455,34 @@ def plot_average_rank_bars(
     ax.set_xlabel("Mean rank across simulations (1 = highest NPV)", fontsize=label_font_size, color="#5a5a5a")
 
     max_rank = max(max(average_ranks), len(rank_count_columns))
-    label_space = 3.8 * font_scale
+    if show_rank_annotations and count_ax is None:
+        label_space = 7.5 * font_scale
+    elif show_rank_annotations:
+        label_space = 3.8 * font_scale
+    else:
+        label_space = 0.5
     ax.set_xlim(0, max_rank + label_space)
     ax.set_xticks(range(1, int(max_rank) + 1))
     ax.grid(axis="x", color="#e6e6e6", linewidth=0.8)
     ax.set_axisbelow(True)
 
-    for y_position, rank, rank_1, top_3 in zip(
-        y_positions,
-        average_ranks,
-        probability_rank_1,
-        probability_top_3,
-    ):
-        label = f"avg {rank:.2f} | rank 1 {rank_1:.1%} | top 3 {top_3:.1%}"
-        ax.text(
-            rank + 0.22,
-            y_position,
-            label,
-            va="center",
-            ha="left",
-            fontsize=annotation_font_size,
-            color="#333333",
-        )
+    if show_rank_annotations:
+        for y_position, rank, rank_1, top_3 in zip(
+            y_positions,
+            average_ranks,
+            probability_rank_1,
+            probability_top_3,
+        ):
+            label = f"avg {rank:.2f} | #1 {rank_1:.1%} | T3 {top_3:.1%}"
+            ax.text(
+                rank + 0.22,
+                y_position,
+                label,
+                va="center",
+                ha="left",
+                fontsize=annotation_font_size,
+                color="#333333",
+            )
 
     ax.tick_params(axis="x", colors="#7a7a7a", labelsize=tick_font_size)
     ax.tick_params(axis="y", left=False)
@@ -395,29 +541,37 @@ def plot_average_rank_bars(
             spine.set_visible(False)
         count_ax.set_facecolor("white")
 
-    fig.suptitle(title, fontsize=suptitle_font_size, color="#444444", y=0.98)
-    fig.text(
-        0.012,
-        0.025,
-        (
+    if title:
+        fig.suptitle(title, fontsize=suptitle_font_size, color="#444444", y=0.98)
+    display_note = (
+        note_text
+        if note_text is not None
+        else (
             f"Ranks are calculated within each Monte Carlo simulation by NPV "
             f"(rank 1 = highest NPV, rank {int(max_rank)} = lowest NPV). "
             f"Sample size: {n_simulations:,} simulations"
             f"{f'; random seed: {random_seed}' if random_seed is not None else ''}."
-        ),
-        fontsize=figure_note_font_size,
-        color="#5a5a5a",
+        )
     )
+    if display_note:
+        fig.text(
+            0.012,
+            0.025,
+            display_note,
+            fontsize=figure_note_font_size,
+            color="#5a5a5a",
+        )
     fig.subplots_adjust(
-        left=0.12,
+        left=0.26 if count_ax is None else 0.12,
         right=0.985,
-        top=0.86,
-        bottom=0.14,
+        top=0.86 if title else 0.92,
+        bottom=0.14 if display_note else 0.11,
         wspace=0.12,
     )
     if output_path is None:
         return None
 
-    fig.savefig(output_path, bbox_inches="tight")
+    save_kwargs = {"bbox_inches": "tight"} if tight_bbox else {}
+    fig.savefig(output_path, **save_kwargs)
     plt.close(fig)
     return output_path
