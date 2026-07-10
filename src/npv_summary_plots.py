@@ -103,7 +103,7 @@ def fixed_npv_bar_axis_config(
     )
 
     if sector_key == "cement" and npv_scale == "EUR/t":
-        lower = -250 if p05_minimum < -200 else -200
+        lower = -300 if p05_minimum < -200 else -200
         return (float(lower), 50.0), tuple(float(value) for value in range(lower, 51, 50))
     if sector_key == "electricity" and npv_scale == "EUR/MWh":
         return (-150.0, 50.0), (-150.0, -100.0, -50.0, 0.0, 50.0)

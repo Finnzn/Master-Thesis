@@ -1,3 +1,46 @@
+## 2026-07-10 13:58 — Extend cement specific NPV axis to show full whisker
+
+### User request
+
+Change the cement specific NPV charts so the x-axis goes down to `-300 EUR/t`, because the uncertainty whisker is not shown correctly at `-250 EUR/t`. Do not change notebooks.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — changed the fixed cement specific lower axis bound from `-250` to `-300 EUR/t` when the electrolysis uncertainty whisker requires the wider range.
+- `figures/2026-07-10-Mean_NPV_per_t_Cement.png` — regenerated with the wider cement specific axis.
+- `figures/2026-07-10-Deterministic_NPV_per_t_Cement.png` — regenerated with the same cement specific axis.
+- `Excel plots/2026-07-10-NPV_chart_data.xlsx` — regenerated so the editable `Cement EUR per t` sheet uses `-300` to `+50` with `50` as the major unit.
+- `CHANGELOG.md` — added this implementation entry.
+
+### What was implemented
+
+- Cement specific Monte Carlo mean and deterministic charts now share an x-axis from `-300` to `+50 EUR/t`.
+- The Excel workbook now records:
+  - minimum: `-300`
+  - maximum: `50`
+  - major unit: `50`
+  - ticks: `-300, -250, -200, -150, -100, -50, 0, 50`
+- No notebooks were changed.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m compileall -q src`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m cement.cement_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale EUR/t`
+  - `PYTHONPYCACHEPREFIX=/private/tmp/masterthesis_pycache PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m export_npv_chart_workbook`
+  - `openpyxl` workbook validation for the `Cement EUR per t` axis values.
+- Result:
+  - Passed.
+- Notes:
+  - Visual inspection confirmed that the cement electrolysis uncertainty whisker is visible within the `-300` to `+50 EUR/t` axis.
+
+### Reproducibility notes
+
+- Regenerate the cement specific PNGs with:
+  - `PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m cement.cement_npv_summary_figures --no-data --ranking-output none --kind all --npv-scale EUR/t`
+- Regenerate the Excel workbook with:
+  - `PYTHONPATH=src /opt/anaconda3/bin/python3.12 -m export_npv_chart_workbook`
+
 ## 2026-07-10 13:54 — Apply fixed midterm NPV axes and Excel ranking exports
 
 ### User request
