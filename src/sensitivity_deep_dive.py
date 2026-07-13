@@ -72,6 +72,23 @@ SENSITIVITY_SCOPE: Mapping[str, tuple[str, ...]] = {
     ),
 }
 
+HEATMAP_PARAMETER_GROUPS: Mapping[str, Mapping[str, str]] = {
+    "cement": {
+        "Fuel use": "Fuel",
+        "Fuel price": "Fuel",
+        "Electricity use": "Electricity",
+        "Electricity price": "Electricity",
+        "Direct emissions": "Emissions",
+        "Carbon price": "Emissions",
+    },
+    "electricity": {
+        "Fuel use": "Fuel",
+        "Fuel price": "Fuel",
+        "Direct emissions": "Emissions",
+        "Carbon price": "Emissions",
+    },
+}
+
 
 def _technology_label(technology: str) -> str:
     """Return a publication-friendly technology name."""
@@ -150,16 +167,29 @@ def build_sensitivity_heatmap_figure(
     """Build a within-technology relative sensitivity heatmap for one sector."""
 
     sector_data = standardized.loc[standardized["sector"] == sector].copy()
+    sector_data["heatmap_parameter"] = sector_data["parameter"].map(
+        HEATMAP_PARAMETER_GROUPS.get(sector, {})
+    ).fillna(sector_data["parameter"])
+    sector_data = (
+        sector_data.sort_values(["technology", "rank"])
+        .groupby(["technology", "heatmap_parameter"], as_index=False)
+        .agg(
+            relative_impact_percent=("relative_impact_percent", "max"),
+            rank=("rank", "min"),
+        )
+    )
     technologies = list(available_technologies(sector))
     parameters = list(
         dict.fromkeys(
-            sector_data.sort_values(["technology", "rank"])["parameter"].tolist()
+            sector_data.sort_values(["technology", "rank"])[
+                "heatmap_parameter"
+            ].tolist()
         )
     )
     relative = (
         sector_data.pivot(
             index="technology",
-            columns="parameter",
+            columns="heatmap_parameter",
             values="relative_impact_percent",
         )
         .reindex(index=technologies, columns=parameters)

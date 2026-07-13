@@ -1,3 +1,55 @@
+## 2026-07-13 13:38 — Group duplicated sensitivity heatmap drivers
+
+### User request
+
+Combine sensitivity heatmap variables that carry the same linear information,
+specifically fuel use/fuel price, electricity use/electricity price, and
+emissions/carbon price.
+
+### Files changed (if needed)
+
+- `src/sensitivity_deep_dive.py` — grouped duplicate linear drivers only in the
+  heatmap display layer.
+- `figures/2026-06-24-Sensitivity_Heatmap_Standardized_Cement.png` — regenerated
+  with grouped Fuel, Electricity, and Emissions columns.
+- `figures/2026-06-24-Sensitivity_Heatmap_Standardized_Electricity.png` —
+  regenerated with grouped Fuel and Emissions columns.
+- `CHANGELOG.md` — documented the heatmap update.
+
+### What was implemented
+
+- Added sector-specific heatmap parameter groups:
+  Fuel, Electricity, and Emissions.
+- Kept the underlying one-at-a-time sensitivity table unchanged, so the raw
+  calculation still evaluates each original model input separately.
+- Collapsed grouped heatmap cells using the maximum relative impact within each
+  technology and group, which preserves the shared signal from linear product
+  terms.
+
+### Verification (if needed)
+
+- Commands run:
+  - `python3 -m py_compile src/sensitivity_deep_dive.py`
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+- Result:
+  - The source file compiled successfully.
+  - The grouped cement and electricity heatmaps regenerated successfully.
+  - A sanity check confirmed grouped heatmap labels for cement and electricity.
+- Notes:
+  - The default system `python3` lacks `matplotlib`, so figure regeneration used
+    the thesis conda environment.
+
+### Reproducibility notes
+
+- No model parameters or scientific assumptions were changed.
+- Regenerate the full current dated outputs with:
+  `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python src/sensitivity_deep_dive.py`
+
+### Next suggested step
+
+Inspect the regenerated heatmap PNGs in `figures/` and confirm the grouped
+columns match the intended thesis presentation.
+
 ## 2026-07-10 14:16 — Remove Excel plot export workflow
 
 ### User request
