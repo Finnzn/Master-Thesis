@@ -1,3 +1,110 @@
+## 2026-07-13 15:16 — Set scenario notebook to specific NPV with shared panel scales
+
+### User request
+
+Update the deterministic scenario analysis so it again uses specific NPV, and
+make the x-axis scales the same across the scenario panels for each sector.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` — changed the default metric to
+  specific NPV and added shared x-axis limits across scenario panels.
+- `CHANGELOG.md` — documented the scenario notebook adjustment.
+
+### What was implemented
+
+- Set `NPV_METRIC = METRIC_SPECIFIC` in the notebook settings cell.
+- Kept the existing option to switch back to `METRIC_TOTAL` if needed.
+- Updated the plotting helper to calculate one symmetric x-axis range from all
+  NPV values in the sector summary and apply it to both scenario panels.
+
+### Verification (if needed)
+
+- Commands run:
+  - Notebook code-cell compile check for
+    `notebooks/co2_discount_rate_scenarios.ipynb`.
+  - `MPLBACKEND=Agg PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python - <<'PY' ...`
+- Result:
+  - Notebook code cells compiled successfully.
+  - Direct notebook code execution confirmed the selected metric is `specific`.
+  - The scenario variables remained electricity full-load hours/lifetime and
+    cement CO2 price/discount rate.
+- Notes:
+  - The verification emitted expected Matplotlib Agg warnings because terminal
+    execution used a non-interactive plotting backend.
+
+### Reproducibility notes
+
+- No model parameters, generated figures, raw data, or numerical outputs were
+  changed.
+- The shared x-axis scaling is applied at plot time and does not change the
+  deterministic scenario values.
+
+### Next suggested step
+
+Rerun `notebooks/co2_discount_rate_scenarios.ipynb` interactively and inspect
+that each sector's two scenario panels now use matching x-axis scales.
+
+## 2026-07-13 14:55 — Update deterministic sector scenario analysis
+
+### User request
+
+Update the scenario analysis so electricity scenarios examine full-load hours
+and lifetime, cement scenarios examine discount rate and carbon price, and all
+scenario cases use deterministic base inputs instead of Monte Carlo simulation.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` — replaced the Monte Carlo
+  revaluation workflow with deterministic sector-specific scenarios.
+- `CHANGELOG.md` — documented the scenario-analysis update.
+
+### What was implemented
+
+- Removed notebook imports and settings for Monte Carlo sample size, random
+  seed, and cement retrofit BAU sampling mode.
+- Loaded deterministic base inputs through the shared sensitivity-analysis
+  helpers.
+- Added electricity scenario panels for full-load hours and lifetime using
+  editable low / medium / high multipliers around each technology's deterministic
+  base value.
+- Kept cement scenario panels for carbon price and discount rate using editable
+  absolute low / medium / high values.
+- Updated tables and plot labels from Monte Carlo means and percentiles to
+  deterministic NPV and change from the medium/base case.
+
+### Verification (if needed)
+
+- Commands run:
+  - Notebook code-cell compile check for
+    `notebooks/co2_discount_rate_scenarios.ipynb`.
+  - `/opt/anaconda3/envs/master-thesis/bin/jupyter nbconvert --to notebook --execute notebooks/co2_discount_rate_scenarios.ipynb --stdout >/tmp/co2_discount_rate_scenarios.executed.ipynb`
+  - Deterministic calculation-only scenario check in the thesis conda
+    environment.
+- Result:
+  - Notebook code cells compiled successfully.
+  - The notebook executed successfully with nbconvert.
+  - The deterministic check produced 54 electricity rows for full-load hours and
+    lifetime, and 54 cement rows for CO2 price and discount rate.
+- Notes:
+  - A separate direct Python execution check was interrupted because macOS
+    matplotlib blocks on `plt.show()` outside Jupyter; this does not affect
+    notebook execution.
+
+### Reproducibility notes
+
+- No raw data, generated figures, model parameters, or Monte Carlo outputs were
+  changed.
+- Electricity low/high scenario multipliers are explicit notebook assumptions
+  and can be edited in the settings cell.
+- Cement carbon-price and discount-rate scenarios remain explicit notebook
+  assumptions and do not modify `src/general_parameters.py`.
+
+### Next suggested step
+
+Run `notebooks/co2_discount_rate_scenarios.ipynb` interactively and inspect the
+new deterministic electricity and cement scenario plots.
+
 ## 2026-07-13 13:38 — Group duplicated sensitivity heatmap drivers
 
 ### User request
