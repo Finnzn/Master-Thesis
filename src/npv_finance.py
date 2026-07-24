@@ -1,9 +1,10 @@
-"""Sector-independent NPV finance calculations.
+"""Sector-independent discounted financial calculations.
 
 All sector models eventually reduce to the same financial structure: an upfront
 capital cost at year 0 and a constant annual net cash flow over the asset
-lifetime. Keeping that formula here makes it easier to compare electricity,
-cement, and future sectors with one consistent NPV definition.
+lifetime. Keeping the NPV, levelized net margin, and levelized cost formulas
+here makes it easier to compare electricity, cement, and future sectors with
+consistent discounting.
 """
 
 from __future__ import annotations
@@ -97,3 +98,55 @@ def calculate_levelized_net_margin(
     if np.ndim(levelized_net_margin) == 0:
         return float(levelized_net_margin)
     return levelized_net_margin
+
+
+def calculate_total_cost_present_value(
+    initial_capex_eur: float | np.ndarray,
+    annual_cost_eur: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+) -> float | np.ndarray:
+    """Calculate discounted lifetime cost including year-zero CAPEX."""
+
+    present_value_factor = calculate_level_cash_flow_present_value_factor(
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    present_value_total_cost = (
+        np.asarray(initial_capex_eur)
+        + np.asarray(annual_cost_eur) * present_value_factor
+    )
+    if np.ndim(present_value_total_cost) == 0:
+        return float(present_value_total_cost)
+    return present_value_total_cost
+
+
+def calculate_levelized_cost(
+    initial_capex_eur: float | np.ndarray,
+    annual_cost_eur: float | np.ndarray,
+    annual_output: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+) -> float | np.ndarray:
+    """Calculate LCOX as discounted lifetime cost per discounted output.
+
+    Revenue is deliberately excluded. ``annual_cost_eur`` should contain the
+    operating, fuel, energy, and carbon costs included in the model boundary.
+    Electricity reports the result as LCOE; cement reports it as LCOC.
+    """
+
+    present_value_total_cost = calculate_total_cost_present_value(
+        initial_capex_eur=initial_capex_eur,
+        annual_cost_eur=annual_cost_eur,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    discounted_output = calculate_discounted_lifetime_output(
+        annual_output=annual_output,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    levelized_cost = np.asarray(present_value_total_cost) / discounted_output
+    if np.ndim(levelized_cost) == 0:
+        return float(levelized_cost)
+    return levelized_cost

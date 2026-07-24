@@ -4906,3 +4906,90 @@ regenerate the complete output set, and rerun every notebook.
 
 Review the regenerated figures for thesis selection, then add only the final
 figure set intended for version control.
+
+## 2026-07-24 14:36 — Add deterministic and probabilistic LCOX
+
+### User request
+
+Add LCOX without creating a duplicate calculation pipeline, explain the
+scientific and software design, support deterministic and probabilistic results
+in the same way as NPV, and add one general notebook for electricity and cement.
+
+### Files changed
+
+- `src/npv_finance.py` — added shared discounted-cost and levelized-cost
+  calculations.
+- `src/electricity/electricity_npv_{deterministic,monte_carlo}.py` — added
+  annual total cost, present value of total cost, and LCOE.
+- `src/cement/cement_npv_{deterministic,monte_carlo}.py` — added annual total
+  cost, present value of total cost, and LCOC.
+- `src/npv_summary.py` and `src/npv_summary_plots.py` — added configurable
+  higher/lower-is-better rankings and cost-metric plot behavior.
+- `src/electricity/electricity_npv_summary_figures.py` and
+  `src/cement/cement_npv_summary_figures.py` — added the `LCOX` metric option,
+  exports, figures, and rankings.
+- `notebooks/lcox_summary.ipynb` — added the general deterministic and
+  probabilistic LCOE/LCOC analysis.
+- `notebooks/electricity/*.ipynb` and `notebooks/cement/*.ipynb` — exposed LCOX
+  in sector switches and technology result tables.
+- `README.md` and `docs/HANDOVER.md` — documented the definition, boundary,
+  units, ranking direction, commands, and shared implementation.
+- `figures/` — regenerated existing NPV/LNM figures and added six LCOE/LCOC
+  figures.
+- `data/raw/` and `data/processed/` — regenerated full NPV/LNM outputs with the
+  expanded schema and added full LCOE/LCOC outputs.
+
+### What was implemented
+
+- Defined LCOX as discounted lifetime cost divided by discounted lifetime
+  output, using the same lifetime, discount rate, and cash-flow timing as NPV
+  and levelized net margin.
+- Included year-zero CAPEX plus discounted fixed OPEX, variable OPEX, fuel,
+  cement electricity consumption, and carbon cost. Product sales revenue is
+  excluded.
+- Reported electricity LCOX as LCOE in EUR/MWh and cement LCOX as LCOC in
+  EUR/t cement.
+- Reused the existing deterministic, Monte Carlo, summary, export, plotting,
+  and ranking paths. No parallel LCOE/LCOC model was created.
+- Preserved higher-is-better ranking for NPV and LNM; LCOE/LCOC rank 1 is the
+  lowest cost. Cost bars use one neutral color, ascending order, and a
+  zero-anchored axis instead of profitability sign colors.
+- Added one cross-sector notebook that runs each sector simulation once and
+  reuses its result arrays for distributions, deterministic comparisons,
+  rankings, and identity checks. Sector plots remain separate because LCOE and
+  LCOC describe different products and units.
+
+### Verification
+
+- Compiled all Python source files successfully.
+- Executed reduced-size smoke tests for all 39 affected existing notebooks and
+  the new LCOX notebook.
+- Ran full 100,000-draw NPV, LNM, and LCOX workflows for both sectors with
+  random seed 42.
+- Executed and saved all 43 notebooks at their stored full settings with no
+  saved error outputs.
+- Validated all 24 PNG files and visually inspected the six new LCOE/LCOC
+  distribution, deterministic, and ranking figures.
+- Checked all 1,800,000 generated LCOX processed rows. Maximum absolute
+  `product price - LCOX - LNM` error was below `3.5e-13`; maximum relative
+  `LCOX * discounted output - present value of cost` error was below `8e-16`.
+- Verified lower-is-better LCOE/LCOC ranking and preserved higher-is-better
+  NPV/LNM ranking.
+- Final generated inventory: 24 PNGs, 18 raw CSVs, and 22 processed CSVs.
+
+### Reproducibility notes
+
+- The default LCOX commands are:
+  - `PYTHONPATH=src python -m electricity.electricity_npv_summary_figures
+    --metric LCOX`
+  - `PYTHONPATH=src python -m cement.cement_npv_summary_figures --metric LCOX`
+- Current generated CSVs occupy approximately 3 GB and remain ignored by Git.
+- Under the current constant-price and constant-output model,
+  `product price - LCOX = levelized net margin`; the notebook reports the
+  numerical residual explicitly.
+
+### Next suggested step
+
+Review the cost boundary and generated LCOE/LCOC results for thesis
+interpretation, especially whether carbon cost should remain inside the stated
+LCOX boundary in every scenario.

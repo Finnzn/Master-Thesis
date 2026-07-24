@@ -39,8 +39,10 @@ from general_parameters import (
 )
 from npv_finance import (
     calculate_discounted_lifetime_output,
+    calculate_levelized_cost,
     calculate_levelized_net_margin,
     calculate_npv,
+    calculate_total_cost_present_value,
 )
 from npv_summary import representative_value
 
@@ -216,6 +218,13 @@ def calculate_deterministic_cement_result(
         - annual_electricity_cost_eur
         - annual_emissions_cost_eur
     )
+    annual_total_cost_eur = (
+        annual_fixed_opex_eur
+        + annual_variable_opex_eur
+        + annual_fuel_cost_eur
+        + annual_electricity_cost_eur
+        + annual_emissions_cost_eur
+    )
     npv_eur = float(
         calculate_npv(
             initial_capex_eur=np.array([initial_capex_eur]),
@@ -231,6 +240,19 @@ def calculate_deterministic_cement_result(
     )
     levelized_net_margin_eur_per_t = calculate_levelized_net_margin(
         npv_eur=npv_eur,
+        annual_output=annual_output_t,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
+    present_value_total_cost_eur = calculate_total_cost_present_value(
+        initial_capex_eur=initial_capex_eur,
+        annual_cost_eur=annual_total_cost_eur,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
+    lcoc_eur_per_t = calculate_levelized_cost(
+        initial_capex_eur=initial_capex_eur,
+        annual_cost_eur=annual_total_cost_eur,
         annual_output=annual_output_t,
         lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
@@ -267,9 +289,12 @@ def calculate_deterministic_cement_result(
         "annual_fuel_cost_eur": [annual_fuel_cost_eur],
         "annual_electricity_cost_eur": [annual_electricity_cost_eur],
         "annual_emissions_cost_eur": [annual_emissions_cost_eur],
+        "annual_total_cost_eur": [annual_total_cost_eur],
         "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
         "npv_eur": [npv_eur],
         "discounted_lifetime_output_t": [discounted_lifetime_output_t],
+        "present_value_total_cost_eur": [present_value_total_cost_eur],
+        "lcoc_eur_per_t": [lcoc_eur_per_t],
         "levelized_net_margin_eur_per_t": [levelized_net_margin_eur_per_t],
     }
 

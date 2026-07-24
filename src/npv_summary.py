@@ -216,12 +216,13 @@ def financial_metric_ranking_dataframe(
     technology_column: str = "technology",
     metric_column: str = "npv_eur",
     metric_unit: str = "",
+    higher_is_better: bool = True,
 ) -> pd.DataFrame:
     """Rank technologies by a financial metric within each simulation.
 
     A single Monte Carlo simulation ID represents one shared uncertain world.
     Ranking within each ID answers: under this draw of uncertain parameters,
-    which technology has the highest selected financial metric?
+    which technology has the best selected financial metric?
     """
 
     frames = []
@@ -247,6 +248,9 @@ def financial_metric_ranking_dataframe(
                 "technology": technology_values,
                 "metric_column": metric_column,
                 "metric_unit": metric_unit,
+                "ranking_preference": (
+                    "higher_is_better" if higher_is_better else "lower_is_better"
+                ),
                 "metric_value": results[metric_column],
             }
         )
@@ -260,18 +264,18 @@ def financial_metric_ranking_dataframe(
                 "technology",
                 "metric_column",
                 "metric_unit",
+                "ranking_preference",
                 "metric_value",
                 "rank",
             ]
         )
 
     ranking = pd.concat(frames, ignore_index=True)
-    # Rank 1 is the highest metric value within a simulation and sector. `method="min"`
-    # gives tied technologies the same best rank rather than forcing an arbitrary
-    # ordering.
+    # `method="min"` gives tied technologies the same best rank rather than
+    # forcing an arbitrary ordering.
     ranking["rank"] = ranking.groupby(["sector", "simulation_id"])[
         "metric_value"
-    ].rank(method="min", ascending=False)
+    ].rank(method="min", ascending=not higher_is_better)
     return (
         ranking[
             [
@@ -280,6 +284,7 @@ def financial_metric_ranking_dataframe(
                 "technology",
                 "metric_column",
                 "metric_unit",
+                "ranking_preference",
                 "metric_value",
                 "rank",
             ]
@@ -352,7 +357,7 @@ def summarize_financial_metric_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
     )
     metadata_columns = [
         column
-        for column in ("metric_column", "metric_unit")
+        for column in ("metric_column", "metric_unit", "ranking_preference")
         if column in ranking.columns
     ]
     if metadata_columns:

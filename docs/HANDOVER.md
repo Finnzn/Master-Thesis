@@ -11,12 +11,13 @@ The project has three layers:
 1. `src/general_parameters.py` and the sector parameter modules define model
    assumptions and uncertainty distributions.
 2. Deterministic and Monte Carlo modules turn those assumptions into annual
-   costs, cash flow, and NPV arrays.
+   costs, cash flow, NPV, levelized net margin, and LCOX arrays.
 3. Summary modules, notebooks, and the Streamlit dashboard present those
    results.
 
-The core NPV formula is shared in `src/npv_finance.py`. Electricity and cement
-should not implement separate finance formulas.
+The core NPV, levelized-net-margin, discounted-cost, and LCOX formulas are
+shared in `src/npv_finance.py`. Electricity and cement should not implement
+separate finance formulas.
 
 ## Where to Change What
 
@@ -33,6 +34,7 @@ should not implement separate finance formulas.
 | Change output naming or command-line workflows | the matching `*_npv_summary_figures.py` module |
 | Explore one technology | `notebooks/<sector>/plot_*_npv.ipynb` |
 | Compare all technologies | the sector `*_summary.ipynb` notebook |
+| Compare deterministic and probabilistic LCOX | `notebooks/lcox_summary.ipynb` |
 | Run deterministic sensitivity interactively | `sensitivity_dashboard.py` |
 
 ## Standard Workflows
@@ -77,7 +79,7 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 
 - `figures/`: thesis-ready dated PNG files.
 - `data/raw/`: sampled or representative inputs exported by a run.
-- `data/processed/`: derived costs, cash flow, NPV, and summary CSVs.
+- `data/processed/`: derived costs, cash flow, NPV, LNM, LCOX, and summary CSVs.
 - `results/`: reserved for other numerical outputs.
 
 The data and results directories are ignored by Git. A generated CSV is
@@ -93,17 +95,23 @@ outside the working repository.
 
 ## Important Scientific Conventions
 
-- Higher total NPV and higher levelized net margin are better.
+- Higher total NPV and higher levelized net margin are better; lower LCOX is
+  better.
 - A value of exactly zero is classified as non-negative.
 - Electricity levelized net margin is NPV divided by discounted lifetime
   electricity output and is reported in EUR/MWh.
 - Cement levelized net margin is NPV divided by discounted lifetime cement
   output and is reported in EUR/t.
-- Summary workflows switch explicitly between total NPV (`NPV`) and levelized
-  net margin (`LNM`). LCOX is intentionally not implemented yet.
+- Electricity LCOX is LCOE in EUR/MWh; cement LCOX is LCOC in EUR/t cement.
+- LCOX includes year-zero CAPEX and discounted fixed OPEX, variable OPEX, fuel,
+  energy, and carbon cost. It excludes product sales revenue.
+- Summary workflows switch explicitly between total NPV (`NPV`), levelized net
+  margin (`LNM`), and levelized cost (`LCOX`).
+- Under the current constant-price and constant-output models, product price
+  minus LCOX equals levelized net margin.
 - Monte Carlo technology rankings compare technologies within the same
   simulation ID, so shared uncertain conditions describe the same sampled
-  world.
+  world. Rank 1 is the highest NPV/LNM or the lowest LCOX.
 - The default random seed is 42 and the default sample size is 100,000.
 - Cement retrofit technologies use a configurable BAU baseline mode. Check
   `DEFAULT_RETROFIT_BAU_MODE` and the command-line `--retrofit-bau-mode` option

@@ -1,8 +1,9 @@
-"""Reusable plotting helpers for NPV technology comparisons.
+"""Reusable plotting helpers for financial-metric technology comparisons.
 
 The calculation modules produce dictionaries and DataFrames; this module turns
-those summaries into thesis-ready figures. It does not calculate NPV or rankings
-itself, which keeps visual styling separate from model logic.
+those summaries into thesis-ready figures. It does not calculate financial
+metrics or rankings itself, which keeps visual styling separate from model
+logic.
 """
 
 from __future__ import annotations
@@ -118,6 +119,14 @@ def fixed_financial_metric_bar_axis_config(
         return (float(lower), 1000.0), tuple(
             float(value) for value in range(int(lower), 1001, 1000)
         )
+    if financial_metric == "LCOX":
+        upper = max(
+            max(values["p95"] for values in distribution_summary.values()),
+            max(deterministic_values.values()),
+        )
+        upper_limit = max(1.0, math.ceil(upper / 50.0) * 50.0)
+        axis_limits = (0.0, upper_limit)
+        return axis_limits, shared_axis_ticks(axis_limits)
 
     x_axis_limits = shared_axis_limits(
         {label: values["p05"] for label, values in distribution_summary.items()},
@@ -160,15 +169,19 @@ def plot_financial_metric_technology_bars(
     tight_layout_pad: float = 1.2,
     x_axis_limits: tuple[float, float] | None = None,
     x_axis_ticks: tuple[float, ...] | None = None,
+    higher_is_better: bool = True,
+    color_by_sign: bool = True,
+    zero_baseline: bool = False,
 ) -> Path | None:
-    """Plot a horizontal positive/negative financial-metric bar chart.
+    """Plot a horizontal financial-metric bar chart.
 
     The helper is sector-agnostic: callers provide display labels and values in
     the selected metric's display unit.
 
     For Monte Carlo outputs, callers can also pass median and percentile values.
-    In that case the bars still show the mean NPV, while markers and whiskers
-    show the distribution behind that mean.
+    In that case the bars show the mean, while markers and whiskers show the
+    distribution behind it. Cost metrics can be sorted ascending with a neutral
+    color and an axis anchored at zero.
     """
 
     if not values:
@@ -177,11 +190,15 @@ def plot_financial_metric_technology_bars(
     sorted_items = sorted(
         values.items(),
         key=lambda item: item[1],
-        reverse=True,
+        reverse=higher_is_better,
     )
     labels = [label for label, _ in sorted_items]
     values = [value for _, value in sorted_items]
-    colors = ["#4EA72E" if value >= 0 else "#FF0F0F" for value in values]
+    colors = (
+        ["#4EA72E" if value >= 0 else "#FF0F0F" for value in values]
+        if color_by_sign
+        else ["#4472C4"] * len(values)
+    )
     # Uncertainty markers are optional. This lets deterministic and Monte Carlo
     # figures use the same visual style while only Monte Carlo figures show the
     # simulated spread.
@@ -273,6 +290,10 @@ def plot_financial_metric_technology_bars(
             raise ValueError("x_axis_limits must be an increasing (min, max) tuple.")
         ax.set_xlim(lower_limit, upper_limit)
         margin = 0.04 * (upper_limit - lower_limit)
+    elif has_uncertainty and zero_baseline:
+        upper = max(upper_uncertainty_values)
+        margin = max(5.0, 0.12 * upper)
+        ax.set_xlim(0.0, upper + margin)
     elif has_uncertainty:
         max_abs_value = max(
             max(abs(value) for value in lower_uncertainty_values),
@@ -283,6 +304,10 @@ def plot_financial_metric_technology_bars(
             min(lower_uncertainty_values) - margin,
             max(upper_uncertainty_values) + margin,
         )
+    elif zero_baseline:
+        upper = max(values)
+        margin = max(5.0, 0.16 * upper)
+        ax.set_xlim(0.0, upper + margin)
     else:
         max_abs_value = max(abs(value) for value in values)
         margin = max(25.0, 0.16 * max_abs_value)
@@ -380,6 +405,7 @@ def plot_average_rank_bars(
     tight_layout_pad: float | None = None,
     show_rank_counts: bool = True,
     show_rank_annotations: bool = True,
+    higher_is_better: bool = True,
 ) -> Path | None:
     """Plot an average-rank chart with rank-frequency counts.
 
@@ -461,8 +487,10 @@ def plot_average_rank_bars(
     ax.set_yticklabels(labels, fontsize=label_font_size, color="#5a5a5a")
     ax.invert_yaxis()
     ax.set_title("Average rank", fontsize=panel_title_font_size, color="#4d4d4d", pad=10 * font_scale)
+    preferred_direction = "highest" if higher_is_better else "lowest"
+    least_preferred_direction = "lowest" if higher_is_better else "highest"
     ax.set_xlabel(
-        f"Mean rank across simulations (1 = highest {metric_label})",
+        f"Mean rank across simulations (1 = {preferred_direction} {metric_label})",
         fontsize=label_font_size,
         color="#5a5a5a",
     )
@@ -561,8 +589,8 @@ def plot_average_rank_bars(
         if note_text is not None
         else (
             f"Ranks are calculated within each Monte Carlo simulation by {metric_label} "
-            f"(rank 1 = highest {metric_label}, "
-            f"rank {int(max_rank)} = lowest {metric_label}). "
+            f"(rank 1 = {preferred_direction} {metric_label}, "
+            f"rank {int(max_rank)} = {least_preferred_direction} {metric_label}). "
             f"Sample size: {n_simulations:,} simulations"
             f"{f'; random seed: {random_seed}' if random_seed is not None else ''}."
         )

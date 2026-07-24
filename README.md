@@ -198,10 +198,17 @@ For electricity levelized net margin, use:
 PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LNM
 ```
 
-For cement, use the same `--metric NPV` or `--metric LNM` switch:
+For LCOE, use the same electricity workflow with `LCOX`:
 
 ```bash
-PYTHONPATH=src python -m cement.cement_npv_summary_figures --metric LNM
+PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LCOX
+```
+
+For cement, use the same `--metric NPV`, `--metric LNM`, or `--metric LCOX`
+switch. In the cement model, `LCOX` is reported as LCOC:
+
+```bash
+PYTHONPATH=src python -m cement.cement_npv_summary_figures --metric LCOX
 ```
 
 Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
@@ -217,24 +224,40 @@ The reporting workflows can switch between:
 - `NPV`: total project net present value, displayed in million EUR.
 - `LNM`: levelized net margin, displayed in EUR/MWh of electricity or EUR/t of
   cement.
+- `LCOX`: levelized cost of the sector product. This is displayed as LCOE in
+  EUR/MWh for electricity and LCOC in EUR/t cement for cement.
 
-Levelized net margin uses a consistent discounted numerator and denominator:
+All three metrics use the same project lifetime, discount rate, and cash-flow
+timing:
 
 ```text
 LNM = NPV / discounted lifetime output
+LCOX = discounted lifetime cost / discounted lifetime output
 discounted lifetime output = sum(output_t / (1 + r)^t)
+discounted lifetime cost = CAPEX at t=0 + sum(annual cost_t / (1 + r)^t)
 ```
 
 For the current level annual-output models, discounted lifetime output equals
 annual output multiplied by the level cash-flow present-value factor. Positive
 LNM creates value, zero is break-even, and negative LNM destroys value under the
-stated assumptions. LCOX is intentionally not implemented in this step.
+stated assumptions. Lower LCOX is preferable. The LCOX boundary includes CAPEX,
+fixed OPEX, variable OPEX, fuel, cement electricity consumption, and carbon
+cost; product sales revenue is excluded. Under the current constant-price and
+constant-output assumptions:
+
+```text
+product price - LCOX = LNM
+```
+
+The general deterministic and probabilistic LCOX analysis is in
+`notebooks/lcox_summary.ipynb`. It keeps electricity and cement charts separate
+because LCOE and LCOC measure different products in different units.
 
 ## Generated Data and Version Control
 
 `data/raw/`, `data/processed/`, and `results/` are intentionally ignored by Git.
 They can become very large: the current local generated CSVs occupy roughly
-1.5 GB. They are reproducible outputs, not the only copy of source assumptions.
+3 GB. They are reproducible outputs, not the only copy of source assumptions.
 Do not place hand-edited inputs or irreplaceable results only in these ignored
 folders.
 

@@ -1,4 +1,4 @@
-"""Generate electricity-sector NPV comparison figures and CSV outputs.
+"""Generate electricity-sector financial-metric figures and CSV outputs.
 
 This module is the bridge between model calculations and thesis artefacts. It
 runs deterministic and Monte Carlo electricity NPV calculations, writes raw and
@@ -91,9 +91,12 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "annual_variable_opex_eur",
     "annual_fuel_cost_eur",
     "annual_emissions_cost_eur",
+    "annual_total_cost_eur",
     "annual_net_cash_flow_eur",
     "npv_eur",
     "discounted_lifetime_output_mwh",
+    "present_value_total_cost_eur",
+    "lcoe_eur_per_mwh",
     "levelized_net_margin_eur_per_mwh",
 )
 
@@ -112,6 +115,9 @@ ELECTRICITY_FINANCIAL_METRIC_OPTIONS = {
         "title_unit": "million EUR",
         "file_metric": "NPV",
         "ranking_label": "NPV",
+        "higher_is_better": True,
+        "color_by_sign": True,
+        "zero_baseline": False,
     },
     "LNM": {
         "metric_column": "levelized_net_margin_eur_per_mwh",
@@ -122,6 +128,22 @@ ELECTRICITY_FINANCIAL_METRIC_OPTIONS = {
         "title_unit": "EUR/MWh",
         "file_metric": "Levelized_Net_Margin_per_MWh",
         "ranking_label": "levelized net margin",
+        "higher_is_better": True,
+        "color_by_sign": True,
+        "zero_baseline": False,
+    },
+    "LCOX": {
+        "metric_column": "lcoe_eur_per_mwh",
+        "metric_unit": "EUR/MWh",
+        "scale": 1.0,
+        "summary_column": "lcoe_eur_per_mwh",
+        "axis_label": "LCOE (EUR/MWh)",
+        "title_unit": "EUR/MWh",
+        "file_metric": "LCOE",
+        "ranking_label": "LCOE",
+        "higher_is_better": False,
+        "color_by_sign": False,
+        "zero_baseline": True,
     },
 }
 
@@ -249,7 +271,7 @@ def calculate_mean_electricity_npv(
     technologies: tuple[str, ...] | None = None,
     financial_metric: str = "NPV",
 ) -> dict[str, float]:
-    """Calculate mean simulated NPV by electricity technology for one financial metric."""
+    """Calculate a mean simulated financial metric by electricity technology."""
 
     config = _electricity_financial_metric_config(financial_metric)
     return mean_metric(
@@ -285,7 +307,7 @@ def calculate_deterministic_electricity_npv(
     technologies: tuple[str, ...] | None = None,
     financial_metric: str = "NPV",
 ) -> dict[str, float]:
-    """Calculate deterministic NPV by electricity technology for one financial metric."""
+    """Calculate a deterministic financial metric by electricity technology."""
 
     config = _electricity_financial_metric_config(financial_metric)
     return deterministic_metric(
@@ -336,6 +358,9 @@ def save_electricity_mean_npv_figure(
         sample_size=sample_size,
         random_seed=random_seed,
         x_axis_label=str(config["axis_label"]),
+        higher_is_better=bool(config["higher_is_better"]),
+        color_by_sign=bool(config["color_by_sign"]),
+        zero_baseline=bool(config["zero_baseline"]),
     )
 
 
@@ -359,6 +384,9 @@ def save_electricity_deterministic_npv_figure(
         output_path=output_path,
         title=f"Deterministic {config['ranking_label']} ({config['title_unit']})",
         x_axis_label=str(config["axis_label"]),
+        higher_is_better=bool(config["higher_is_better"]),
+        color_by_sign=bool(config["color_by_sign"]),
+        zero_baseline=bool(config["zero_baseline"]),
     )
 
 
@@ -407,6 +435,9 @@ def save_electricity_mean_npv_outputs(
         sample_size=sample_size,
         random_seed=random_seed,
         x_axis_label=str(config["axis_label"]),
+        higher_is_better=bool(config["higher_is_better"]),
+        color_by_sign=bool(config["color_by_sign"]),
+        zero_baseline=bool(config["zero_baseline"]),
     )
     raw_csv_path = save_results_csv(
         results_by_item=results,
@@ -476,6 +507,7 @@ def calculate_electricity_npv_rankings_from_results(
         sector=sector_name,
         metric_column=str(config["metric_column"]),
         metric_unit=str(config["metric_unit"]),
+        higher_is_better=bool(config["higher_is_better"]),
     )
     ranking_summary = summarize_financial_metric_rankings(ranking)
     return ranking, ranking_summary
@@ -566,6 +598,7 @@ def save_electricity_npv_ranking_outputs(
                 title=f"Monte Carlo {config['ranking_label']} Ranking",
                 metric_label=str(config["ranking_label"]),
                 random_seed=random_seed,
+                higher_is_better=bool(config["higher_is_better"]),
             )
         )
 
@@ -652,6 +685,9 @@ def save_electricity_deterministic_npv_outputs(
         ),
         title=f"Deterministic {config['ranking_label']} ({config['title_unit']})",
         x_axis_label=str(config["axis_label"]),
+        higher_is_better=bool(config["higher_is_better"]),
+        color_by_sign=bool(config["color_by_sign"]),
+        zero_baseline=bool(config["zero_baseline"]),
     )
     raw_csv_path = save_results_csv(
         results_by_item=results,
@@ -773,6 +809,9 @@ def save_electricity_npv_figures(
         x_axis_label=str(config["axis_label"]),
         x_axis_limits=x_axis_limits,
         x_axis_ticks=x_axis_ticks,
+        higher_is_better=bool(config["higher_is_better"]),
+        color_by_sign=bool(config["color_by_sign"]),
+        zero_baseline=bool(config["zero_baseline"]),
     )
     deterministic_path = plot_financial_metric_technology_bars(
         values=deterministic_values,
@@ -785,6 +824,9 @@ def save_electricity_npv_figures(
         x_axis_label=str(config["axis_label"]),
         x_axis_limits=x_axis_limits,
         x_axis_ticks=x_axis_ticks,
+        higher_is_better=bool(config["higher_is_better"]),
+        color_by_sign=bool(config["color_by_sign"]),
+        zero_baseline=bool(config["zero_baseline"]),
     )
     return mean_path, deterministic_path
 
@@ -799,7 +841,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command-line options for regenerating electricity outputs."""
 
     parser = argparse.ArgumentParser(
-        description="Generate electricity-sector NPV comparison figures."
+        description="Generate electricity-sector financial-metric comparison figures."
     )
     parser.add_argument(
         "--output-dir",
@@ -823,13 +865,13 @@ def parse_args() -> argparse.Namespace:
         "--sample-size",
         type=int,
         default=DEFAULT_SAMPLE_SIZE,
-        help="Monte Carlo sample size for the mean NPV figure.",
+        help="Monte Carlo sample size for the mean comparison figure.",
     )
     parser.add_argument(
         "--random-seed",
         type=int,
         default=DEFAULT_RANDOM_SEED,
-        help="Random seed for the mean NPV figure.",
+        help="Random seed for the mean comparison figure.",
     )
     parser.add_argument(
         "--kind",
@@ -851,7 +893,7 @@ def parse_args() -> argparse.Namespace:
         "--ranking-output",
         choices=("csv", "plots", "both", "none"),
         default="both",
-        help="Which Monte Carlo NPV ranking outputs to save.",
+        help="Which Monte Carlo financial-metric ranking outputs to save.",
     )
     parser.add_argument(
         "--metric",
