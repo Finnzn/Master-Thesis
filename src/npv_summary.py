@@ -44,9 +44,9 @@ def summarize_metric_signs(values: object) -> dict[str, int | float]:
     negative_count = int(np.count_nonzero(numeric_values < 0))
     simulation_count = int(numeric_values.size)
     return {
-        "non_negative_npv_count": non_negative_count,
-        "negative_npv_count": negative_count,
-        "non_negative_npv_share": non_negative_count / simulation_count,
+        "non_negative_count": non_negative_count,
+        "negative_count": negative_count,
+        "non_negative_share": non_negative_count / simulation_count,
     }
 
 
@@ -103,8 +103,8 @@ def mean_metric(
     """Calculate mean values for a selected metric column.
 
     `scale` converts stored model units into display units. For example,
-    `npv_eur` uses `scale=1_000_000` for million EUR, while normalized
-    `npv_eur_per_mwh` and `npv_eur_per_t` use `scale=1`.
+    `npv_eur` uses `scale=1_000_000` for million EUR, while levelized net
+    margin uses `scale=1`.
     """
 
     if scale == 0:
@@ -209,27 +209,26 @@ def results_to_dataframe(
     return dataframe
 
 
-def npv_ranking_dataframe(
+def financial_metric_ranking_dataframe(
     results_by_item: Mapping[str, Mapping[str, object]],
     sector: str,
     simulation_id_column: str = "run_id",
     technology_column: str = "technology",
-    npv_column: str = "npv_eur",
-    metric_column: str | None = None,
+    metric_column: str = "npv_eur",
     metric_unit: str = "",
 ) -> pd.DataFrame:
-    """Rank technologies by NPV within each Monte Carlo simulation.
+    """Rank technologies by a financial metric within each simulation.
 
     A single Monte Carlo simulation ID represents one shared uncertain world.
     Ranking within each ID answers: under this draw of uncertain parameters,
-    which technology has the highest NPV?
+    which technology has the highest selected financial metric?
     """
 
     frames = []
     for item, results in results_by_item.items():
         missing_columns = [
             column
-            for column in (simulation_id_column, npv_column)
+            for column in (simulation_id_column, metric_column)
             if column not in results
         ]
         if missing_columns:
@@ -246,9 +245,9 @@ def npv_ranking_dataframe(
                 "simulation_id": results[simulation_id_column],
                 "sector": sector,
                 "technology": technology_values,
-                "metric_column": metric_column or npv_column,
+                "metric_column": metric_column,
                 "metric_unit": metric_unit,
-                "npv": results[npv_column],
+                "metric_value": results[metric_column],
             }
         )
         frames.append(frame)
@@ -261,19 +260,18 @@ def npv_ranking_dataframe(
                 "technology",
                 "metric_column",
                 "metric_unit",
-                "npv",
+                "metric_value",
                 "rank",
             ]
         )
 
     ranking = pd.concat(frames, ignore_index=True)
-    # Rank 1 is the highest NPV within a simulation and sector. `method="min"`
+    # Rank 1 is the highest metric value within a simulation and sector. `method="min"`
     # gives tied technologies the same best rank rather than forcing an arbitrary
     # ordering.
-    ranking["rank"] = ranking.groupby(["sector", "simulation_id"])["npv"].rank(
-        method="min",
-        ascending=False,
-    )
+    ranking["rank"] = ranking.groupby(["sector", "simulation_id"])[
+        "metric_value"
+    ].rank(method="min", ascending=False)
     return (
         ranking[
             [
@@ -282,7 +280,7 @@ def npv_ranking_dataframe(
                 "technology",
                 "metric_column",
                 "metric_unit",
-                "npv",
+                "metric_value",
                 "rank",
             ]
         ]
@@ -291,8 +289,8 @@ def npv_ranking_dataframe(
     )
 
 
-def summarize_npv_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
-    """Summarize NPV ranks by sector and technology.
+def summarize_financial_metric_rankings(ranking: pd.DataFrame) -> pd.DataFrame:
+    """Summarize financial-metric ranks by sector and technology.
 
     The raw ranking table is long and simulation-level. This summary collapses
     it into interpretable indicators: average rank, probability of being rank 1,

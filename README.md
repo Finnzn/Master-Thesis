@@ -105,7 +105,8 @@ sector-specific calculations.
   distribution specifications used by Monte Carlo simulations.
 - `src/general_parameters.py` stores shared assumptions such as carbon price,
   discount rate, and fuel-price distributions.
-- `src/npv_finance.py` contains the sector-independent NPV formula.
+- `src/npv_finance.py` contains the sector-independent NPV and levelized net
+  margin formulas.
 - `src/sensitivity_analysis.py` contains deterministic one-factor-at-a-time
   sensitivity calculations and tornado-chart plotting for the dashboard.
 - `src/npv_summary.py` converts simulation outputs into summary tables, rankings,
@@ -137,7 +138,7 @@ sector-specific calculations.
 
 The Streamlit dashboard provides an interactive deterministic sensitivity
 analysis for the cement and electricity sectors. It lets you select a sector,
-technology, NPV metric, and scenario inputs, then generates a tornado diagram
+technology, financial metric, and scenario inputs, then generates a tornado diagram
 showing one-factor-at-a-time impacts.
 
 To run the dashboard from the repository root:
@@ -156,9 +157,9 @@ The path above is specific to the original development machine. On another
 machine, activate the environment created in the quick start and use the first
 command.
 
-The dashboard supports total NPV in `MEUR` and normalized NPV in `EUR/t` for
-cement or `EUR/MWh` for electricity. Green bars indicate changes that improve
-the selected NPV metric, red bars indicate changes that worsen it, and the
+The dashboard supports total NPV in million EUR and levelized net margin in
+`EUR/t` for cement or `EUR/MWh` for electricity. Green bars indicate changes
+that improve the selected metric, red bars indicate changes that worsen it, and the
 `+x%` or `-x%` labels show which input movement caused the impact. Downloaded or
 in-app saved dashboard figures can be written to `figures/`.
 
@@ -168,7 +169,7 @@ shown in the tornado diagram.
 
 The dashboard is a deterministic scenario tool. It does not change stored model
 assumptions, and it currently varies annual production/generation consistently
-with the normalized deterministic plant-size setup rather than holding capacity
+with the deterministic plant-size setup rather than holding capacity
 fixed.
 
 To regenerate the standardized technology-input sensitivity CSV and heatmaps:
@@ -177,7 +178,7 @@ To regenerate the standardized technology-input sensitivity CSV and heatmaps:
 PYTHONPATH=src python -m sensitivity_deep_dive
 ```
 
-The heatmaps compare equal relative input changes using specific NPV
+The heatmaps compare equal relative input changes using levelized net margin
 (`EUR/t` or `EUR/MWh`). Annual output and product selling prices are excluded
 from these cross-technology heatmaps because they are common comparison
 assumptions rather than technology-development inputs. Lifetime and discount
@@ -185,23 +186,49 @@ rate remain included as common financial assumptions.
 The derived sensitivity CSV is written to `data/processed/`; heatmaps are
 written to `figures/`.
 
-To regenerate the electricity-sector figures and CSV outputs, run:
+To regenerate electricity-sector total NPV figures and CSV outputs, run:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures
+PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric NPV
 ```
 
-For cement:
+For electricity levelized net margin, use:
 
 ```bash
-PYTHONPATH=src python -m cement.cement_npv_summary_figures
+PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LNM
+```
+
+For cement, use the same `--metric NPV` or `--metric LNM` switch:
+
+```bash
+PYTHONPATH=src python -m cement.cement_npv_summary_figures --metric LNM
 ```
 
 Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
 and processed model outputs to `data/processed/`.
 
-Use `--help` on either module to see options for sample size, random seed, NPV
-scale, output type, and cement retrofit baseline mode.
+Use `--help` on either module to see options for sample size, random seed,
+financial metric, output type, and cement retrofit baseline mode.
+
+## Financial Metrics
+
+The reporting workflows can switch between:
+
+- `NPV`: total project net present value, displayed in million EUR.
+- `LNM`: levelized net margin, displayed in EUR/MWh of electricity or EUR/t of
+  cement.
+
+Levelized net margin uses a consistent discounted numerator and denominator:
+
+```text
+LNM = NPV / discounted lifetime output
+discounted lifetime output = sum(output_t / (1 + r)^t)
+```
+
+For the current level annual-output models, discounted lifetime output equals
+annual output multiplied by the level cash-flow present-value factor. Positive
+LNM creates value, zero is break-even, and negative LNM destroys value under the
+stated assumptions. LCOX is intentionally not implemented in this step.
 
 ## Generated Data and Version Control
 

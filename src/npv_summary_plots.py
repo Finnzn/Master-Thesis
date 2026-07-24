@@ -88,13 +88,13 @@ def shared_axis_ticks(
     return tuple(ticks)
 
 
-def fixed_npv_bar_axis_config(
+def fixed_financial_metric_bar_axis_config(
     sector: str,
-    npv_scale: str,
+    financial_metric: str,
     distribution_summary: Mapping[str, Mapping[str, float]],
     deterministic_values: Mapping[str, float],
 ) -> tuple[tuple[float, float], tuple[float, ...]]:
-    """Return presentation axis limits and ticks for NPV bar-chart pairs."""
+    """Return presentation axis limits and ticks for financial-metric chart pairs."""
 
     sector_key = sector.lower()
     p05_minimum = min(
@@ -102,18 +102,18 @@ def fixed_npv_bar_axis_config(
         min(deterministic_values.values()),
     )
 
-    if sector_key == "cement" and npv_scale == "EUR/t":
+    if sector_key == "cement" and financial_metric == "LNM":
         lower = -300 if p05_minimum < -200 else -200
         return (float(lower), 50.0), tuple(float(value) for value in range(lower, 51, 50))
-    if sector_key == "electricity" and npv_scale == "EUR/MWh":
+    if sector_key == "electricity" and financial_metric == "LNM":
         return (-150.0, 50.0), (-150.0, -100.0, -50.0, 0.0, 50.0)
-    if sector_key == "cement" and npv_scale == "MEUR":
+    if sector_key == "cement" and financial_metric == "NPV":
         lower = math.floor(p05_minimum / 200) * 200
         first_major_tick = math.ceil(lower / 1000) * 1000
         return (float(lower), 2000.0), tuple(
             float(value) for value in range(int(first_major_tick), 2001, 1000)
         )
-    if sector_key == "electricity" and npv_scale == "MEUR":
+    if sector_key == "electricity" and financial_metric == "NPV":
         lower = math.floor(p05_minimum / 1000) * 1000
         return (float(lower), 1000.0), tuple(
             float(value) for value in range(int(lower), 1001, 1000)
@@ -140,13 +140,13 @@ def dated_figure_path(
     return output_dir / f"{figure_date.isoformat()}-{stem}.{suffix}"
 
 
-def plot_mean_npv_technology_bars(
-    values_million_eur: Mapping[str, float],
+def plot_financial_metric_technology_bars(
+    values: Mapping[str, float],
     output_path: Path | None,
     title: str = "Mean NPV (MEUR)",
-    median_values_million_eur: Mapping[str, float] | None = None,
-    lower_values_million_eur: Mapping[str, float] | None = None,
-    upper_values_million_eur: Mapping[str, float] | None = None,
+    median_values: Mapping[str, float] | None = None,
+    lower_values: Mapping[str, float] | None = None,
+    upper_values: Mapping[str, float] | None = None,
     sample_size: int | None = None,
     random_seed: int | None = None,
     x_axis_label: str = "NPV (million EUR)",
@@ -161,22 +161,21 @@ def plot_mean_npv_technology_bars(
     x_axis_limits: tuple[float, float] | None = None,
     x_axis_ticks: tuple[float, ...] | None = None,
 ) -> Path | None:
-    """Plot a horizontal positive/negative NPV bar chart.
+    """Plot a horizontal positive/negative financial-metric bar chart.
 
-    The helper is sector-agnostic: callers provide display labels and NPV values
-    in million EUR. It can therefore be reused for electricity, cement, or other
-    sectors once they produce the same summary mapping.
+    The helper is sector-agnostic: callers provide display labels and values in
+    the selected metric's display unit.
 
     For Monte Carlo outputs, callers can also pass median and percentile values.
     In that case the bars still show the mean NPV, while markers and whiskers
     show the distribution behind that mean.
     """
 
-    if not values_million_eur:
-        raise ValueError("values_million_eur must contain at least one value.")
+    if not values:
+        raise ValueError("values must contain at least one value.")
 
     sorted_items = sorted(
-        values_million_eur.items(),
+        values.items(),
         key=lambda item: item[1],
         reverse=True,
     )
@@ -187,26 +186,26 @@ def plot_mean_npv_technology_bars(
     # figures use the same visual style while only Monte Carlo figures show the
     # simulated spread.
     has_uncertainty = (
-        median_values_million_eur is not None
-        and lower_values_million_eur is not None
-        and upper_values_million_eur is not None
+        median_values is not None
+        and lower_values is not None
+        and upper_values is not None
     )
     if has_uncertainty:
         missing_uncertainty_labels = [
             label
             for label in labels
-            if label not in median_values_million_eur
-            or label not in lower_values_million_eur
-            or label not in upper_values_million_eur
+            if label not in median_values
+            or label not in lower_values
+            or label not in upper_values
         ]
         if missing_uncertainty_labels:
             raise KeyError(
                 "uncertainty mappings are missing labels: "
                 f"{missing_uncertainty_labels}"
             )
-        medians = [median_values_million_eur[label] for label in labels]
-        lower_values = [lower_values_million_eur[label] for label in labels]
-        upper_values = [upper_values_million_eur[label] for label in labels]
+        medians = [median_values[label] for label in labels]
+        lower_uncertainty_values = [lower_values[label] for label in labels]
+        upper_uncertainty_values = [upper_values[label] for label in labels]
 
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -233,8 +232,14 @@ def plot_mean_npv_technology_bars(
             values,
             y_positions,
             xerr=[
-                [value - lower for value, lower in zip(values, lower_values)],
-                [upper - value for value, upper in zip(values, upper_values)],
+                [
+                    value - lower
+                    for value, lower in zip(values, lower_uncertainty_values)
+                ],
+                [
+                    upper - value
+                    for value, upper in zip(values, upper_uncertainty_values)
+                ],
             ],
             fmt="none",
             ecolor="#4d4d4d",
@@ -270,11 +275,14 @@ def plot_mean_npv_technology_bars(
         margin = 0.04 * (upper_limit - lower_limit)
     elif has_uncertainty:
         max_abs_value = max(
-            max(abs(value) for value in lower_values),
-            max(abs(value) for value in upper_values),
+            max(abs(value) for value in lower_uncertainty_values),
+            max(abs(value) for value in upper_uncertainty_values),
         )
         margin = max(60.0, 0.12 * max_abs_value)
-        ax.set_xlim(min(lower_values) - margin, max(upper_values) + margin)
+        ax.set_xlim(
+            min(lower_uncertainty_values) - margin,
+            max(upper_uncertainty_values) + margin,
+        )
     else:
         max_abs_value = max(abs(value) for value in values)
         margin = max(25.0, 0.16 * max_abs_value)
@@ -296,7 +304,7 @@ def plot_mean_npv_technology_bars(
         display_note = (
             note_text
             if note_text is not None
-            else f"{note}Bars show mean NPV; whiskers show simulated 5th-95th percentiles."
+            else f"{note}Bars show the mean; whiskers show simulated 5th-95th percentiles."
         )
         if display_note:
             ax.text(
@@ -361,6 +369,7 @@ def plot_average_rank_bars(
     ranking_summary: pd.DataFrame,
     output_path: Path | None,
     title: str = "Monte Carlo NPV Ranking",
+    metric_label: str = "NPV",
     random_seed: int | None = None,
     base_font_size: float = 9.0,
     minimum_font_size: float | None = None,
@@ -452,7 +461,11 @@ def plot_average_rank_bars(
     ax.set_yticklabels(labels, fontsize=label_font_size, color="#5a5a5a")
     ax.invert_yaxis()
     ax.set_title("Average rank", fontsize=panel_title_font_size, color="#4d4d4d", pad=10 * font_scale)
-    ax.set_xlabel("Mean rank across simulations (1 = highest NPV)", fontsize=label_font_size, color="#5a5a5a")
+    ax.set_xlabel(
+        f"Mean rank across simulations (1 = highest {metric_label})",
+        fontsize=label_font_size,
+        color="#5a5a5a",
+    )
 
     max_rank = max(max(average_ranks), len(rank_count_columns))
     if show_rank_annotations and count_ax is None:
@@ -547,8 +560,9 @@ def plot_average_rank_bars(
         note_text
         if note_text is not None
         else (
-            f"Ranks are calculated within each Monte Carlo simulation by NPV "
-            f"(rank 1 = highest NPV, rank {int(max_rank)} = lowest NPV). "
+            f"Ranks are calculated within each Monte Carlo simulation by {metric_label} "
+            f"(rank 1 = highest {metric_label}, "
+            f"rank {int(max_rank)} = lowest {metric_label}). "
             f"Sample size: {n_simulations:,} simulations"
             f"{f'; random seed: {random_seed}' if random_seed is not None else ''}."
         )

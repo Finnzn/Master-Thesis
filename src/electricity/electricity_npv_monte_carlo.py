@@ -40,7 +40,11 @@ from general_parameters import (
     NO_FUEL_PRICE_EUR_PER_MWH_TH,
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
-from npv_finance import calculate_npv
+from npv_finance import (
+    calculate_discounted_lifetime_output,
+    calculate_levelized_net_margin,
+    calculate_npv,
+)
 
 
 DEFAULT_SAMPLE_SIZE = 100_000
@@ -223,8 +227,17 @@ def simulate_electricity_technology_npv(
         lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
     )
-    lifetime_output_mwh = annual_output_mwh * lifetime_years
-    npv_eur_per_mwh = npv_eur / lifetime_output_mwh
+    discounted_lifetime_output_mwh = calculate_discounted_lifetime_output(
+        annual_output=annual_output_mwh,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
+    levelized_net_margin_eur_per_mwh = calculate_levelized_net_margin(
+        npv_eur=npv_eur,
+        annual_output=annual_output_mwh,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
 
     # Return both sampled inputs and derived outputs so CSV exports are traceable.
     # `run_id` links technologies when they are ranked within the same simulation.
@@ -253,8 +266,10 @@ def simulate_electricity_technology_npv(
         "annual_emissions_cost_eur": annual_emissions_cost_eur,
         "annual_net_cash_flow_eur": annual_net_cash_flow_eur,
         "npv_eur": npv_eur,
-        "lifetime_output_mwh": np.full(size, lifetime_output_mwh),
-        "npv_eur_per_mwh": npv_eur_per_mwh,
+        "discounted_lifetime_output_mwh": np.full(
+            size, discounted_lifetime_output_mwh
+        ),
+        "levelized_net_margin_eur_per_mwh": levelized_net_margin_eur_per_mwh,
     }
 
 

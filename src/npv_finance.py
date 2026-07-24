@@ -51,3 +51,49 @@ def calculate_npv(
     )
     # Initial CAPEX is paid at year 0; annual cash flow is discounted over the lifetime.
     return -initial_capex_eur + annual_net_cash_flow_eur * present_value_factor
+
+
+def calculate_discounted_lifetime_output(
+    annual_output: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+) -> float | np.ndarray:
+    """Calculate lifetime output discounted on the same basis as annual cash flow."""
+
+    output = np.asarray(annual_output)
+    if np.any(output <= 0):
+        raise ValueError("annual_output must be positive.")
+
+    present_value_factor = calculate_level_cash_flow_present_value_factor(
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    discounted_output = output * present_value_factor
+    if np.ndim(discounted_output) == 0:
+        return float(discounted_output)
+    return discounted_output
+
+
+def calculate_levelized_net_margin(
+    npv_eur: float | np.ndarray,
+    annual_output: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+) -> float | np.ndarray:
+    """Calculate levelized net margin as NPV per discounted lifetime output.
+
+    The numerator and denominator use the same lifetime and discount rate. The
+    result is therefore expressed in EUR per physical unit of output, while
+    retaining NPV's sign: positive values create value and negative values
+    destroy value under the stated assumptions.
+    """
+
+    discounted_output = calculate_discounted_lifetime_output(
+        annual_output=annual_output,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    levelized_net_margin = np.asarray(npv_eur) / discounted_output
+    if np.ndim(levelized_net_margin) == 0:
+        return float(levelized_net_margin)
+    return levelized_net_margin

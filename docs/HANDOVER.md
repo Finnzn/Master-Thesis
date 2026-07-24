@@ -93,10 +93,14 @@ outside the working repository.
 
 ## Important Scientific Conventions
 
-- Higher NPV is better.
-- An NPV of exactly zero is classified as non-negative.
-- Electricity normalized NPV is reported in EUR/MWh over lifetime output.
-- Cement normalized NPV is reported in EUR/t over lifetime output.
+- Higher total NPV and higher levelized net margin are better.
+- A value of exactly zero is classified as non-negative.
+- Electricity levelized net margin is NPV divided by discounted lifetime
+  electricity output and is reported in EUR/MWh.
+- Cement levelized net margin is NPV divided by discounted lifetime cement
+  output and is reported in EUR/t.
+- Summary workflows switch explicitly between total NPV (`NPV`) and levelized
+  net margin (`LNM`). LCOX is intentionally not implemented yet.
 - Monte Carlo technology rankings compare technologies within the same
   simulation ID, so shared uncertain conditions describe the same sampled
   world.

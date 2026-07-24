@@ -30,7 +30,11 @@ from general_parameters import (
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
 from npv_summary import representative_value
-from npv_finance import calculate_npv
+from npv_finance import (
+    calculate_discounted_lifetime_output,
+    calculate_levelized_net_margin,
+    calculate_npv,
+)
 
 
 def electricity_fuel_price_parameter(
@@ -139,8 +143,17 @@ def calculate_deterministic_electricity_result(
             discount_rate=INTEREST_RATE.value,
         )[0]
     )
-    lifetime_output_mwh = annual_output_mwh * lifetime_years
-    npv_eur_per_mwh = npv_eur / lifetime_output_mwh
+    discounted_lifetime_output_mwh = calculate_discounted_lifetime_output(
+        annual_output=annual_output_mwh,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
+    levelized_net_margin_eur_per_mwh = calculate_levelized_net_margin(
+        npv_eur=npv_eur,
+        annual_output=annual_output_mwh,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
 
     # Keep the same output keys as the Monte Carlo result for shared export helpers.
     return {
@@ -171,8 +184,10 @@ def calculate_deterministic_electricity_result(
         "annual_emissions_cost_eur": [annual_emissions_cost_eur],
         "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
         "npv_eur": [npv_eur],
-        "lifetime_output_mwh": [lifetime_output_mwh],
-        "npv_eur_per_mwh": [npv_eur_per_mwh],
+        "discounted_lifetime_output_mwh": [discounted_lifetime_output_mwh],
+        "levelized_net_margin_eur_per_mwh": [
+            levelized_net_margin_eur_per_mwh
+        ],
     }
 
 

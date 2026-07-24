@@ -1,4 +1,4 @@
-"""Streamlit dashboard for deterministic NPV sensitivity analysis."""
+"""Streamlit dashboard for deterministic financial sensitivity analysis."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from sensitivity_analysis import (  # noqa: E402
-    METRIC_SPECIFIC,
+    METRIC_LEVELIZED_NET_MARGIN,
     METRIC_TOTAL,
     SECTOR_DISPLAY_NAMES,
     SECTOR_UNITS,
@@ -34,7 +34,7 @@ from sensitivity_analysis import (  # noqa: E402
 
 
 st.set_page_config(
-    page_title="NPV Sensitivity Dashboard",
+    page_title="Financial Metric Sensitivity Dashboard",
     layout="wide",
 )
 
@@ -42,7 +42,7 @@ st.set_page_config(
 def main() -> None:
     """Render the sensitivity-analysis dashboard."""
 
-    st.title("NPV Sensitivity Dashboard")
+    st.title("Financial Metric Sensitivity Dashboard")
     st.caption("Deterministic one-factor-at-a-time sensitivity around editable inputs.")
 
     cement_tab, electricity_tab = st.tabs(["Cement", "Electricity"])
@@ -77,8 +77,8 @@ def render_sector_dashboard(sector: str) -> None:
             key=f"{sector}_variation",
         )
         metric = st.selectbox(
-            "NPV metric",
-            [METRIC_SPECIFIC, METRIC_TOTAL],
+            "Financial metric",
+            [METRIC_LEVELIZED_NET_MARGIN, METRIC_TOTAL],
             format_func=lambda value: format_metric_option(sector, value),
             key=f"{sector}_metric",
         )
@@ -103,7 +103,7 @@ def render_sector_dashboard(sector: str) -> None:
     )
     title = (
         f"Tornado Diagram: {SECTOR_DISPLAY_NAMES[sector]} "
-        f"{display_label(technology)} NPV"
+        f"{display_label(technology)} {format_metric_option(sector, metric)}"
     )
     x_axis_label = metric_axis_label(sector, metric)
     fig = plot_tornado(
@@ -336,7 +336,7 @@ def format_metric_option(sector: str, metric: str) -> str:
 
     if metric == METRIC_TOTAL:
         return "Total NPV (MEUR)"
-    return f"Specific NPV (EUR/{SECTOR_UNITS[sector]})"
+    return f"Levelized net margin (EUR/{SECTOR_UNITS[sector]})"
 
 
 def selected_metric_label(sector: str, metric: str) -> str:
@@ -344,7 +344,7 @@ def selected_metric_label(sector: str, metric: str) -> str:
 
     if metric == METRIC_TOTAL:
         return "Scenario NPV"
-    return f"Scenario NPV/{SECTOR_UNITS[sector]}"
+    return f"Scenario levelized net margin (EUR/{SECTOR_UNITS[sector]})"
 
 
 def format_metric_value(sector: str, metric: str, value: float) -> str:

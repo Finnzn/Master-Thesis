@@ -4770,3 +4770,139 @@ scenario behavior.
 - The analysis used the current normal assumptions: 80 EUR/tCO2 carbon price,
   8% discount rate, 100,000 Monte Carlo draws, random seed 42, and sampled
   cement retrofit BAU mode.
+
+## 2026-07-24 13:28 — Add levelized net margin as a financial metric
+
+### User request
+
+Implement levelized net margin throughout the project, including every affected
+notebook, while retaining an explicit switch between total NPV and levelized net
+margin. Leave LCOX for a later step.
+
+### Files changed (if needed)
+
+- `src/npv_finance.py` — added shared discounted-output and levelized-net-margin
+  calculations.
+- `src/electricity/` and `src/cement/` NPV model and summary modules — replaced
+  undiscounted NPV-per-output results with discounted-output levelized net
+  margin and added `NPV`/`LNM` reporting switches.
+- `src/npv_summary.py` and `src/npv_summary_plots.py` — generalized ranking,
+  sign-summary, and plot helpers for either financial metric.
+- `src/sensitivity_analysis.py`, `src/sensitivity_deep_dive.py`, and
+  `sensitivity_dashboard.py` — replaced specific NPV with levelized net margin
+  and retained total NPV as the alternative.
+- 40 affected notebooks under `notebooks/` — updated result keys, labels,
+  plots, settings, and metric switches; cleared stale saved outputs.
+- `README.md` and `docs/HANDOVER.md` — documented the formula, units, switches,
+  and the explicit deferral of LCOX.
+- `CHANGELOG.md` — documented this implementation.
+
+### What was implemented
+
+- Defined levelized net margin as NPV divided by discounted lifetime output,
+  using the same lifetime and discount rate as the annual cash-flow present
+  value.
+- Added auditable discounted-output fields and levelized-net-margin fields in
+  electricity (`EUR/MWh`) and cement (`EUR/t`) deterministic and Monte Carlo
+  results.
+- Replaced the ambiguous NPV-scale CLI with `--metric NPV` and `--metric LNM`.
+- Made summary figures, technology rankings, CSV exports, sensitivity analyses,
+  dashboard labels, and notebook plots follow the selected metric.
+- Kept rank 1 as the highest value for both NPV and levelized net margin.
+- Did not implement LCOX and did not generate or change repository figures or
+  data outputs.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src /opt/anaconda3/envs/master-thesis/bin/python -m compileall -q src sensitivity_dashboard.py`
+  - Deterministic and Monte Carlo formula assertions for both sectors.
+  - Both sector summary CLIs with reduced samples for `--metric NPV` and
+    `--metric LNM`, including ranking plots and CSV exports in temporary
+    directories.
+  - Code-cell compile checks for every notebook.
+  - Reduced-sample execution of all 40 modified notebooks with saving disabled.
+  - Repository-wide stale-reference scans and `git diff --check`.
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- No model input parameters, raw data, processed data, tracked figures, or
+  assumptions other than the reported per-output metric definition changed.
+- The previous NPV divided by undiscounted lifetime output fields were removed.
+- Existing historical figures remain unchanged; regenerate only the metric and
+  sector outputs needed for the thesis.
+
+### Next suggested step
+
+Define the LCOX cost boundary and component treatment, then compare it
+analytically with product price minus levelized net margin.
+
+## 2026-07-24 13:45 — Rebuild all outputs and execute all notebooks
+
+### User request
+
+Verify that every notebook path previously using specific or normalized NPV now
+uses levelized net margin, clear all figures and generated raw/processed data,
+regenerate the complete output set, and rerun every notebook.
+
+### Files changed (if needed)
+
+- `figures/` — removed 24 historical tracked figures and generated 18 current
+  NPV, levelized-net-margin, sensitivity, and cement MACC figures.
+- `data/raw/` — cleared and regenerated 12 current raw/ranking CSVs.
+- `data/processed/` — cleared and regenerated 16 current model, ranking,
+  sensitivity, and cement MACC CSVs.
+- `notebooks/**/*.ipynb` — executed and saved all 42 notebooks with fresh cell
+  outputs.
+- `CHANGELOG.md` — documented the full rebuild.
+
+### What was implemented
+
+- Audited all 42 notebook sources. Summary notebooks switch explicitly between
+  `NPV` and `LNM`; sensitivity/scenario notebooks switch between total NPV and
+  `METRIC_LEVELIZED_NET_MARGIN`; technology notebooks report total NPV and
+  levelized net margin together.
+- Confirmed no notebook source retains the former specific/normalized NPV keys
+  or labels.
+- Removed every existing file under `figures/`, `data/raw/`, and
+  `data/processed/`.
+- Regenerated electricity and cement summary, deterministic, ranking, raw, and
+  processed outputs at 100,000 Monte Carlo draws and random seed 42 for both
+  total NPV and levelized net margin.
+- Regenerated standardized sensitivity heatmaps/CSVs for total NPV and
+  levelized net margin.
+- Regenerated deterministic and simulated cement MACC figures and CSVs.
+- Executed all notebooks using their stored full-size settings and saved their
+  current outputs.
+
+### Verification (if needed)
+
+- Commands run:
+  - Full electricity summary workflow with `--metric NPV` and `--metric LNM`.
+  - Full cement summary workflow with `--metric NPV` and `--metric LNM`.
+  - `python -m sensitivity_deep_dive` for `levelized_net_margin` and `total`.
+  - `python -m cement.cement_macc` in deterministic and simulated modes.
+  - `nbclient` execution of all 42 notebooks without reduced samples.
+  - PNG readability, CSV schema/row-count, LNM identity, ranking-metric,
+    notebook-error, stale-reference, and `git diff --check` validations.
+- Result:
+  - All workflows and all 42 notebooks completed successfully.
+  - Generated 18 valid PNGs and 28 CSVs containing 10,800,528 lines in total.
+  - Sampled processed rows satisfy
+    `levelized net margin × discounted lifetime output = NPV`.
+
+### Reproducibility notes
+
+- Current generated outputs are dated `2026-07-24`.
+- `data/raw/` is approximately 972 MB and `data/processed/` approximately
+  798 MB; both directories remain ignored by Git.
+- The old tracked figure files are deleted in the working tree. The 18 new
+  current figures are untracked until explicitly added to Git.
+- No LCOX calculation was added during this rebuild.
+
+### Next suggested step
+
+Review the regenerated figures for thesis selection, then add only the final
+figure set intended for version control.

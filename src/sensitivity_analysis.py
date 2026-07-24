@@ -27,7 +27,10 @@ from electricity.electricity_npv_deterministic import (
 )
 from electricity.electricity_parameters import ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS
 from general_parameters import INTEREST_RATE
-from npv_finance import calculate_level_cash_flow_present_value_factor
+from npv_finance import (
+    calculate_level_cash_flow_present_value_factor,
+    calculate_levelized_net_margin,
+)
 
 
 @dataclass(frozen=True)
@@ -70,7 +73,7 @@ SECTOR_UNITS = {
 }
 
 METRIC_TOTAL = "total"
-METRIC_SPECIFIC = "specific"
+METRIC_LEVELIZED_NET_MARGIN = "levelized_net_margin"
 
 
 SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
@@ -229,16 +232,20 @@ def calculate_metric_value(
     inputs: ScenarioInputs,
     metric: str,
 ) -> float:
-    """Calculate the selected NPV metric for one scenario."""
+    """Calculate total NPV or levelized net margin for one scenario."""
 
     npv_eur = calculate_sector_npv(sector, inputs)
     if metric == METRIC_TOTAL:
         return npv_eur / 1_000_000.0
-    if metric == METRIC_SPECIFIC:
-        lifetime_output = inputs.annual_output * inputs.lifetime_years
-        if lifetime_output <= 0:
-            raise ValueError("Specific NPV requires positive lifetime output.")
-        return npv_eur / lifetime_output
+    if metric == METRIC_LEVELIZED_NET_MARGIN:
+        return float(
+            calculate_levelized_net_margin(
+                npv_eur=npv_eur,
+                annual_output=inputs.annual_output,
+                lifetime_years=int(round(inputs.lifetime_years)),
+                discount_rate=inputs.discount_rate,
+            )
+        )
 
     raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
 
@@ -248,8 +255,8 @@ def metric_axis_label(sector: str, metric: str) -> str:
 
     if metric == METRIC_TOTAL:
         return "Impact on NPV (million EUR)"
-    if metric == METRIC_SPECIFIC:
-        return f"Impact on NPV (EUR/{SECTOR_UNITS[sector]})"
+    if metric == METRIC_LEVELIZED_NET_MARGIN:
+        return f"Impact on levelized net margin (EUR/{SECTOR_UNITS[sector]})"
 
     raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
 

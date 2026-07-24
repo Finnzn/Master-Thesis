@@ -1,13 +1,13 @@
-"""Generate the thesis technology-input NPV sensitivity analysis.
+"""Generate the thesis technology-input financial sensitivity analysis.
 
 The analysis is deliberately narrow: every included input is changed one at a
 time by the same relative amount (20% by default), and the resulting change in
-specific NPV is recorded. It does not perform Monte Carlo uncertainty-range or
-correlation analysis.
+levelized net margin is recorded. It does not perform Monte Carlo
+uncertainty-range or correlation analysis.
 
-Specific NPV (EUR/t cement or EUR/MWh electricity) removes the arbitrary common
-annual-output scale. Product selling price and annual output are excluded from
-the cross-technology heatmap because they are common comparison assumptions.
+Levelized net margin (EUR/t cement or EUR/MWh electricity) divides NPV by
+discounted lifetime output. Product selling price and annual output are excluded
+from the cross-technology heatmap because they are common comparison assumptions.
 Lifetime and discount rate remain included as common financial assumptions.
 """
 
@@ -22,8 +22,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from sensitivity_analysis import (
+    METRIC_LEVELIZED_NET_MARGIN,
     METRIC_TOTAL,
-    METRIC_SPECIFIC,
     available_technologies,
     base_inputs,
     build_sensitivity_table,
@@ -99,7 +99,7 @@ def _technology_label(technology: str) -> str:
 def standardized_sensitivity(
     sector: str,
     variation_fraction: float,
-    metric: str = METRIC_SPECIFIC,
+    metric: str = METRIC_LEVELIZED_NET_MARGIN,
 ) -> pd.DataFrame:
     """Calculate equal-percentage NPV sensitivity for all technologies."""
 
@@ -142,7 +142,7 @@ def plot_sensitivity_heatmap(
     sector: str,
     variation_fraction: float,
     output_path: Path,
-    metric: str = METRIC_SPECIFIC,
+    metric: str = METRIC_LEVELIZED_NET_MARGIN,
 ) -> Path:
     """Save a within-technology relative sensitivity heatmap for one sector."""
 
@@ -162,7 +162,7 @@ def build_sensitivity_heatmap_figure(
     standardized: pd.DataFrame,
     sector: str,
     variation_fraction: float,
-    metric: str = METRIC_SPECIFIC,
+    metric: str = METRIC_LEVELIZED_NET_MARGIN,
 ) -> plt.Figure:
     """Build a within-technology relative sensitivity heatmap for one sector."""
 
@@ -250,7 +250,7 @@ def build_sensitivity_heatmap_figure(
     fig.text(
         0.01,
         0.01,
-        "100 = largest absolute change in specific NPV for that technology. "
+        "100 = largest absolute change in levelized net margin for that technology. "
         "A value of 17 means 17% of that row's largest impact.",
         fontsize=8,
         color="#555555",
@@ -263,7 +263,7 @@ def generate_deep_dive(
     project_root: Path,
     output_dir: Path | None = None,
     variation_fraction: float = 0.20,
-    metric: str = METRIC_SPECIFIC,
+    metric: str = METRIC_LEVELIZED_NET_MARGIN,
 ) -> tuple[Path, ...]:
     """Save one standardized CSV and one heatmap per sector."""
 
@@ -306,8 +306,8 @@ def generate_deep_dive(
 def _metric_title_label(metric: str) -> str:
     """Return a concise plot-title label for a sensitivity metric."""
 
-    if metric == METRIC_SPECIFIC:
-        return "specific NPV"
+    if metric == METRIC_LEVELIZED_NET_MARGIN:
+        return "levelized net margin"
     if metric == METRIC_TOTAL:
         return "total NPV"
     raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
@@ -316,8 +316,8 @@ def _metric_title_label(metric: str) -> str:
 def _metric_filename_suffix(metric: str) -> str:
     """Return a filename-safe label for a sensitivity metric."""
 
-    if metric == METRIC_SPECIFIC:
-        return "Specific"
+    if metric == METRIC_LEVELIZED_NET_MARGIN:
+        return "Levelized_Net_Margin"
     if metric == METRIC_TOTAL:
         return "Total"
     raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
@@ -353,9 +353,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--metric",
-        choices=(METRIC_SPECIFIC, METRIC_TOTAL),
-        default=METRIC_SPECIFIC,
-        help="NPV metric used for the one-at-a-time sensitivity calculation.",
+        choices=(METRIC_LEVELIZED_NET_MARGIN, METRIC_TOTAL),
+        default=METRIC_LEVELIZED_NET_MARGIN,
+        help="Financial metric used for the one-at-a-time sensitivity calculation.",
     )
     args = parser.parse_args()
     paths = generate_deep_dive(

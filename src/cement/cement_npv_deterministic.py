@@ -37,7 +37,11 @@ from general_parameters import (
     ELECTRICITY_PRICE_DISTRIBUTION,
     INTEREST_RATE,
 )
-from npv_finance import calculate_npv
+from npv_finance import (
+    calculate_discounted_lifetime_output,
+    calculate_levelized_net_margin,
+    calculate_npv,
+)
 from npv_summary import representative_value
 
 
@@ -220,8 +224,17 @@ def calculate_deterministic_cement_result(
             discount_rate=INTEREST_RATE.value,
         )[0]
     )
-    lifetime_output_t = annual_output_t * lifetime_years
-    npv_eur_per_t = npv_eur / lifetime_output_t
+    discounted_lifetime_output_t = calculate_discounted_lifetime_output(
+        annual_output=annual_output_t,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
+    levelized_net_margin_eur_per_t = calculate_levelized_net_margin(
+        npv_eur=npv_eur,
+        annual_output=annual_output_t,
+        lifetime_years=int(lifetime_years),
+        discount_rate=INTEREST_RATE.value,
+    )
 
     result = {
         "run_id": [0],
@@ -256,8 +269,8 @@ def calculate_deterministic_cement_result(
         "annual_emissions_cost_eur": [annual_emissions_cost_eur],
         "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
         "npv_eur": [npv_eur],
-        "lifetime_output_t": [lifetime_output_t],
-        "npv_eur_per_t": [npv_eur_per_t],
+        "discounted_lifetime_output_t": [discounted_lifetime_output_t],
+        "levelized_net_margin_eur_per_t": [levelized_net_margin_eur_per_t],
     }
 
     for retrofit_key in (
