@@ -109,6 +109,13 @@ outside the working repository.
   margin (`LNM`), and levelized cost (`LCOX`).
 - Under the current constant-price and constant-output models, product price
   minus LCOX equals levelized net margin.
+- BECCS is registered as an electricity technology with uniformly sampled
+  techno-economic ranges, a triangular biomass price of
+  17.36/28.93/46.28 EUR/MWh_th, fixed full-load hours of 7,665 h/year, and an
+  explicit 25-year lifetime assumption aligned with biogas.
+- BECCS emissions are negative. The common emissions-cost calculation therefore
+  produces a negative cost that acts as carbon-removal revenue in NPV/LNM and
+  as a carbon credit in LCOE.
 - Monte Carlo technology rankings compare technologies within the same
   simulation ID, so shared uncertain conditions describe the same sampled
   world. Rank 1 is the highest NPV/LNM or the lowest LCOX.

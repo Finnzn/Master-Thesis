@@ -16,6 +16,7 @@ from typing import Mapping
 from distributions import (
     FixedParameter,
     ScaledBetaDistribution,
+    TriangularDistribution,
     UniformDistribution,
     create_scaled_beta_distribution,
 )
@@ -44,6 +45,14 @@ BIOGAS_PRICE_EUR_PER_MWH_TH = FixedParameter(
     value=87.5,
     unit="EUR/MWh_th",
     description="Biogas fuel price.",
+)
+
+BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
+    minimum=17.36,
+    mode=28.93,
+    maximum=46.28,
+    unit="EUR/MWh_th",
+    description="Triangular biomass fuel-price distribution for BECCS.",
 )
 
 NO_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
@@ -95,9 +104,13 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,
 }
 
-GENERAL_DISTRIBUTIONS: Mapping[str, ScaledBetaDistribution | UniformDistribution] = {
+GENERAL_DISTRIBUTIONS: Mapping[
+    str,
+    ScaledBetaDistribution | TriangularDistribution | UniformDistribution,
+] = {
     "gas_price_eur_per_mwh_th": GAS_PRICE_DISTRIBUTION,
     "coal_price_eur_per_mwh_th": COAL_PRICE_DISTRIBUTION,
     "electricity_price_eur_per_mwh": ELECTRICITY_PRICE_DISTRIBUTION,
     "biofuel_price_eur_per_mwh_th": BIOFUEL_PRICE_DISTRIBUTION,
+    "biomass_price_eur_per_mwh_th": BIOMASS_PRICE_DISTRIBUTION,
 }

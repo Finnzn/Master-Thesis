@@ -58,6 +58,7 @@ ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
     "wind_onshore": "Wind Onshore",
     "pv": "PV",
     "biogas": "Biogas",
+    "beccs": "BECCS",
 }
 
 # Columns exported as raw inputs. These are values that enter the model directly:

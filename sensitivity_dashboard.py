@@ -297,11 +297,14 @@ def build_input_controls(sector: str, technology: str, defaults):
             key=f"{sector}_{technology}_electricity_price",
         )
 
+    # BECCS has net-negative emissions. Keep the zero floor for conventional
+    # technologies while allowing the BECCS base value and carbon credit.
+    emissions_min_value = None if defaults.emissions < 0.0 else 0.0
     emissions = st.number_input(
         emissions_label,
-        min_value=0.0,
+        min_value=emissions_min_value,
         value=float(defaults.emissions),
-        step=max(0.001, defaults.emissions * 0.05),
+        step=max(0.001, abs(defaults.emissions) * 0.05),
         format="%.4f",
         key=f"{sector}_{technology}_emissions",
     )

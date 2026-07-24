@@ -495,6 +495,59 @@ BIOGAS_LIFETIME_YEARS = FixedParameter(
     description="Economic lifetime for the biogas technology.",
 )
 
+# Bioenergy with carbon capture and storage (BECCS). The supplied source values
+# provide bounded ranges but no central estimate, so the techno-economic inputs
+# use uniform distributions. Negative direct emissions represent net carbon
+# removal and therefore produce a carbon credit in the shared cash-flow formula.
+BECCS_CAPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=2_454.0,
+    upper_bound=4_239.0,
+    unit="EUR/kW",
+    description="Uniform distribution for BECCS CAPEX, not annualized.",
+)
+
+BECCS_FIXED_OPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=128.4,
+    upper_bound=229.1,
+    unit="EUR/kW/year",
+    description="Uniform distribution for BECCS fixed OPEX.",
+)
+
+BECCS_VARIABLE_OPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=1.16,
+    upper_bound=2.31,
+    unit="EUR/MWh_e",
+    description="Uniform distribution for BECCS variable OPEX excluding fuel and electricity.",
+)
+
+BECCS_FUEL_CONSUMPTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=2.42,
+    upper_bound=3.27,
+    unit="MWh_th/MWh_e",
+    description="Uniform distribution for BECCS biomass fuel consumption.",
+)
+
+BECCS_EMISSIONS_DISTRIBUTION = UniformDistribution(
+    lower_bound=-1.33,
+    upper_bound=-1.01,
+    unit="tCO2/MWh_e",
+    description="Uniform distribution for BECCS net-negative direct emissions.",
+)
+
+BECCS_FULL_LOAD_HOURS = FixedParameter(
+    value=7_665.0,
+    unit="h/year",
+    description="Average of the supplied 7,446-7,884 h/year BECCS range.",
+)
+
+# No BECCS lifetime was supplied. The model therefore uses the existing
+# 25-year bioenergy lifetime assumption applied to biogas.
+BECCS_LIFETIME_YEARS = FixedParameter(
+    value=25.0,
+    unit="years",
+    description="Assumed BECCS economic lifetime, aligned with biogas.",
+)
+
 
 # Parameter registries.
 #
@@ -547,6 +600,10 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     "biogas": {
         "full_load_hours_per_year": BIOGAS_FULL_LOAD_HOURS,
         "lifetime_years": BIOGAS_LIFETIME_YEARS,
+    },
+    "beccs": {
+        "full_load_hours_per_year": BECCS_FULL_LOAD_HOURS,
+        "lifetime_years": BECCS_LIFETIME_YEARS,
     },
 }
 
@@ -618,5 +675,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": BIOGAS_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": BIOGAS_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": BIOGAS_EMISSIONS,
+    },
+    "beccs": {
+        "capex_eur_per_kw": BECCS_CAPEX_DISTRIBUTION,
+        "fixed_opex_eur_per_kw_year": BECCS_FIXED_OPEX_DISTRIBUTION,
+        "variable_opex_eur_per_mwh": BECCS_VARIABLE_OPEX_DISTRIBUTION,
+        "fuel_consumption_mwh_th_per_mwh_e": BECCS_FUEL_CONSUMPTION_DISTRIBUTION,
+        "emissions_tco2_per_mwh_e": BECCS_EMISSIONS_DISTRIBUTION,
     },
 }

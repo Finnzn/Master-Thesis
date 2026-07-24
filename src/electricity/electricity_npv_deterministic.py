@@ -12,7 +12,11 @@ from typing import Mapping
 
 import numpy as np
 
-from distributions import FixedParameter, ScaledBetaDistribution
+from distributions import (
+    FixedParameter,
+    ScaledBetaDistribution,
+    TriangularDistribution,
+)
 from electricity.electricity_capacity_calculation import calculate_capacity_kw
 from electricity.electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
@@ -21,6 +25,7 @@ from electricity.electricity_parameters import (
     RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
+    BIOMASS_PRICE_DISTRIBUTION,
     BIOGAS_PRICE_EUR_PER_MWH_TH,
     CARBON_PRICE_EUR_PER_T,
     COAL_PRICE_DISTRIBUTION,
@@ -41,7 +46,7 @@ from npv_finance import (
 
 def electricity_fuel_price_parameter(
     technology: str,
-) -> FixedParameter | ScaledBetaDistribution:
+) -> FixedParameter | ScaledBetaDistribution | TriangularDistribution:
     """Return the fuel-price parameter used by an electricity technology.
 
     Fuel prices are not stored inside every technology block because several
@@ -61,6 +66,7 @@ def electricity_fuel_price_parameter(
         "wind_onshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "pv": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "biogas": BIOGAS_PRICE_EUR_PER_MWH_TH,
+        "beccs": BIOMASS_PRICE_DISTRIBUTION,
     }
     if technology not in fuel_price_by_technology:
         raise ValueError(f"No fuel-price parameter configured for {technology!r}.")
@@ -127,6 +133,9 @@ def calculate_deterministic_electricity_result(
         * fuel_consumption_mwh_th_per_mwh_e
         * fuel_price_eur_per_mwh_th
     )
+    # Negative BECCS emissions produce a negative carbon-cost value. Subtracting
+    # that value below turns the carbon term into revenue without a separate
+    # technology-specific cash-flow formula.
     annual_emissions_cost_eur = (
         annual_output_mwh * emissions_tco2_per_mwh_e * CARBON_PRICE_EUR_PER_T.value
     )

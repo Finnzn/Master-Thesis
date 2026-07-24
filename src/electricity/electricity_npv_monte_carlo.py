@@ -32,6 +32,7 @@ from electricity.electricity_parameters import (
     RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
+    BIOMASS_PRICE_DISTRIBUTION,
     BIOGAS_PRICE_EUR_PER_MWH_TH,
     CARBON_PRICE_EUR_PER_T,
     COAL_PRICE_DISTRIBUTION,
@@ -176,6 +177,7 @@ def simulate_electricity_technology_npv(
         "wind_onshore": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "pv": NO_FUEL_PRICE_EUR_PER_MWH_TH,
         "biogas": BIOGAS_PRICE_EUR_PER_MWH_TH,
+        "beccs": BIOMASS_PRICE_DISTRIBUTION,
     }
     fuel_price_key_by_technology = {
         "hard_coal": "coal_price_eur_per_mwh_th",
@@ -187,6 +189,7 @@ def simulate_electricity_technology_npv(
         "wind_onshore": "no_fuel_price_eur_per_mwh_th",
         "pv": "no_fuel_price_eur_per_mwh_th",
         "biogas": "biogas_price_eur_per_mwh_th",
+        "beccs": "biomass_price_eur_per_mwh_th",
     }
     if technology not in fuel_price_distribution_by_technology:
         raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
@@ -213,6 +216,9 @@ def simulate_electricity_technology_npv(
         * fuel_consumption_mwh_th_per_mwh_e
         * fuel_price_eur_per_mwh_th
     )
+    # For BECCS, sampled emissions are negative. The resulting negative
+    # carbon-cost value is subtracted from cash flow and therefore acts as
+    # carbon-removal revenue while retaining one shared formula.
     annual_emissions_cost_eur = (
         annual_output_mwh * emissions_tco2_per_mwh_e * CARBON_PRICE_EUR_PER_T.value
     )
@@ -414,6 +420,19 @@ def simulate_biogas_npv(
     )
 
 
+def simulate_beccs_npv(
+    size: int,
+    rng: np.random.Generator | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Run a Monte Carlo NPV simulation for a BECCS electricity plant."""
+
+    return simulate_electricity_technology_npv(
+        technology="beccs",
+        size=size,
+        rng=rng,
+    )
+
+
 def simulate_electricity_technologies_npv(
     size: int,
     technologies: tuple[str, ...] | None = None,
@@ -461,15 +480,27 @@ def simulate_electricity_technologies_npv(
             rng=generator,
         ),
     }
-    return {
-        technology: simulate_electricity_technology_npv(
+    results: dict[str, Mapping[str, np.ndarray]] = {}
+    for technology in selected_technologies:
+        if (
+            technology == "beccs"
+            and "biomass_price_eur_per_mwh_th" not in market_values
+        ):
+            # BECCS is appended to the default registry. Sampling its shared
+            # biomass price only when BECCS is reached preserves the seeded
+            # draws of all pre-existing technologies.
+            market_values["biomass_price_eur_per_mwh_th"] = _sample_parameter(
+                parameter=BIOMASS_PRICE_DISTRIBUTION,
+                size=size,
+                rng=generator,
+            )
+        results[technology] = simulate_electricity_technology_npv(
             technology=technology,
             size=size,
             rng=generator,
             market_values=market_values,
         )
-        for technology in selected_technologies
-    }
+    return results
 
 
 def simulate_electricity_results(

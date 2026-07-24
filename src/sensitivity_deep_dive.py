@@ -39,6 +39,7 @@ TECHNOLOGY_LABELS = {
     "ccgt_ccs": "CCGT with CCS",
     "hard_coal_ccs": "Hard coal with CCS",
     "pv": "PV",
+    "beccs": "BECCS",
 }
 
 # Inputs retained for the first thesis step. Product selling price and annual

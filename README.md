@@ -105,8 +105,8 @@ sector-specific calculations.
   distribution specifications used by Monte Carlo simulations.
 - `src/general_parameters.py` stores shared assumptions such as carbon price,
   discount rate, and fuel-price distributions.
-- `src/npv_finance.py` contains the sector-independent NPV and levelized net
-  margin formulas.
+- `src/npv_finance.py` contains the sector-independent NPV, levelized net
+  margin, and LCOX formulas.
 - `src/sensitivity_analysis.py` contains deterministic one-factor-at-a-time
   sensitivity calculations and tornado-chart plotting for the dashboard.
 - `src/npv_summary.py` converts simulation outputs into summary tables, rankings,
@@ -133,6 +133,27 @@ sector-specific calculations.
   regenerated reproducibly.
 - Use `sensitivity_dashboard.py` for interactive deterministic
   one-factor-at-a-time sensitivity analysis.
+
+## BECCS Electricity Assumptions
+
+BECCS follows the same normalized-output, deterministic, Monte Carlo, NPV, LNM,
+and LCOE pipeline as the other electricity technologies. Its assumptions are:
+
+| Input | BECCS assumption |
+| --- | --- |
+| CAPEX | Uniform, 2,454-4,239 EUR/kW |
+| Fixed OPEX | Uniform, 128.4-229.1 EUR/kW/year |
+| Variable OPEX excluding fuel | Uniform, 1.16-2.31 EUR/MWh |
+| Biomass consumption | Uniform, 2.42-3.27 MWh_th/MWh_e |
+| Net emissions | Uniform, -1.33 to -1.01 tCO2/MWh_e |
+| Full-load hours | Fixed at 7,665 h/year, the average of 7,446-7,884 |
+| Biomass price | Triangular, 17.36 / 28.93 / 46.28 EUR/MWh_th |
+| Lifetime | 25 years, assumed equal to the existing biogas lifetime |
+
+The supplied negative-emissions range is multiplied by the common carbon price.
+This produces a negative carbon-cost term, which becomes carbon-removal revenue
+when subtracted in the shared cash-flow formula. The same negative term reduces
+LCOE because the established LCOX boundary includes carbon costs and credits.
 
 ## Sensitivity Dashboard
 

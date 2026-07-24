@@ -4993,3 +4993,102 @@ in the same way as NPV, and add one general notebook for electricity and cement.
 Review the cost boundary and generated LCOE/LCOC results for thesis
 interpretation, especially whether carbon cost should remain inside the stated
 LCOX boundary in every scenario.
+
+## 2026-07-24 15:38 — Add BECCS to the electricity sector
+
+### User request
+
+Use the thesis workflow and implement BECCS with the same deterministic,
+probabilistic, NPV, LNM, and LCOE structure as the other electricity
+technologies. Use the average supplied full-load hours, the supplied biomass
+fuel-price range, and treat negative emissions as carbon revenue.
+
+### Files changed
+
+- `src/general_parameters.py` — added the triangular BECCS biomass-price
+  distribution.
+- `src/electricity/electricity_parameters.py` — added and registered BECCS
+  techno-economic assumptions, fixed full-load hours, and lifetime.
+- `src/electricity/electricity_npv_deterministic.py` — connected BECCS to the
+  biomass-price assumption and documented negative carbon cost as revenue.
+- `src/electricity/electricity_npv_monte_carlo.py` — added the BECCS simulation
+  wrapper, biomass-price sampling, and the shared carbon-credit treatment.
+- `src/electricity/electricity_npv_summary_figures.py` — added the publication
+  label `BECCS`.
+- `src/npv_summary_plots.py` — allowed LCOX comparison axes to display negative
+  values if a carbon credit pushes a percentile below zero.
+- `src/sensitivity_analysis.py`, `src/sensitivity_deep_dive.py`, and
+  `sensitivity_dashboard.py` — added BECCS labeling and allowed negative
+  emissions in deterministic sensitivity calculations and dashboard inputs.
+- `notebooks/electricity/deterministic_beccs_npv.ipynb` — added the executed
+  deterministic BECCS notebook.
+- `notebooks/electricity/plot_beccs_npv.ipynb` — added the executed 100,000-draw
+  BECCS Monte Carlo notebook.
+- `README.md` and `docs/HANDOVER.md` — documented assumptions, distribution
+  choices, carbon-credit treatment, and the lifetime assumption.
+- `CHANGELOG.md` — documented the implementation and verification.
+
+### What was implemented
+
+- Added BECCS with the supplied bounded assumptions:
+  - CAPEX: uniform `2,454-4,239 EUR/kW`
+  - fixed OPEX: uniform `128.4-229.1 EUR/kW/year`
+  - variable OPEX excluding fuel: uniform `1.16-2.31 EUR/MWh`
+  - biomass consumption: uniform `2.42-3.27 MWh_th/MWh_e`
+  - emissions: uniform `-1.33` to `-1.01 tCO2/MWh_e`
+- Used fixed full-load hours of `7,665 h/year`, the arithmetic mean of
+  `7,446-7,884 h/year`.
+- Modelled the supplied biomass low/base/high values as a triangular
+  distribution with `17.36/28.93/46.28 EUR/MWh_th`. The deterministic case
+  therefore uses the base value of `28.93 EUR/MWh_th`.
+- Used a 25-year BECCS lifetime because no lifetime was supplied, explicitly
+  aligning the assumption with the existing biogas bioenergy technology.
+- Kept one shared financial formula. Negative BECCS emissions create a negative
+  `annual_emissions_cost_eur`; subtracting this term increases net cash flow,
+  while adding it to total cost applies the same carbon credit to LCOE.
+- Appended BECCS to the default technology registry. Biomass price is sampled
+  only when BECCS is reached, preserving all pre-existing technologies'
+  seed-42 random draws.
+- Updated sensitivity handling so BECCS negative emissions are not clamped to
+  zero.
+
+### Verification
+
+- Commands run:
+  - Python compilation for `src/` and `sensitivity_dashboard.py`
+  - deterministic and 100-/1,000-draw in-memory BECCS checks
+  - seed-hash comparison for all nine pre-existing electricity technologies
+  - 500-draw temporary NPV, LNM, and LCOX summary/ranking workflows
+  - full execution of the two new BECCS notebooks
+  - `git diff --check`
+- Result:
+  - All checks passed.
+  - All nine pre-existing technologies retained their exact seed-42 hashes.
+  - Repeated BECCS runs with the same seed were identical, while different
+    simulation IDs received different biomass-price draws.
+  - BECCS emissions and annual carbon cost remained negative in every checked
+    draw, and the carbon term increased net cash flow.
+  - `electricity price - LCOE = levelized net margin` passed numerically.
+  - Negative-emissions sensitivity variations remained negative rather than
+    being clamped to zero.
+  - Both new notebooks executed with no saved error outputs.
+
+### Reproducibility notes
+
+- No ignored raw/processed data and no repository figure outputs were
+  regenerated or changed for this task.
+- Existing electricity aggregate figures, CSVs, and saved summary-notebook
+  outputs predate BECCS and therefore do not yet contain the new technology.
+  Their source code will include BECCS automatically when those workflows are
+  next rerun.
+- With the current common carbon price of `80 EUR/tCO2`, the deterministic
+  BECCS case has a carbon credit of `93.6 million EUR/year`, NPV of
+  `420.684 million EUR`, LCOE of `54.661 EUR/MWh`, and levelized net margin of
+  `39.409 EUR/MWh`.
+- The 25-year lifetime is an explicit modelling assumption, not a supplied
+  BECCS source value.
+
+### Next suggested step
+
+Confirm the 25-year BECCS lifetime assumption before regenerating the aggregate
+electricity figures, CSVs, and summary notebooks.

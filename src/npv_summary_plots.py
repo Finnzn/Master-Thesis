@@ -120,12 +120,17 @@ def fixed_financial_metric_bar_axis_config(
             float(value) for value in range(int(lower), 1001, 1000)
         )
     if financial_metric == "LCOX":
+        lower = min(
+            min(values["p05"] for values in distribution_summary.values()),
+            min(deterministic_values.values()),
+        )
         upper = max(
             max(values["p95"] for values in distribution_summary.values()),
             max(deterministic_values.values()),
         )
+        lower_limit = min(0.0, math.floor(lower / 50.0) * 50.0)
         upper_limit = max(1.0, math.ceil(upper / 50.0) * 50.0)
-        axis_limits = (0.0, upper_limit)
+        axis_limits = (lower_limit, upper_limit)
         return axis_limits, shared_axis_ticks(axis_limits)
 
     x_axis_limits = shared_axis_limits(

@@ -103,7 +103,10 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
         SensitivityParameter("Variable OPEX", "variable_opex"),
         SensitivityParameter("Fuel use", "fuel_consumption"),
         SensitivityParameter("Fuel price", "fuel_price"),
-        SensitivityParameter("Direct emissions", "emissions"),
+        # Negative emissions must remain available for BECCS. Other technology
+        # base cases remain positive, so removing the zero floor does not alter
+        # their standard ±variation calculation.
+        SensitivityParameter("Direct emissions", "emissions", minimum=float("-inf")),
         SensitivityParameter("Carbon price", "carbon_price"),
     ),
 }
@@ -124,6 +127,8 @@ def available_technologies(sector: str) -> tuple[str, ...]:
 def display_label(name: str) -> str:
     """Convert snake-case technology or parameter names to display labels."""
 
+    if name == "beccs":
+        return "BECCS"
     return name.replace("_", " ").title()
 
 
