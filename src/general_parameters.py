@@ -23,7 +23,7 @@ from distributions import (
 
 # Carbon price is applied to direct stack emissions in the NPV cash-flow model.
 CARBON_PRICE_EUR_PER_T = FixedParameter(
-    value=80.0,
+    value=0.0,
     unit="EUR/tCO2",
     description="Carbon price used in the general setup.",
 )
