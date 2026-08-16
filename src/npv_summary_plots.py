@@ -1,9 +1,9 @@
-"""Reusable plotting helpers for financial-metric technology comparisons.
+"""Reusable plotting helpers for financial-metric distributions and comparisons.
 
 The calculation modules produce dictionaries and DataFrames; this module turns
-those summaries into thesis-ready figures. It does not calculate financial
-metrics or rankings itself, which keeps visual styling separate from model
-logic.
+simulation results and summaries into thesis-ready figures. It does not
+calculate financial metrics or rankings itself, which keeps visual styling
+separate from model logic.
 """
 
 from __future__ import annotations
@@ -152,6 +152,56 @@ def dated_figure_path(
     figure_date = run_date or date.today()
     suffix = extension.lstrip(".")
     return output_dir / f"{figure_date.isoformat()}-{stem}.{suffix}"
+
+
+def plot_financial_metric_distribution(
+    values: pd.Series,
+    *,
+    title: str,
+    x_axis_label: str,
+    color: str,
+    bins: int = 50,
+    show_break_even: bool = False,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Plot one Monte Carlo financial-metric distribution.
+
+    NPV and levelized net margin callers can show the zero break-even line.
+    Levelized cost callers omit it because zero cost is not a profitability
+    threshold.
+    """
+
+    if values.empty:
+        raise ValueError("values must contain at least one value.")
+    if values.isna().any() or not values.map(math.isfinite).all():
+        raise ValueError("values must contain only finite values.")
+    if bins <= 0:
+        raise ValueError("bins must be a positive integer.")
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.hist(
+        values,
+        bins=bins,
+        color=color,
+        edgecolor="white",
+        alpha=0.8,
+    )
+    ax.axvline(values.mean(), color="tab:blue", linewidth=2, label="Mean")
+    ax.axvline(
+        values.median(),
+        color="tab:orange",
+        linewidth=2,
+        label="Median",
+    )
+    if show_break_even:
+        ax.axvline(0, color="black", linewidth=1, linestyle="--", label="Break-even")
+
+    ax.set_title(title)
+    ax.set_xlabel(x_axis_label)
+    ax.set_ylabel("Frequency")
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend()
+    fig.tight_layout()
+    return fig, ax
 
 
 def plot_financial_metric_technology_bars(

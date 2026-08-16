@@ -5210,3 +5210,72 @@ add a separate renewable value-factor scenario plot using the supplied cases.
 Review the inline renewable VF figure and, once accepted, regenerate only the
 electricity CSV outputs needed for the thesis so they include value factor and
 captured electricity price.
+
+## 2026-08-16 18:08 — Add all financial metrics to technology distributions
+
+### User request
+
+Update the individual electricity and cement technology notebooks so their
+Monte Carlo distribution plots cover total NPV, LNM, and LCOX, while keeping the
+implementation lean and reusable.
+
+### Files changed (if needed)
+
+- `src/npv_summary_plots.py` — added one reusable financial-metric histogram
+  helper for the repeated notebook plotting pattern.
+- `notebooks/electricity/plot_*_npv.ipynb` — updated all ten individual
+  electricity notebooks to plot total NPV, LNM, and LCOE as electricity LCOX.
+- `notebooks/cement/plot_*_npv.ipynb` — updated all nine individual cement
+  notebooks to plot total NPV, LNM, and LCOC as cement LCOX.
+- `CHANGELOG.md` — documented the implementation and verification.
+
+### What was implemented
+
+- Reused the NPV, LNM, and LCOE/LCOC series that the notebooks already
+  calculated and summarized; no simulation formula or financial assumption was
+  changed.
+- Centralized the common 50-bin histogram, mean, median, axes, grid, and legend
+  styling in `plot_financial_metric_distribution()` and replaced the duplicated
+  NPV/LNM plotting blocks with concise calls to it.
+- Added the missing purple LCOE/LCOC distribution to every individual
+  technology notebook and labelled it explicitly as `LCOE (LCOX)` or
+  `LCOC (LCOX)`.
+- Retained the zero break-even line for NPV and LNM. Levelized-cost plots omit
+  that line because zero cost is not the financial break-even threshold and
+  lower LCOX is preferable.
+- Removed unused NumPy imports and redundant electricity LNM heading cells.
+
+### Verification (if needed)
+
+- Commands run:
+  - Python compilation for `src/` and `sensitivity_dashboard.py`.
+  - JSON parsing and Python AST compilation for all 19 affected notebooks.
+  - Full in-place execution of all 19 notebooks with the project `python3`
+    kernel and the default 100,000 Monte Carlo samples.
+  - Saved-output checks for exactly three embedded plot images per notebook,
+    with no execution errors or `FigureCanvasAgg` warning outputs.
+  - Cross-sector 128-draw numerical checks for every technology.
+  - Visual inspection of representative PV and CCS cement NPV, LNM, and LCOX
+    figures.
+  - Source-scope comparison against `HEAD` and `git diff --check`.
+- Result:
+  - All checks passed.
+  - `NPV / discounted lifetime output = LNM` passed for every electricity and
+    cement technology.
+  - `captured electricity price - LCOE = electricity LNM` and
+    `cement price - LCOC = cement LNM` passed for every checked draw.
+
+### Reproducibility notes
+
+- The 19 notebooks contain freshly executed tables and all three distribution
+  figures. Their metadata records Python 3.12.14 because that is the interpreter
+  in the project `.venv` used for execution; it is not a model parameter.
+- No raw data, processed data, standalone result files, or repository figure
+  files were generated or changed.
+- To regenerate the notebook outputs, run:
+  `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=300 --ExecutePreprocessor.kernel_name=python3 notebooks/electricity/plot_*_npv.ipynb notebooks/cement/plot_*_npv.ipynb`.
+
+### Next suggested step
+
+Review one representative electricity and cement notebook in Jupyter and use
+the same three-metric order when selecting final thesis figures.
