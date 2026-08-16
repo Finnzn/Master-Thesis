@@ -62,7 +62,8 @@ ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
 }
 
 # Columns exported as raw inputs. These are values that enter the model directly:
-# sampled techno-economic assumptions, fixed prices, and carbon price.
+# sampled techno-economic assumptions, fixed prices, value factor, and carbon
+# price.
 ELECTRICITY_RAW_INPUT_COLUMNS = (
     "run_id",
     "technology",
@@ -76,6 +77,7 @@ ELECTRICITY_RAW_INPUT_COLUMNS = (
     "emissions_tco2_per_mwh_e",
     "fuel_price_eur_per_mwh_th",
     "electricity_price_eur_per_mwh",
+    "value_factor",
     "carbon_price_eur_per_t",
 )
 
@@ -87,6 +89,7 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "capacity_mw",
     "capacity_kw",
     "initial_capex_eur",
+    "captured_electricity_price_eur_per_mwh",
     "annual_revenue_eur",
     "annual_fixed_opex_eur",
     "annual_variable_opex_eur",

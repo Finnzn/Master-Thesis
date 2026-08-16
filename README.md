@@ -129,6 +129,8 @@ sector-specific calculations.
   of non-negative versus negative NPV simulations.
 - Use `notebooks/<sector>/deterministic_*_npv.ipynb` to inspect one
   representative deterministic calculation.
+- Use `notebooks/scenario_analysis.ipynb` for the deterministic FLH, lifetime,
+  renewable value-factor, CO2-price, and discount-rate scenarios.
 - Use the command-line summary modules when figures and CSV outputs must be
   regenerated reproducibly.
 - Use `sensitivity_dashboard.py` for interactive deterministic
@@ -155,6 +157,23 @@ This produces a negative carbon-cost term, which becomes carbon-removal revenue
 when subtracted in the shared cash-flow formula. The same negative term reduces
 LCOE because the established LCOX boundary includes carbon costs and credits.
 
+## Renewable Electricity Value Factors
+
+PV, onshore wind, and offshore wind each have a fixed base value factor of
+`1.0` in `src/electricity/electricity_parameters.py`. The value factor scales
+the model's existing electricity sales-price proxy to a captured price. The
+parameter names are `VF_PV`, `VF_Wind_onshore`, and `VF_windoffshore`:
+
+```text
+captured electricity price = electricity sales-price proxy * value factor
+annual electricity revenue = annual generation * captured electricity price
+```
+
+It does not change generation, required capacity, costs, discounted output, or
+LCOE. The separate renewable plot in `notebooks/scenario_analysis.ipynb`
+compares the requested Base / Case 1 / Case 2 factors for PV and both wind
+technologies.
+
 ## Sensitivity Dashboard
 
 The Streamlit dashboard provides an interactive deterministic sensitivity
@@ -178,11 +197,12 @@ The path above is specific to the original development machine. On another
 machine, activate the environment created in the quick start and use the first
 command.
 
-The dashboard supports total NPV in million EUR and levelized net margin in
-`EUR/t` for cement or `EUR/MWh` for electricity. Green bars indicate changes
-that improve the selected metric, red bars indicate changes that worsen it, and the
-`+x%` or `-x%` labels show which input movement caused the impact. Downloaded or
-in-app saved dashboard figures can be written to `figures/`.
+The dashboard uses the same `NPV`, `LNM`, and `LCOX` selector as the summary and
+scenario notebooks. Green bars indicate changes that improve the selected
+metric and red bars indicate changes that worsen it; for LCOX, a lower value is
+treated as better. The `+x%` or `-x%` labels show which input movement caused
+the impact. Downloaded or in-app saved dashboard figures can be written to
+`figures/`.
 
 Each sector tab also contains a **Variables in sensitivity analysis** panel.
 Check or uncheck inputs there to control which variables are recalculated and
@@ -199,8 +219,8 @@ To regenerate the standardized technology-input sensitivity CSV and heatmaps:
 PYTHONPATH=src python -m sensitivity_deep_dive
 ```
 
-The heatmaps compare equal relative input changes using levelized net margin
-(`EUR/t` or `EUR/MWh`). Annual output and product selling prices are excluded
+The heatmaps compare equal relative input changes using the selected `NPV`,
+`LNM`, or `LCOX` metric. Annual output and product selling prices are excluded
 from these cross-technology heatmaps because they are common comparison
 assumptions rather than technology-development inputs. Lifetime and discount
 rate remain included as common financial assumptions.
@@ -267,7 +287,8 @@ cost; product sales revenue is excluded. Under the current constant-price and
 constant-output assumptions:
 
 ```text
-product price - LCOX = LNM
+electricity captured price - LCOE = electricity LNM
+cement price - LCOC = cement LNM
 ```
 
 The general deterministic and probabilistic LCOX analysis is in

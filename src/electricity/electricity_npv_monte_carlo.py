@@ -133,6 +133,12 @@ def simulate_electricity_technology_npv(
         rng=generator,
     )
     lifetime_years = technology_fixed_parameters["lifetime_years"].value
+    value_factor_parameter = technology_fixed_parameters.get("value_factor")
+    value_factor = (
+        _sample_parameter(value_factor_parameter, size=size, rng=generator)
+        if value_factor_parameter is not None
+        else np.ones(size)
+    )
     capacity_mw = annual_output_mwh / full_load_hours
     capacity_kw = capacity_mw * 1_000.0
 
@@ -204,11 +210,17 @@ def simulate_electricity_technology_npv(
     else:
         fuel_price_eur_per_mwh_th = market_values[fuel_price_key]
     electricity_price_eur_per_mwh = RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
+    captured_electricity_price_eur_per_mwh = (
+        electricity_price_eur_per_mwh * value_factor
+    )
 
-    # Annual cash flow is revenue minus operating, fuel, and carbon-cost terms.
-    # CAPEX is handled separately as the initial investment in the NPV formula.
+    # Renewable value factors scale the common sales-price proxy to the captured
+    # price. Annual cash flow is revenue minus operating, fuel, and carbon-cost
+    # terms; CAPEX is handled separately in the NPV formula.
     initial_capex_eur = capacity_kw * capex_eur_per_kw
-    annual_revenue_eur = annual_output_mwh * electricity_price_eur_per_mwh
+    annual_revenue_eur = (
+        annual_output_mwh * captured_electricity_price_eur_per_mwh
+    )
     annual_fixed_opex_eur = capacity_kw * fixed_opex_eur_per_kw_year
     annual_variable_opex_eur = annual_output_mwh * variable_opex_eur_per_mwh
     annual_fuel_cost_eur = (
@@ -284,9 +296,13 @@ def simulate_electricity_technology_npv(
         "fuel_price_eur_per_mwh_th": fuel_price_eur_per_mwh_th,
         fuel_price_key: fuel_price_eur_per_mwh_th,
         "electricity_price_eur_per_mwh": np.full(size, electricity_price_eur_per_mwh),
+        "value_factor": value_factor,
+        "captured_electricity_price_eur_per_mwh": (
+            captured_electricity_price_eur_per_mwh
+        ),
         "carbon_price_eur_per_t": np.full(size, CARBON_PRICE_EUR_PER_T.value),
         "initial_capex_eur": initial_capex_eur,
-        "annual_revenue_eur": np.full(size, annual_revenue_eur),
+        "annual_revenue_eur": annual_revenue_eur,
         "annual_fixed_opex_eur": annual_fixed_opex_eur,
         "annual_variable_opex_eur": annual_variable_opex_eur,
         "annual_fuel_cost_eur": annual_fuel_cost_eur,

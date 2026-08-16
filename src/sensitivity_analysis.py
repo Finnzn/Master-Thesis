@@ -1,9 +1,9 @@
-"""Deterministic sensitivity-analysis helpers for the NPV dashboard.
+"""Deterministic sensitivity-analysis helpers for the financial dashboard.
 
 The dashboard uses the existing deterministic sector models as its base case.
-This module only recalculates NPV after explicit user changes to prices, costs,
-output, lifetime, or discount rate; it does not change the thesis assumptions
-stored in the parameter modules.
+This module recalculates NPV, levelized net margin, or levelized cost after
+explicit user changes to prices, costs, output, lifetime, or discount rate; it
+does not change the thesis assumptions stored in the parameter modules.
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ from electricity.electricity_parameters import ELECTRICITY_TECHNOLOGY_DISTRIBUTI
 from general_parameters import INTEREST_RATE
 from npv_finance import (
     calculate_level_cash_flow_present_value_factor,
+    calculate_levelized_cost,
     calculate_levelized_net_margin,
 )
 
@@ -51,6 +52,7 @@ class ScenarioInputs:
     emissions: float
     carbon_price: float
     full_load_hours: float | None = None
+    value_factor: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -72,8 +74,7 @@ SECTOR_UNITS = {
     "electricity": "MWh",
 }
 
-METRIC_TOTAL = "total"
-METRIC_LEVELIZED_NET_MARGIN = "levelized_net_margin"
+FINANCIAL_METRIC_OPTIONS = ("NPV", "LNM", "LCOX")
 
 
 SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
@@ -172,13 +173,17 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             emissions=result["emissions_tco2_per_mwh_e"],
             carbon_price=result["carbon_price_eur_per_t"],
             full_load_hours=result["full_load_hours_per_year"],
+            value_factor=result["value_factor"],
         )
 
     raise ValueError(f"Unknown sector: {sector!r}.")
 
 
-def calculate_sector_npv(sector: str, inputs: ScenarioInputs) -> float:
-    """Calculate NPV for one sector and one explicit scenario."""
+def _sector_financial_components(
+    sector: str,
+    inputs: ScenarioInputs,
+) -> tuple[float, float, float]:
+    """Return initial CAPEX, annual revenue, and annual cost for a scenario."""
 
     if sector == "cement":
         initial_capex_eur = inputs.annual_output * inputs.capex
@@ -204,7 +209,9 @@ def calculate_sector_npv(sector: str, inputs: ScenarioInputs) -> float:
             full_load_hours_per_year=inputs.full_load_hours,
         )
         initial_capex_eur = capacity_kw * inputs.capex
-        annual_revenue_eur = inputs.annual_output * inputs.sales_price
+        annual_revenue_eur = (
+            inputs.annual_output * inputs.sales_price * inputs.value_factor
+        )
         annual_fixed_opex_eur = capacity_kw * inputs.fixed_opex
         annual_variable_opex_eur = inputs.annual_output * inputs.variable_opex
         annual_fuel_cost_eur = (
@@ -217,14 +224,23 @@ def calculate_sector_npv(sector: str, inputs: ScenarioInputs) -> float:
     else:
         raise ValueError(f"Unknown sector: {sector!r}.")
 
-    annual_net_cash_flow_eur = (
-        annual_revenue_eur
-        - annual_fixed_opex_eur
-        - annual_variable_opex_eur
-        - annual_fuel_cost_eur
-        - annual_electricity_cost_eur
-        - annual_emissions_cost_eur
+    annual_total_cost_eur = (
+        annual_fixed_opex_eur
+        + annual_variable_opex_eur
+        + annual_fuel_cost_eur
+        + annual_electricity_cost_eur
+        + annual_emissions_cost_eur
     )
+    return initial_capex_eur, annual_revenue_eur, annual_total_cost_eur
+
+
+def calculate_sector_npv(sector: str, inputs: ScenarioInputs) -> float:
+    """Calculate NPV for one sector and one explicit scenario."""
+
+    initial_capex_eur, annual_revenue_eur, annual_total_cost_eur = (
+        _sector_financial_components(sector, inputs)
+    )
+    annual_net_cash_flow_eur = annual_revenue_eur - annual_total_cost_eur
     present_value_factor = calculate_level_cash_flow_present_value_factor(
         lifetime_years=int(round(inputs.lifetime_years)),
         discount_rate=inputs.discount_rate,
@@ -237,12 +253,17 @@ def calculate_metric_value(
     inputs: ScenarioInputs,
     metric: str,
 ) -> float:
-    """Calculate total NPV or levelized net margin for one scenario."""
+    """Calculate NPV, levelized net margin, or levelized cost for a scenario."""
 
+    if metric not in FINANCIAL_METRIC_OPTIONS:
+        valid_metrics = ", ".join(FINANCIAL_METRIC_OPTIONS)
+        raise ValueError(
+            f"Unknown financial metric {metric!r}. Use one of: {valid_metrics}."
+        )
     npv_eur = calculate_sector_npv(sector, inputs)
-    if metric == METRIC_TOTAL:
+    if metric == "NPV":
         return npv_eur / 1_000_000.0
-    if metric == METRIC_LEVELIZED_NET_MARGIN:
+    if metric == "LNM":
         return float(
             calculate_levelized_net_margin(
                 npv_eur=npv_eur,
@@ -251,26 +272,43 @@ def calculate_metric_value(
                 discount_rate=inputs.discount_rate,
             )
         )
-
-    raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
+    initial_capex_eur, _, annual_total_cost_eur = _sector_financial_components(
+        sector,
+        inputs,
+    )
+    return float(
+        calculate_levelized_cost(
+            initial_capex_eur=initial_capex_eur,
+            annual_cost_eur=annual_total_cost_eur,
+            annual_output=inputs.annual_output,
+            lifetime_years=int(round(inputs.lifetime_years)),
+            discount_rate=inputs.discount_rate,
+        )
+    )
 
 
 def metric_axis_label(sector: str, metric: str) -> str:
     """Return a readable axis label for the selected sensitivity metric."""
 
-    if metric == METRIC_TOTAL:
+    if metric == "NPV":
         return "Impact on NPV (million EUR)"
-    if metric == METRIC_LEVELIZED_NET_MARGIN:
+    if metric == "LNM":
         return f"Impact on levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LCOX":
+        levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
+        return f"Impact on {levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
 
-    raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
+    valid_metrics = ", ".join(FINANCIAL_METRIC_OPTIONS)
+    raise ValueError(
+        f"Unknown financial metric {metric!r}. Use one of: {valid_metrics}."
+    )
 
 
 def build_sensitivity_table(
     sector: str,
     inputs: ScenarioInputs,
     variation_fraction: float,
-    metric: str = METRIC_TOTAL,
+    metric: str = "NPV",
     included_attributes: Iterable[str] | None = None,
 ) -> pd.DataFrame:
     """Calculate one-factor-at-a-time tornado values around a scenario.
@@ -307,12 +345,18 @@ def build_sensitivity_table(
         )
         low_impact = low_metric_value - base_metric_value
         high_impact = high_metric_value - base_metric_value
-        favorable_impact = max(low_impact, high_impact)
-        unfavorable_impact = min(low_impact, high_impact)
         low_change = _relative_change_label(base_value, low_value)
         high_change = _relative_change_label(base_value, high_value)
-        favorable_change = low_change if low_impact >= high_impact else high_change
-        unfavorable_change = low_change if low_impact < high_impact else high_change
+        if metric == "LCOX":
+            favorable_impact = min(low_impact, high_impact)
+            unfavorable_impact = max(low_impact, high_impact)
+            low_is_favorable = low_impact <= high_impact
+        else:
+            favorable_impact = max(low_impact, high_impact)
+            unfavorable_impact = min(low_impact, high_impact)
+            low_is_favorable = low_impact >= high_impact
+        favorable_change = low_change if low_is_favorable else high_change
+        unfavorable_change = high_change if low_is_favorable else low_change
         rows.append(
             {
                 "parameter": parameter.label,
@@ -388,14 +432,14 @@ def plot_tornado(
         unfavorable,
         height=0.5,
         color="#ff6468",
-        label="Worse for selected NPV metric",
+        label="Worse for selected financial metric",
     )
     ax.barh(
         y_positions,
         favorable,
         height=0.5,
         color="#69b36d",
-        label="Better for selected NPV metric",
+        label="Better for selected financial metric",
     )
     ax.axvline(0, color="#222222", linewidth=1.0)
     ax.set_yticks(y_positions)
@@ -415,33 +459,31 @@ def plot_tornado(
     ax.tick_params(axis="y", left=False)
     for spine in ax.spines.values():
         spine.set_visible(False)
-    max_abs = max(
-        abs(table["unfavorable_impact"].min()),
-        abs(table["favorable_impact"].max()),
+    max_abs = float(
+        table[["unfavorable_impact", "favorable_impact"]]
+        .abs()
+        .to_numpy()
+        .max()
     )
     margin = max(1.0, 0.30 * max_abs)
     ax.set_xlim(-max_abs - margin, max_abs + margin)
     label_offset = margin * 0.10
-    for y_position, value, change in zip(y_positions, favorable, favorable_changes):
-        ax.text(
-            value + label_offset,
-            y_position,
-            change,
-            va="center",
-            ha="left",
-            fontsize=8,
-            color="#2c6f32",
-        )
-    for y_position, value, change in zip(y_positions, unfavorable, unfavorable_changes):
-        ax.text(
-            value - label_offset,
-            y_position,
-            change,
-            va="center",
-            ha="right",
-            fontsize=8,
-            color="#9a3033",
-        )
+    annotations = (
+        (favorable, favorable_changes, "#2c6f32"),
+        (unfavorable, unfavorable_changes, "#9a3033"),
+    )
+    for values, changes, color in annotations:
+        for y_position, value, change in zip(y_positions, values, changes):
+            is_negative = value < 0
+            ax.text(
+                value - label_offset if is_negative else value + label_offset,
+                y_position,
+                change,
+                va="center",
+                ha="right" if is_negative else "left",
+                fontsize=8,
+                color=color,
+            )
     fig.patch.set_facecolor("white")
     ax.set_facecolor("white")
     fig.tight_layout(pad=1.4)

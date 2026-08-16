@@ -17,8 +17,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from sensitivity_analysis import (  # noqa: E402
-    METRIC_LEVELIZED_NET_MARGIN,
-    METRIC_TOTAL,
+    FINANCIAL_METRIC_OPTIONS,
     SECTOR_DISPLAY_NAMES,
     SECTOR_UNITS,
     SENSITIVITY_PARAMETERS,
@@ -78,7 +77,8 @@ def render_sector_dashboard(sector: str) -> None:
         )
         metric = st.selectbox(
             "Financial metric",
-            [METRIC_LEVELIZED_NET_MARGIN, METRIC_TOTAL],
+            FINANCIAL_METRIC_OPTIONS,
+            index=FINANCIAL_METRIC_OPTIONS.index("LNM"),
             format_func=lambda value: format_metric_option(sector, value),
             key=f"{sector}_metric",
         )
@@ -331,31 +331,44 @@ def build_input_controls(sector: str, technology: str, defaults):
         emissions=emissions,
         carbon_price=carbon_price,
         full_load_hours=full_load_hours,
+        value_factor=defaults.value_factor,
     )
 
 
 def format_metric_option(sector: str, metric: str) -> str:
     """Return the selectbox label for one metric option."""
 
-    if metric == METRIC_TOTAL:
+    if metric == "NPV":
         return "Total NPV (MEUR)"
-    return f"Levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LNM":
+        return f"Levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LCOX":
+        levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
+        return f"{levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
+    raise ValueError(f"Unknown financial metric: {metric!r}.")
 
 
 def selected_metric_label(sector: str, metric: str) -> str:
     """Return the headline metric label."""
 
-    if metric == METRIC_TOTAL:
+    if metric == "NPV":
         return "Scenario NPV"
-    return f"Scenario levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LNM":
+        return f"Scenario levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LCOX":
+        levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
+        return f"Scenario {levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
+    raise ValueError(f"Unknown financial metric: {metric!r}.")
 
 
 def format_metric_value(sector: str, metric: str, value: float) -> str:
     """Format a selected metric value for the dashboard headline."""
 
-    if metric == METRIC_TOTAL:
+    if metric == "NPV":
         return f"{value:,.1f} MEUR"
-    return f"{value:,.2f} EUR/{SECTOR_UNITS[sector]}"
+    if metric in {"LNM", "LCOX"}:
+        return f"{value:,.2f} EUR/{SECTOR_UNITS[sector]}"
+    raise ValueError(f"Unknown financial metric: {metric!r}.")
 
 
 def format_sensitivity_table(table: pd.DataFrame, impact_label: str) -> pd.DataFrame:

@@ -98,6 +98,12 @@ def calculate_deterministic_electricity_result(
         fixed_parameters["full_load_hours_per_year"]
     )
     lifetime_years = representative_value(fixed_parameters["lifetime_years"])
+    value_factor_parameter = fixed_parameters.get("value_factor")
+    value_factor = (
+        representative_value(value_factor_parameter)
+        if value_factor_parameter is not None
+        else 1.0
+    )
     capacity_kw = calculate_capacity_kw(
         annual_electricity_output_mwh=annual_output_mwh,
         full_load_hours_per_year=full_load_hours,
@@ -120,11 +126,15 @@ def calculate_deterministic_electricity_result(
         electricity_fuel_price_parameter(technology)
     )
 
-    # The cash-flow structure mirrors the Monte Carlo calculation: revenue from
-    # electricity sales minus fixed OPEX, variable OPEX, fuel cost, and carbon cost.
+    # The cash-flow structure mirrors the Monte Carlo calculation. Renewable
+    # value factors scale the common sales-price proxy to the captured price;
+    # costs and physical generation remain unchanged.
     initial_capex_eur = capacity_kw * capex_eur_per_kw
+    captured_electricity_price_eur_per_mwh = (
+        RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value * value_factor
+    )
     annual_revenue_eur = (
-        annual_output_mwh * RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
+        annual_output_mwh * captured_electricity_price_eur_per_mwh
     )
     annual_fixed_opex_eur = capacity_kw * fixed_opex_eur_per_kw_year
     annual_variable_opex_eur = annual_output_mwh * variable_opex_eur_per_mwh
@@ -202,6 +212,10 @@ def calculate_deterministic_electricity_result(
         "fuel_price_eur_per_mwh_th": [fuel_price_eur_per_mwh_th],
         "electricity_price_eur_per_mwh": [
             RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
+        ],
+        "value_factor": [value_factor],
+        "captured_electricity_price_eur_per_mwh": [
+            captured_electricity_price_eur_per_mwh
         ],
         "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
         "capacity_mw": [capacity_kw / 1_000.0],

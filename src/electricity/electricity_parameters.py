@@ -25,6 +25,27 @@ RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
     description="Retail price of electricity used in the electricity-sector setup.",
 )
 
+# Renewable value factors scale the common electricity price to the average
+# price captured by each variable renewable technology. A value of 1.0 keeps
+# the existing base case unchanged.
+VF_PV = FixedParameter(
+    value=1.0,
+    unit="dimensionless",
+    description="Value factor applied to PV electricity sales revenue.",
+)
+
+VF_Wind_onshore = FixedParameter(
+    value=1.0,
+    unit="dimensionless",
+    description="Value factor applied to onshore-wind electricity sales revenue.",
+)
+
+VF_windoffshore = FixedParameter(
+    value=1.0,
+    unit="dimensionless",
+    description="Value factor applied to offshore-wind electricity sales revenue.",
+)
+
 # Normalized annual output: every technology is sized to produce this amount so
 # the NPV comparison is not driven by different plant sizes.
 ANNUAL_ELECTRICITY_OUTPUT_MWH = FixedParameter(
@@ -565,6 +586,7 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
 ] = {
     # Full-load hours size the plant before CAPEX and fixed OPEX are calculated.
     # Lifetime controls the NPV discount horizon and lifetime-output denominator.
+    # Variable renewables also carry a value factor that scales captured revenue.
     "hard_coal": {
         "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
         "lifetime_years": HARD_COAL_LIFETIME_YEARS,
@@ -588,14 +610,17 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     "wind_offshore": {
         "full_load_hours_per_year": WIND_OFFSHORE_FULL_LOAD_HOURS,
         "lifetime_years": WIND_OFFSHORE_LIFETIME_YEARS,
+        "value_factor": VF_windoffshore,
     },
     "wind_onshore": {
         "full_load_hours_per_year": WIND_ONSHORE_FULL_LOAD_HOURS,
         "lifetime_years": WIND_ONSHORE_LIFETIME_YEARS,
+        "value_factor": VF_Wind_onshore,
     },
     "pv": {
         "full_load_hours_per_year": PV_FULL_LOAD_HOURS,
         "lifetime_years": PV_LIFETIME_YEARS,
+        "value_factor": VF_PV,
     },
     "biogas": {
         "full_load_hours_per_year": BIOGAS_FULL_LOAD_HOURS,

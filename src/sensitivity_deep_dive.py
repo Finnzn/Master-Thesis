@@ -2,12 +2,12 @@
 
 The analysis is deliberately narrow: every included input is changed one at a
 time by the same relative amount (20% by default), and the resulting change in
-levelized net margin is recorded. It does not perform Monte Carlo
+the selected financial metric is recorded. It does not perform Monte Carlo
 uncertainty-range or correlation analysis.
 
-Levelized net margin (EUR/t cement or EUR/MWh electricity) divides NPV by
-discounted lifetime output. Product selling price and annual output are excluded
-from the cross-technology heatmap because they are common comparison assumptions.
+The selected financial metric can be NPV, levelized net margin, or levelized
+cost. Product selling price and annual output are excluded from the
+cross-technology heatmap because they are common comparison assumptions.
 Lifetime and discount rate remain included as common financial assumptions.
 """
 
@@ -22,8 +22,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from sensitivity_analysis import (
-    METRIC_LEVELIZED_NET_MARGIN,
-    METRIC_TOTAL,
+    FINANCIAL_METRIC_OPTIONS,
     available_technologies,
     base_inputs,
     build_sensitivity_table,
@@ -100,9 +99,9 @@ def _technology_label(technology: str) -> str:
 def standardized_sensitivity(
     sector: str,
     variation_fraction: float,
-    metric: str = METRIC_LEVELIZED_NET_MARGIN,
+    metric: str = "LNM",
 ) -> pd.DataFrame:
-    """Calculate equal-percentage NPV sensitivity for all technologies."""
+    """Calculate equal-percentage financial sensitivity for all technologies."""
 
     frames = []
     for technology in available_technologies(sector):
@@ -143,7 +142,7 @@ def plot_sensitivity_heatmap(
     sector: str,
     variation_fraction: float,
     output_path: Path,
-    metric: str = METRIC_LEVELIZED_NET_MARGIN,
+    metric: str = "LNM",
 ) -> Path:
     """Save a within-technology relative sensitivity heatmap for one sector."""
 
@@ -163,7 +162,7 @@ def build_sensitivity_heatmap_figure(
     standardized: pd.DataFrame,
     sector: str,
     variation_fraction: float,
-    metric: str = METRIC_LEVELIZED_NET_MARGIN,
+    metric: str = "LNM",
 ) -> plt.Figure:
     """Build a within-technology relative sensitivity heatmap for one sector."""
 
@@ -251,7 +250,8 @@ def build_sensitivity_heatmap_figure(
     fig.text(
         0.01,
         0.01,
-        "100 = largest absolute change in levelized net margin for that technology. "
+        f"100 = largest absolute change in {_metric_title_label(metric)} "
+        "for that technology. "
         "A value of 17 means 17% of that row's largest impact.",
         fontsize=8,
         color="#555555",
@@ -264,7 +264,7 @@ def generate_deep_dive(
     project_root: Path,
     output_dir: Path | None = None,
     variation_fraction: float = 0.20,
-    metric: str = METRIC_LEVELIZED_NET_MARGIN,
+    metric: str = "LNM",
 ) -> tuple[Path, ...]:
     """Save one standardized CSV and one heatmap per sector."""
 
@@ -307,21 +307,31 @@ def generate_deep_dive(
 def _metric_title_label(metric: str) -> str:
     """Return a concise plot-title label for a sensitivity metric."""
 
-    if metric == METRIC_LEVELIZED_NET_MARGIN:
+    if metric == "LNM":
         return "levelized net margin"
-    if metric == METRIC_TOTAL:
+    if metric == "NPV":
         return "total NPV"
-    raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
+    if metric == "LCOX":
+        return "levelized cost"
+    valid_metrics = ", ".join(FINANCIAL_METRIC_OPTIONS)
+    raise ValueError(
+        f"Unknown financial metric {metric!r}. Use one of: {valid_metrics}."
+    )
 
 
 def _metric_filename_suffix(metric: str) -> str:
     """Return a filename-safe label for a sensitivity metric."""
 
-    if metric == METRIC_LEVELIZED_NET_MARGIN:
+    if metric == "LNM":
         return "Levelized_Net_Margin"
-    if metric == METRIC_TOTAL:
-        return "Total"
-    raise ValueError(f"Unknown sensitivity metric: {metric!r}.")
+    if metric == "NPV":
+        return "NPV"
+    if metric == "LCOX":
+        return "LCOX"
+    valid_metrics = ", ".join(FINANCIAL_METRIC_OPTIONS)
+    raise ValueError(
+        f"Unknown financial metric {metric!r}. Use one of: {valid_metrics}."
+    )
 
 
 def _variation_filename_suffix(variation_fraction: float) -> str:
@@ -334,7 +344,7 @@ def _variation_filename_suffix(variation_fraction: float) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate standardized technology-input NPV sensitivity outputs."
+        description="Generate standardized technology-input financial sensitivity outputs."
     )
     parser.add_argument(
         "--project-root",
@@ -354,8 +364,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--metric",
-        choices=(METRIC_LEVELIZED_NET_MARGIN, METRIC_TOTAL),
-        default=METRIC_LEVELIZED_NET_MARGIN,
+        choices=FINANCIAL_METRIC_OPTIONS,
+        default="LNM",
         help="Financial metric used for the one-at-a-time sensitivity calculation.",
     )
     args = parser.parse_args()

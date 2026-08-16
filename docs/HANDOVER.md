@@ -34,6 +34,7 @@ separate finance formulas.
 | Change output naming or command-line workflows | the matching `*_npv_summary_figures.py` module |
 | Explore one technology | `notebooks/<sector>/plot_*_npv.ipynb` |
 | Compare all technologies | the sector `*_summary.ipynb` notebook |
+| Run deterministic cross-sector scenarios | `notebooks/scenario_analysis.ipynb` |
 | Compare deterministic and probabilistic LCOX | `notebooks/lcox_summary.ipynb` |
 | Run deterministic sensitivity interactively | `sensitivity_dashboard.py` |
 
@@ -107,8 +108,12 @@ outside the working repository.
   energy, and carbon cost. It excludes product sales revenue.
 - Summary workflows switch explicitly between total NPV (`NPV`), levelized net
   margin (`LNM`), and levelized cost (`LCOX`).
-- Under the current constant-price and constant-output models, product price
-  minus LCOX equals levelized net margin.
+- PV, onshore wind, and offshore wind have base value factors of 1.0. Their
+  captured electricity price is the model sales-price proxy multiplied by the
+  technology value factor; only electricity revenue, NPV, and LNM change.
+- Under the current constant-price and constant-output models, captured
+  electricity price minus LCOE equals electricity LNM, while cement price minus
+  LCOC equals cement LNM.
 - BECCS is registered as an electricity technology with uniformly sampled
   techno-economic ranges, a triangular biomass price of
   17.36/28.93/46.28 EUR/MWh_th, fixed full-load hours of 7,665 h/year, and an

@@ -5092,3 +5092,121 @@ fuel-price range, and treat negative emissions as carbon revenue.
 
 Confirm the 25-year BECCS lifetime assumption before regenerating the aggregate
 electricity figures, CSVs, and summary notebooks.
+
+## 2026-08-16 17:29 — Add renewable value-factor scenarios and unify metric selectors
+
+### User request
+
+Rename the deterministic scenario notebook to scenario analysis, add 1.0 base
+value factors for PV, onshore wind, and offshore wind, use the cement-summary
+`NPV` / `LNM` / `LCOX` selector convention throughout the active codebase, and
+add a separate renewable value-factor scenario plot using the supplied cases.
+
+### Files changed (if needed)
+
+- `notebooks/co2_discount_rate_scenarios.ipynb` ->
+  `notebooks/scenario_analysis.ipynb` — renamed and expanded the executed
+  deterministic scenario analysis with renewable value-factor cases and a
+  separate plot.
+- `src/electricity/electricity_parameters.py` — added and registered `VF_PV`,
+  `VF_Wind_onshore`, and `VF_windoffshore`, each fixed at 1.0.
+- `src/electricity/electricity_npv_deterministic.py` and
+  `src/electricity/electricity_npv_monte_carlo.py` — applied value factors to
+  captured electricity price and sales revenue and exposed the new traceability
+  fields.
+- `src/electricity/electricity_npv_summary_figures.py` — added value factor to
+  raw exports and captured electricity price to processed exports.
+- `src/sensitivity_analysis.py`, `src/sensitivity_deep_dive.py`, and
+  `sensitivity_dashboard.py` — replaced legacy metric constants with the
+  canonical selector strings and added correct LCOX calculations, labels, and
+  lower-is-better sensitivity direction.
+- `notebooks/sensitivity_heatmap.ipynb` — adopted the canonical selector and
+  added functional LCOX support.
+- `notebooks/electricity/electricity_summary.ipynb` — aligned the executed
+  default with the cement-summary `FINANCIAL_METRIC = "LNM"` convention.
+- `notebooks/electricity/deterministic_pv_npv.ipynb`,
+  `notebooks/electricity/deterministic_wind_onshore_npv.ipynb`, and
+  `notebooks/electricity/deterministic_wind_offshore_npv.ipynb` — exposed the
+  value factor and captured price in executed deterministic input/output tables.
+- `README.md` and `docs/HANDOVER.md` — documented the value-factor boundary,
+  scenario notebook, canonical metric options, and updated LNM/LCOX identity.
+- `CHANGELOG.md` — documented this implementation and its verification.
+
+### What was implemented
+
+- Defined each requested renewable base value factor as a traceable
+  `FixedParameter` with value 1.0 and registered it with its technology.
+- Defined captured electricity price as the existing model sales-price proxy
+  multiplied by value factor. Only captured price and revenue change; generation,
+  capacity, costs, discounted output, and LCOE remain unchanged.
+- Preserved a uniform electricity result schema by returning a no-adjustment
+  factor of 1.0 for technologies without a renewable value-factor parameter.
+- Replaced the active legacy `total` / `levelized_net_margin` selector vocabulary
+  with `NPV`, `LNM`, and `LCOX`. The scenario and sensitivity notebooks now use
+  `FINANCIAL_METRIC = "LNM"  # "NPV", "LNM", or "LCOX"`.
+- Aligned every active notebook-level `FINANCIAL_METRIC` default with the exact
+  cement-summary `"LNM"` setting while retaining all three selectable options.
+- Added explicit cost-based LCOE/LCOC calculation to the shared deterministic
+  sensitivity path. LCOX scenarios remain independent of value factor and the
+  tornado chart treats lower LCOX as favorable.
+- Added the requested technology-specific scenarios:
+  - onshore wind: Case 2 / Case 1 / Base = 0.70 / 0.85 / 1.00;
+  - offshore wind: 0.80 / 0.95 / 1.00;
+  - solar PV: 0.50 / 0.80 / 1.00.
+- Reused the FLH scenario calculation helper with configurable scenario order,
+  colors, and reference case, while displaying the renewable cases in their own
+  one-panel figure because Base is highest for NPV and LNM.
+- Renamed the scenario-table delta column from `delta_from_medium` to the
+  semantically accurate `delta_from_base`.
+
+### Verification (if needed)
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m compileall -q src sensitivity_dashboard.py`
+  - Deterministic and 25-draw seed-42 electricity regression checks, including
+    pre-change hashes with the two new result fields excluded.
+  - Cross-sector base-value comparisons for all `NPV`, `LNM`, and `LCOX`
+    calculations and LCOX tornado direction checks.
+  - Reduced 20-draw electricity summary/export workflows for all three metric
+    choices in temporary directories.
+  - In-memory heatmap builds for both sectors and all three metric choices.
+  - Executed `notebooks/scenario_analysis.ipynb` and
+    `notebooks/sensitivity_heatmap.ipynb`; also executed the three modified
+    renewable deterministic notebooks.
+  - Executed `notebooks/electricity/electricity_summary.ipynb` at its aligned
+    100,000-draw LNM default.
+  - In-memory scenario-notebook executions with `FINANCIAL_METRIC = "NPV"` and
+    `FINANCIAL_METRIC = "LCOX"`.
+  - JSON and code-cell compilation for all 44 notebook files present in the
+    working tree, saved-error-output checks, visual inspection of the VF plot,
+    stale-selector/reference scans, and `git diff --check`.
+- Result:
+  - All checks passed.
+  - The default factor of 1.0 preserved every pre-existing deterministic and
+    sampled electricity result bit-for-bit when the two added fields were
+    excluded from the comparison hash.
+  - The default LNM plot reports Case 2 / Case 1 / Base values of
+    `-13.905 / 0.205 / 14.316 EUR/MWh` for onshore wind,
+    `-11.004 / 3.107 / 7.810 EUR/MWh` for offshore wind, and
+    `-29.138 / -0.917 / 17.897 EUR/MWh` for PV.
+  - `captured electricity price - LCOE = LNM` passed numerically, and value-factor
+    changes left LCOE invariant.
+
+### Reproducibility notes
+
+- The renamed scenario notebook and affected summary, deterministic, and
+  sensitivity notebooks contain freshly executed outputs. The scenario notebook
+  writes no external files.
+- No repository raw data, processed data, results, or tracked figure files were
+  generated or changed. Export smoke-test files were written only to a temporary
+  directory.
+- Existing ignored electricity CSVs predate the two new schema fields and must be
+  regenerated before they are used as current value-factor-aware exports.
+- `notebooks/lcox_summary.ipynb` was already deleted in the working tree before
+  this task and was not restored or otherwise modified.
+
+### Next suggested step
+
+Review the inline renewable VF figure and, once accepted, regenerate only the
+electricity CSV outputs needed for the thesis so they include value factor and
+captured electricity price.
