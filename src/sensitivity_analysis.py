@@ -25,7 +25,7 @@ from electricity.electricity_capacity_calculation import calculate_capacity_kw
 from electricity.electricity_npv_deterministic import (
     calculate_deterministic_electricity_result,
 )
-from electricity.electricity_parameters import ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS
+from electricity.electricity_parameters import ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS
 from general_parameters import INTEREST_RATE
 from npv_finance import (
     calculate_level_cash_flow_present_value_factor,
@@ -121,7 +121,9 @@ def available_technologies(sector: str) -> tuple[str, ...]:
             CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
         )
     if sector == "electricity":
-        return tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
+        # The fixed-parameter registry retains the canonical display order across
+        # both absolute technologies and BAU-relative CCS retrofits.
+        return tuple(ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS)
     raise ValueError(f"Unknown sector: {sector!r}.")
 
 

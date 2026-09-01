@@ -108,55 +108,45 @@ HARD_COAL_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# Hard coal with CCS technology parameters. CCS raises CAPEX/OPEX and fuel use,
-# but lowers residual emissions compared with unabated hard coal.
-HARD_COAL_CCS_CAPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=3_021.0,
-    upper_bound=5_131.0,
+# Hard coal with CCS is a retrofit measure. Cost changes are added to the hard
+# coal BAU values. Positive reduction fractions lower a BAU physical intensity,
+# while negative reduction fractions represent consumption increases in the
+# later retrofit calculations.
+HARD_COAL_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=1_321.0,
+    upper_bound=2_831.0,
     unit="EUR/kW",
-    description="Uniform distribution for hard coal with CCS CAPEX, not annualized.",
+    description="Uniform distribution for hard coal CCS retrofit CAPEX increase, not annualized.",
 )
 
-HARD_COAL_CCS_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=61.3,
-    mode=82.2,
-    maximum=115.9,
+HARD_COAL_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
+    minimum=31.6,
+    mode=45.2,
+    maximum=67.8,
     unit="EUR/kW/year",
-    description="Triangular distribution for hard coal with CCS fixed OPEX.",
+    description="Triangular distribution for hard coal CCS retrofit fixed OPEX increase.",
 )
 
-HARD_COAL_CCS_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=8.0,
-    mode=10.73,
-    maximum=15.1,
+HARD_COAL_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
+    minimum=4.0,
+    mode=5.73,
+    maximum=8.6,
     unit="EUR/MWh_e",
-    description="Triangular distribution for hard coal with CCS variable OPEX excluding fuel and electricity.",
+    description="Triangular distribution for hard coal CCS retrofit variable OPEX increase excluding fuel and electricity.",
 )
 
-HARD_COAL_CCS_FUEL_CONSUMPTION_DISTRIBUTION = UniformDistribution(
-    lower_bound=3.08,
-    upper_bound=3.24,
-    unit="MWh_th/MWh_e",
-    description="Uniform distribution for hard coal with CCS fuel consumption.",
+HARD_COAL_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=-0.33,
+    upper_bound=-0.14,
+    unit="fraction",
+    description="Uniform distribution for hard coal CCS fuel-consumption reduction relative to BAU; negative values represent increases.",
 )
 
-HARD_COAL_CCS_EMISSIONS_DISTRIBUTION = UniformDistribution(
-    lower_bound=0.010,
-    upper_bound=0.110,
-    unit="tCO2/MWh_e",
-    description="Uniform distribution for hard coal with CCS residual direct emissions.",
-)
-
-HARD_COAL_CCS_FULL_LOAD_HOURS = FixedParameter(
-    value=4_100.0,
-    unit="h/year",
-    description="Average full-load hours for the hard coal with CCS technology.",
-)
-
-HARD_COAL_CCS_LIFETIME_YEARS = FixedParameter(
-    value=30.0,
-    unit="years",
-    description="Economic lifetime for the hard coal with CCS technology.",
+HARD_COAL_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.87,
+    upper_bound=0.99,
+    unit="fraction",
+    description="Uniform distribution for hard coal CCS emissions reduction relative to BAU.",
 )
 
 
@@ -214,55 +204,44 @@ CCGT_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# CCGT with CCS technology parameters. As with hard coal CCS, the model captures
-# higher costs and lower residual emissions relative to the unabated plant.
-CCGT_CCS_CAPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=1_487.0,
-    upper_bound=2_557.0,
+# CCGT with CCS follows the same BAU-relative retrofit convention as hard coal
+# CCS: cost changes are added, fuel increases are negative reductions, and the
+# emissions reduction fraction is applied multiplicatively to CCGT emissions.
+CCGT_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+    lower_bound=587.0,
+    upper_bound=1_257.0,
     unit="EUR/kW",
-    description="Uniform distribution for CCGT with CCS CAPEX, not annualized.",
+    description="Uniform distribution for CCGT CCS retrofit CAPEX increase, not annualized.",
 )
 
-CCGT_CCS_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=32.0,
-    mode=42.0,
-    maximum=60.2,
+CCGT_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
+    minimum=16.0,
+    mode=22.8,
+    maximum=34.2,
     unit="EUR/kW/year",
-    description="Triangular distribution for CCGT with CCS fixed OPEX.",
+    description="Triangular distribution for CCGT CCS retrofit fixed OPEX increase.",
 )
 
-CCGT_CCS_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=4.5,
-    mode=6.73,
-    maximum=7.6,
+CCGT_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
+    minimum=0.51,
+    mode=0.73,
+    maximum=1.10,
     unit="EUR/MWh_e",
-    description="Triangular distribution for CCGT with CCS variable OPEX excluding fuel and electricity.",
+    description="Triangular distribution for CCGT CCS retrofit variable OPEX increase excluding fuel and electricity.",
 )
 
-CCGT_CCS_FUEL_CONSUMPTION_DISTRIBUTION = UniformDistribution(
-    lower_bound=1.90,
-    upper_bound=1.94,
-    unit="MWh_th/MWh_e",
-    description="Uniform distribution for CCGT with CCS fuel consumption.",
+CCGT_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=-0.20,
+    upper_bound=-0.10,
+    unit="fraction",
+    description="Uniform distribution for CCGT CCS fuel-consumption reduction relative to BAU; negative values represent increases.",
 )
 
-CCGT_CCS_EMISSIONS_DISTRIBUTION = UniformDistribution(
-    lower_bound=0.0058,
-    upper_bound=0.039,
-    unit="tCO2/MWh_e",
-    description="Uniform distribution for CCGT with CCS residual direct emissions.",
-)
-
-CCGT_CCS_FULL_LOAD_HOURS = FixedParameter(
-    value=4_650.0,
-    unit="h/year",
-    description="Average full-load hours for the CCGT with CCS technology.",
-)
-
-CCGT_CCS_LIFETIME_YEARS = FixedParameter(
-    value=30.0,
-    unit="years",
-    description="Economic lifetime for the CCGT with CCS technology.",
+CCGT_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
+    lower_bound=0.88,
+    upper_bound=0.98,
+    unit="fraction",
+    description="Uniform distribution for CCGT CCS emissions reduction relative to BAU.",
 )
 
 
@@ -592,16 +571,16 @@ ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
         "lifetime_years": HARD_COAL_LIFETIME_YEARS,
     },
     "hard_coal_ccs": {
-        "full_load_hours_per_year": HARD_COAL_CCS_FULL_LOAD_HOURS,
-        "lifetime_years": HARD_COAL_CCS_LIFETIME_YEARS,
+        "full_load_hours_per_year": HARD_COAL_FULL_LOAD_HOURS,
+        "lifetime_years": HARD_COAL_LIFETIME_YEARS,
     },
     "ccgt": {
         "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
         "lifetime_years": CCGT_LIFETIME_YEARS,
     },
     "ccgt_ccs": {
-        "full_load_hours_per_year": CCGT_CCS_FULL_LOAD_HOURS,
-        "lifetime_years": CCGT_CCS_LIFETIME_YEARS,
+        "full_load_hours_per_year": CCGT_FULL_LOAD_HOURS,
+        "lifetime_years": CCGT_LIFETIME_YEARS,
     },
     "nuclear": {
         "full_load_hours_per_year": NUCLEAR_FULL_LOAD_HOURS,
@@ -636,8 +615,8 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
     str,
     Mapping[str, FixedParameter | TriangularDistribution | UniformDistribution],
 ] = {
-    # Each technology uses the same keys so Monte Carlo and deterministic
-    # calculations can loop over technologies with one shared formula.
+    # Absolute technologies use the same keys so Monte Carlo and deterministic
+    # calculations can resolve one shared cash-flow formula.
     "hard_coal": {
         "capex_eur_per_kw": HARD_COAL_CAPEX_DISTRIBUTION,
         "fixed_opex_eur_per_kw_year": HARD_COAL_FIXED_OPEX_DISTRIBUTION,
@@ -645,26 +624,12 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "fuel_consumption_mwh_th_per_mwh_e": HARD_COAL_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": HARD_COAL_EMISSIONS_DISTRIBUTION,
     },
-    "hard_coal_ccs": {
-        "capex_eur_per_kw": HARD_COAL_CCS_CAPEX_DISTRIBUTION,
-        "fixed_opex_eur_per_kw_year": HARD_COAL_CCS_FIXED_OPEX_DISTRIBUTION,
-        "variable_opex_eur_per_mwh": HARD_COAL_CCS_VARIABLE_OPEX_DISTRIBUTION,
-        "fuel_consumption_mwh_th_per_mwh_e": HARD_COAL_CCS_FUEL_CONSUMPTION_DISTRIBUTION,
-        "emissions_tco2_per_mwh_e": HARD_COAL_CCS_EMISSIONS_DISTRIBUTION,
-    },
     "ccgt": {
         "capex_eur_per_kw": CCGT_CAPEX_DISTRIBUTION,
         "fixed_opex_eur_per_kw_year": CCGT_FIXED_OPEX_DISTRIBUTION,
         "variable_opex_eur_per_mwh": CCGT_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": CCGT_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": CCGT_EMISSIONS_DISTRIBUTION,
-    },
-    "ccgt_ccs": {
-        "capex_eur_per_kw": CCGT_CCS_CAPEX_DISTRIBUTION,
-        "fixed_opex_eur_per_kw_year": CCGT_CCS_FIXED_OPEX_DISTRIBUTION,
-        "variable_opex_eur_per_mwh": CCGT_CCS_VARIABLE_OPEX_DISTRIBUTION,
-        "fuel_consumption_mwh_th_per_mwh_e": CCGT_CCS_FUEL_CONSUMPTION_DISTRIBUTION,
-        "emissions_tco2_per_mwh_e": CCGT_CCS_EMISSIONS_DISTRIBUTION,
     },
     "nuclear": {
         "capex_eur_per_kw": NUCLEAR_CAPEX_DISTRIBUTION,
@@ -707,5 +672,44 @@ ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_eur_per_mwh": BECCS_VARIABLE_OPEX_DISTRIBUTION,
         "fuel_consumption_mwh_th_per_mwh_e": BECCS_FUEL_CONSUMPTION_DISTRIBUTION,
         "emissions_tco2_per_mwh_e": BECCS_EMISSIONS_DISTRIBUTION,
+    },
+}
+
+ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES: Mapping[str, str] = {
+    "hard_coal_ccs": "hard_coal",
+    "ccgt_ccs": "ccgt",
+}
+
+ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
+    str,
+    Mapping[str, FixedParameter | TriangularDistribution | UniformDistribution],
+] = {
+    "hard_coal_ccs": {
+        "capex_change_eur_per_kw": HARD_COAL_CCS_CAPEX_CHANGE_DISTRIBUTION,
+        "fixed_opex_change_eur_per_kw_year": (
+            HARD_COAL_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "variable_opex_change_eur_per_mwh": (
+            HARD_COAL_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "fuel_consumption_reduction_fraction": (
+            HARD_COAL_CCS_FUEL_REDUCTION_DISTRIBUTION
+        ),
+        "emissions_reduction_fraction": (
+            HARD_COAL_CCS_EMISSIONS_REDUCTION_DISTRIBUTION
+        ),
+    },
+    "ccgt_ccs": {
+        "capex_change_eur_per_kw": CCGT_CCS_CAPEX_CHANGE_DISTRIBUTION,
+        "fixed_opex_change_eur_per_kw_year": (
+            CCGT_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "variable_opex_change_eur_per_mwh": (
+            CCGT_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION
+        ),
+        "fuel_consumption_reduction_fraction": (
+            CCGT_CCS_FUEL_REDUCTION_DISTRIBUTION
+        ),
+        "emissions_reduction_fraction": CCGT_CCS_EMISSIONS_REDUCTION_DISTRIBUTION,
     },
 }

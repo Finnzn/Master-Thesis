@@ -1,3 +1,114 @@
+## 2026-09-01 14:06 — Model electricity CCS as BAU-relative retrofits
+
+### User request
+
+Model hard-coal CCS and CCGT CCS as retrofit technologies of hard coal and
+CCGT, respectively, following the existing cement implementation. Add sampled
+and deterministic BAU modes to Monte Carlo workflows and use the supplied
+incremental CCS assumptions with the cement sign convention.
+
+### Files changed (if needed)
+
+- `src/electricity/electricity_parameters.py` — replaced absolute CCS input
+  distributions with incremental cost, fuel-increase, and emissions-reduction
+  distributions plus explicit retrofit-to-BAU mappings.
+- `src/electricity/electricity_npv_deterministic.py` — resolved deterministic
+  CCS inputs from representative parent BAU and retrofit values.
+- `src/electricity/electricity_npv_monte_carlo.py` — added sampled and
+  deterministic retrofit BAU modes, shared parent/retrofit BAU draws, and
+  retrofit audit fields.
+- `src/electricity/electricity_npv_summary_figures.py` — propagated the BAU mode
+  through summary, ranking, figure, CSV, and command-line workflows and aligned
+  deterministic export metadata.
+- `src/sensitivity_analysis.py` — retained both CCS retrofits in the canonical
+  electricity technology list after separating the absolute and retrofit
+  registries.
+- `notebooks/electricity/plot_hard_coal_ccs_npv.ipynb` and
+  `notebooks/electricity/plot_ccgt_ccs_npv.ipynb` — added an editable BAU-mode
+  setting and BAU/increment audit tables, then refreshed outputs.
+- `notebooks/electricity/deterministic_hard_coal_ccs_npv.ipynb` and
+  `notebooks/electricity/deterministic_ccgt_ccs_npv.ipynb` — documented and
+  displayed representative BAU-relative retrofit inputs, then refreshed
+  outputs.
+- `notebooks/electricity/electricity_summary.ipynb` — added and propagated the
+  electricity retrofit BAU-mode setting and refreshed the summary outputs.
+- `notebooks/scenario_analysis.ipynb` and
+  `notebooks/sensitivity_heatmap.ipynb` — refreshed embedded deterministic
+  outputs that consume the revised electricity CCS inputs.
+- `README.md` and `docs/HANDOVER.md` — documented parent mappings, mode
+  semantics, the retrofit sign convention, and command-line usage.
+- `CHANGELOG.md` — documented this retrofit-model refactor.
+
+### What was implemented
+
+- Added the parent mapping `hard_coal_ccs -> hard_coal` and
+  `ccgt_ccs -> ccgt` while preserving the established ten-technology display
+  order.
+- Stored the supplied CCS assumptions as incremental distributions: hard-coal
+  CCS CAPEX +1,321-2,831 EUR/kW, fixed OPEX +31.6/45.2/67.8 EUR/kW/y,
+  variable OPEX +4.0/5.73/8.6 EUR/MWh, fuel +14-33%, and emissions -87-99%;
+  CCGT CCS CAPEX +587-1,257 EUR/kW, fixed OPEX +16.0/22.8/34.2 EUR/kW/y,
+  variable OPEX +0.51/0.73/1.10 EUR/MWh, fuel +10-20%, and emissions -88-98%.
+- Followed the cement sign convention: cost changes are additive, and physical
+  values use `BAU * (1 - reduction_fraction)`. Fuel increases are therefore
+  stored as negative reduction fractions.
+- Added `retrofit_bau_mode="sampled"` as the Monte Carlo default. Parent BAU
+  technical values are sampled once per simulation ID and reused exactly by
+  the matching parent and retrofit results.
+- Added `retrofit_bau_mode="deterministic"`, which fixes only the retrofit BAU
+  technical inputs at representative values while continuing to sample the
+  standalone parent, incremental retrofit inputs, and market inputs.
+- Added `technology_type`, `retrofit_bau_mode`, `bau_*`, and raw incremental
+  fields to Monte Carlo results. Deterministic exports use
+  `deterministic`/`not_applicable` metadata for a consistent schema.
+- Deterministic representative CCS inputs now resolve to 4,076 EUR/kW, 82.2
+  EUR/kW/y, 10.73 EUR/MWh, 3.1616 MWhth/MWhe, and 0.0609 tCO2/MWhe for hard
+  coal CCS; and 2,022 EUR/kW, 42.8 EUR/kW/y, 5.73 EUR/MWh, 1.909 MWhth/MWhe,
+  and 0.02359 tCO2/MWhe for CCGT CCS.
+
+### Verification (if needed)
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Focused Python assertions for registry membership/order, all supplied
+    distribution bounds and modes, deterministic representative values, both
+    Monte Carlo BAU modes, exact sampled BAU sharing, resolution identities,
+    shared fuel-price draws, finite outputs, wrapper propagation,
+    reproducibility, and invalid-mode validation.
+  - Temporary-directory CLI smoke tests for sampled and deterministic Monte
+    Carlo modes plus deterministic exports, including CSV metadata validation.
+  - `.venv/bin/jupyter nbconvert --to notebook --execute --inplace
+    --ExecutePreprocessor.timeout=600 ...` for the five affected electricity
+    notebooks and the scenario/sensitivity notebooks.
+  - Notebook JSON, execution-count, and error-output assertions for all seven
+    refreshed notebooks.
+  - `git diff --check`
+- Result:
+  - Source compilation, all focused regression assertions, all three export
+    smoke tests, all seven notebook executions, notebook integrity checks, and
+    whitespace checks passed.
+- Notes:
+  - Jupyter emitted its standard local unencrypted-kernel warning during
+    execution; notebook calculations completed normally.
+
+### Reproducibility notes
+
+- The affected notebooks were executed in place, so their embedded tables and
+  plots reflect the revised retrofit assumptions.
+- Existing dated files in `figures/`, `data/raw/`, and `data/processed/` were
+  not regenerated. They may contain the former absolute CCS results and should
+  be refreshed before final thesis use. Ignored numerical-output folders were
+  left untouched in accordance with the repository workflow.
+- The default mode is sampled BAU. Use `RETROFIT_BAU_MODE = "deterministic"` in
+  the affected Monte Carlo notebooks or `--retrofit-bau-mode deterministic` in
+  the electricity summary command for the diagnostic fixed-BAU case.
+
+### Next suggested step
+
+Review the refreshed CCS and electricity-summary notebook tables, choose the BAU
+mode for the final thesis run, and then regenerate the dated electricity summary
+and sensitivity artefacts with that mode.
+
 ## 2026-07-13 15:16 — Set scenario notebook to specific NPV with shared panel scales
 
 ### User request

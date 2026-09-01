@@ -50,6 +50,10 @@ PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
   --sample-size 100 --no-data --ranking-output none
 ```
 
+The electricity command defaults to sampled BAU inputs for the hard-coal and
+CCGT CCS retrofits. Append `--retrofit-bau-mode deterministic` when a diagnostic
+run should hold those BAU technical inputs at representative values.
+
 Quick cement check:
 
 ```bash
@@ -125,9 +129,20 @@ outside the working repository.
   simulation ID, so shared uncertain conditions describe the same sampled
   world. Rank 1 is the highest NPV/LNM or the lowest LCOX.
 - The default random seed is 42 and the default sample size is 100,000.
-- Cement retrofit technologies use a configurable BAU baseline mode. Check
-  `DEFAULT_RETROFIT_BAU_MODE` and the command-line `--retrofit-bau-mode` option
-  before interpreting results.
+- Cement retrofit technologies, hard-coal CCS, and CCGT CCS use a configurable
+  BAU baseline mode. Electricity CCS uses hard coal or CCGT, respectively, as
+  the parent BAU technology.
+- `retrofit_bau_mode="sampled"` is the Monte Carlo default. It samples BAU
+  technical inputs once per simulation ID and reuses them for the matching BAU
+  result and retrofit. `"deterministic"` instead fixes the retrofit's BAU
+  technical inputs at representative values while other stochastic inputs remain
+  sampled.
+- Retrofit cost changes are added to BAU costs. Physical reductions resolve as
+  `BAU value * (1 - reduction fraction)`, so positive fractions are reductions
+  and negative reduction fractions are increases.
+- Check `DEFAULT_RETROFIT_BAU_MODE` and the summary command's
+  `--retrofit-bau-mode` option before interpreting Monte Carlo results. The
+  deterministic models always use representative BAU and retrofit values.
 - Deterministic distribution representatives are defined centrally by
   `representative_value()` in `src/npv_summary.py`.
 

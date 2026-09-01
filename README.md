@@ -157,6 +157,28 @@ This produces a negative carbon-cost term, which becomes carbon-removal revenue
 when subtracted in the shared cash-flow formula. The same negative term reduces
 LCOE because the established LCOX boundary includes carbon costs and credits.
 
+## Retrofit BAU Baseline Modes
+
+Cement retrofit technologies and the electricity technologies `hard_coal_ccs`
+and `ccgt_ccs` are modelled as changes relative to a BAU technology. The two
+electricity retrofits use `hard_coal` and `ccgt`, respectively, as their BAU
+parents.
+
+Monte Carlo workflows expose `retrofit_bau_mode` with two choices:
+
+- `sampled` is the default. BAU technical inputs are sampled once per simulation
+  ID and reused for the matching BAU result and retrofit, so each comparison uses
+  one shared uncertain baseline.
+- `deterministic` holds the retrofit's BAU technical inputs at their representative
+  values while continuing to sample incremental retrofit and other stochastic
+  inputs. This isolates retrofit uncertainty for diagnostic runs.
+
+Incremental costs are added to BAU costs. Fuel use, electricity use where
+applicable, and emissions follow `BAU value * (1 - reduction fraction)`. Positive
+fractions therefore reduce the BAU value, while negative reduction fractions
+represent increases. Deterministic calculations always use representative BAU
+and retrofit values; the selectable mode controls Monte Carlo calculations.
+
 ## Renewable Electricity Value Factors
 
 PV, onshore wind, and offshore wind each have a fixed base value factor of
@@ -245,6 +267,15 @@ For LCOE, use the same electricity workflow with `LCOX`:
 PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LCOX
 ```
 
+Electricity Monte Carlo summaries use sampled BAU values for the coal and CCGT
+CCS retrofits by default. To hold those BAU inputs at representative values, add
+the electricity summary flag:
+
+```bash
+PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
+  --metric LCOX --retrofit-bau-mode deterministic
+```
+
 For cement, use the same `--metric NPV`, `--metric LNM`, or `--metric LCOX`
 switch. In the cement model, `LCOX` is reported as LCOC:
 
@@ -256,7 +287,7 @@ Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
 and processed model outputs to `data/processed/`.
 
 Use `--help` on either module to see options for sample size, random seed,
-financial metric, output type, and cement retrofit baseline mode.
+financial metric, output type, and retrofit BAU baseline mode.
 
 ## Financial Metrics
 

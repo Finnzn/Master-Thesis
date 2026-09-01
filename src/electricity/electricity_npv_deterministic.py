@@ -2,8 +2,10 @@
 
 The deterministic calculation is the one-point counterpart to the Monte Carlo
 model. It uses the same electricity assumptions and cash-flow formula, but each
-uncertain parameter is replaced by one representative value. This gives a
-baseline NPV that can be compared with the simulated mean and uncertainty range.
+uncertain parameter is replaced by one representative value. Hard coal CCS and
+CCGT CCS are retrofit technologies: their representative changes are resolved
+against the representative values of their parent BAU technology before the
+cash-flow calculation.
 """
 
 from __future__ import annotations
@@ -16,10 +18,13 @@ from distributions import (
     FixedParameter,
     ScaledBetaDistribution,
     TriangularDistribution,
+    UniformDistribution,
 )
 from electricity.electricity_capacity_calculation import calculate_capacity_kw
 from electricity.electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
+    ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES,
+    ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,
     RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
@@ -44,9 +49,17 @@ from npv_finance import (
 )
 
 
+ParameterSpec = (
+    FixedParameter
+    | ScaledBetaDistribution
+    | TriangularDistribution
+    | UniformDistribution
+)
+
+
 def electricity_fuel_price_parameter(
     technology: str,
-) -> FixedParameter | ScaledBetaDistribution | TriangularDistribution:
+) -> ParameterSpec:
     """Return the fuel-price parameter used by an electricity technology.
 
     Fuel prices are not stored inside every technology block because several
@@ -74,6 +87,61 @@ def electricity_fuel_price_parameter(
     return fuel_price_by_technology[technology]
 
 
+def _representative_values(
+    parameters: Mapping[str, ParameterSpec],
+) -> dict[str, float]:
+    """Convert one parameter mapping into deterministic representative values."""
+
+    return {
+        parameter_name: representative_value(parameter)
+        for parameter_name, parameter in parameters.items()
+    }
+
+
+def _deterministic_electricity_technology_values(
+    technology: str,
+) -> dict[str, float]:
+    """Resolve absolute deterministic values for one electricity technology."""
+
+    if technology in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
+        return _representative_values(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology])
+
+    if technology not in ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS:
+        raise ValueError(f"Unknown electricity technology: {technology!r}.")
+
+    bau_technology = ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
+    bau_values = _representative_values(
+        ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[bau_technology]
+    )
+    retrofit_values = _representative_values(
+        ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS[technology]
+    )
+
+    return {
+        "capex_eur_per_kw": (
+            bau_values["capex_eur_per_kw"]
+            + retrofit_values["capex_change_eur_per_kw"]
+        ),
+        "fixed_opex_eur_per_kw_year": (
+            bau_values["fixed_opex_eur_per_kw_year"]
+            + retrofit_values["fixed_opex_change_eur_per_kw_year"]
+        ),
+        "variable_opex_eur_per_mwh": (
+            bau_values["variable_opex_eur_per_mwh"]
+            + retrofit_values["variable_opex_change_eur_per_mwh"]
+        ),
+        "fuel_consumption_mwh_th_per_mwh_e": (
+            bau_values["fuel_consumption_mwh_th_per_mwh_e"]
+            * (1.0 - retrofit_values["fuel_consumption_reduction_fraction"])
+        ),
+        "emissions_tco2_per_mwh_e": (
+            bau_values["emissions_tco2_per_mwh_e"]
+            * (1.0 - retrofit_values["emissions_reduction_fraction"])
+        ),
+        **retrofit_values,
+    }
+
+
 def calculate_deterministic_electricity_result(
     technology: str,
 ) -> Mapping[str, object]:
@@ -84,10 +152,7 @@ def calculate_deterministic_electricity_result(
     to work for deterministic and simulated results.
     """
 
-    if technology not in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
-        raise ValueError(f"Unknown electricity technology: {technology!r}.")
-
-    distributions = ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology]
+    values = _deterministic_electricity_technology_values(technology)
     fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
 
     # Deterministic calculations use one representative value for each uncertain
@@ -109,19 +174,13 @@ def calculate_deterministic_electricity_result(
         full_load_hours_per_year=full_load_hours,
     )
 
-    capex_eur_per_kw = representative_value(distributions["capex_eur_per_kw"])
-    fixed_opex_eur_per_kw_year = representative_value(
-        distributions["fixed_opex_eur_per_kw_year"]
-    )
-    variable_opex_eur_per_mwh = representative_value(
-        distributions["variable_opex_eur_per_mwh"]
-    )
-    fuel_consumption_mwh_th_per_mwh_e = representative_value(
-        distributions["fuel_consumption_mwh_th_per_mwh_e"]
-    )
-    emissions_tco2_per_mwh_e = representative_value(
-        distributions["emissions_tco2_per_mwh_e"]
-    )
+    capex_eur_per_kw = values["capex_eur_per_kw"]
+    fixed_opex_eur_per_kw_year = values["fixed_opex_eur_per_kw_year"]
+    variable_opex_eur_per_mwh = values["variable_opex_eur_per_mwh"]
+    fuel_consumption_mwh_th_per_mwh_e = values[
+        "fuel_consumption_mwh_th_per_mwh_e"
+    ]
+    emissions_tco2_per_mwh_e = values["emissions_tco2_per_mwh_e"]
     fuel_price_eur_per_mwh_th = representative_value(
         electricity_fuel_price_parameter(technology)
     )
@@ -196,9 +255,14 @@ def calculate_deterministic_electricity_result(
     )
 
     # Keep the same output keys as the Monte Carlo result for shared export helpers.
-    return {
+    result = {
         "run_id": [0],
         "technology": [technology],
+        "technology_type": [
+            "retrofit"
+            if technology in ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
+            else "absolute"
+        ],
         "annual_output_mwh": [annual_output_mwh],
         "full_load_hours_per_year": [full_load_hours],
         "lifetime_years": [lifetime_years],
@@ -237,6 +301,18 @@ def calculate_deterministic_electricity_result(
         ],
     }
 
+    for retrofit_key in (
+        "capex_change_eur_per_kw",
+        "fixed_opex_change_eur_per_kw_year",
+        "variable_opex_change_eur_per_mwh",
+        "fuel_consumption_reduction_fraction",
+        "emissions_reduction_fraction",
+    ):
+        if retrofit_key in values:
+            result[retrofit_key] = [values[retrofit_key]]
+
+    return result
+
 
 def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
     """Calculate deterministic electricity NPV from representative values.
@@ -253,12 +329,13 @@ def calculate_deterministic_electricity_results(
 ) -> Mapping[str, Mapping[str, object]]:
     """Calculate deterministic electricity results for all selected technologies.
 
-    By default this follows the order of the electricity technology registry, so
-    adding a technology to `ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS` automatically
-    includes it in the deterministic comparison.
+    By default this follows the fixed-parameter registry, which preserves the
+    established display order across absolute and retrofit technologies.
     """
 
-    selected_technologies = technologies or tuple(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
+    selected_technologies = technologies or tuple(
+        ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS
+    )
     return {
         technology: calculate_deterministic_electricity_result(technology)
         for technology in selected_technologies

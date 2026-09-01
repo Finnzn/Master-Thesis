@@ -25,7 +25,9 @@ from electricity.electricity_npv_deterministic import (
 )
 from electricity.electricity_npv_monte_carlo import (
     DEFAULT_RANDOM_SEED,
+    DEFAULT_RETROFIT_BAU_MODE,
     DEFAULT_SAMPLE_SIZE,
+    RETROFIT_BAU_MODES,
     simulate_electricity_results,
 )
 from npv_summary import (
@@ -67,6 +69,8 @@ ELECTRICITY_TECHNOLOGY_LABELS: Mapping[str, str] = {
 ELECTRICITY_RAW_INPUT_COLUMNS = (
     "run_id",
     "technology",
+    "technology_type",
+    "retrofit_bau_mode",
     "annual_output_mwh",
     "full_load_hours_per_year",
     "lifetime_years",
@@ -86,6 +90,8 @@ ELECTRICITY_RAW_INPUT_COLUMNS = (
 ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "run_id",
     "technology",
+    "technology_type",
+    "retrofit_bau_mode",
     "capacity_mw",
     "capacity_kw",
     "initial_capex_eur",
@@ -181,6 +187,31 @@ def _with_electricity_display_labels(ranking_summary):
     )
 
 
+def _with_deterministic_retrofit_mode(
+    results_by_technology: Mapping[str, Mapping[str, object]],
+) -> dict[str, dict[str, object]]:
+    """Add Monte Carlo retrofit metadata to deterministic export rows.
+
+    The deterministic electricity model does not need `retrofit_bau_mode`
+    internally, but raw and processed exports should keep the same schema as the
+    Monte Carlo outputs.
+    """
+
+    export_results: dict[str, dict[str, object]] = {}
+    for technology, results in results_by_technology.items():
+        result_copy = dict(results)
+        if "retrofit_bau_mode" not in result_copy:
+            technology_type = str(np.asarray(result_copy["technology_type"]).item())
+            mode = (
+                "deterministic"
+                if technology_type == "retrofit"
+                else "not_applicable"
+            )
+            result_copy["retrofit_bau_mode"] = [mode]
+        export_results[technology] = result_copy
+    return export_results
+
+
 def electricity_npv_distribution_summary_million_eur(
     results_by_technology: Mapping[str, Mapping[str, object]],
     labels: Mapping[str, str] = ELECTRICITY_TECHNOLOGY_LABELS,
@@ -252,6 +283,7 @@ def calculate_mean_electricity_npv_million_eur(
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
     technologies: tuple[str, ...] | None = None,
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> dict[str, float]:
     """Calculate mean simulated NPV by electricity technology in million EUR.
 
@@ -264,6 +296,7 @@ def calculate_mean_electricity_npv_million_eur(
             sample_size=sample_size,
             random_seed=random_seed,
             technologies=technologies,
+            retrofit_bau_mode=retrofit_bau_mode,
         ),
         labels=ELECTRICITY_TECHNOLOGY_LABELS,
     )
@@ -274,6 +307,7 @@ def calculate_mean_electricity_npv(
     random_seed: int = DEFAULT_RANDOM_SEED,
     technologies: tuple[str, ...] | None = None,
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> dict[str, float]:
     """Calculate a mean simulated financial metric by electricity technology."""
 
@@ -283,6 +317,7 @@ def calculate_mean_electricity_npv(
             sample_size=sample_size,
             random_seed=random_seed,
             technologies=technologies,
+            retrofit_bau_mode=retrofit_bau_mode,
         ),
         labels=ELECTRICITY_TECHNOLOGY_LABELS,
         metric_column=str(config["metric_column"]),
@@ -331,6 +366,7 @@ def save_electricity_mean_npv_figure(
     run_date: date | None = None,
     sector_name: str = "Electricity",
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> Path:
     """Save the simulated mean NPV comparison figure for electricity.
 
@@ -343,6 +379,7 @@ def save_electricity_mean_npv_figure(
     results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
+        retrofit_bau_mode=retrofit_bau_mode,
     )
     config = _electricity_financial_metric_config(financial_metric)
     summary = electricity_npv_distribution_summary(results, financial_metric=financial_metric)
@@ -406,6 +443,7 @@ def save_electricity_mean_npv_outputs(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> tuple[Path, ...]:
     """Save mean NPV figure plus raw-input, processed-output, and ranking outputs.
 
@@ -422,6 +460,7 @@ def save_electricity_mean_npv_outputs(
     results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
+        retrofit_bau_mode=retrofit_bau_mode,
     )
     summary = electricity_npv_distribution_summary(results, financial_metric=financial_metric)
     values = _distribution_stat(summary, "mean")
@@ -523,6 +562,7 @@ def calculate_electricity_npv_rankings(
     technologies: tuple[str, ...] | None = None,
     sector_name: str = "Electricity",
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ):
     """Run electricity Monte Carlo simulations and return NPV ranking tables.
 
@@ -534,6 +574,7 @@ def calculate_electricity_npv_rankings(
         sample_size=sample_size,
         random_seed=random_seed,
         technologies=technologies,
+        retrofit_bau_mode=retrofit_bau_mode,
     )
     return calculate_electricity_npv_rankings_from_results(
         results=results,
@@ -622,6 +663,7 @@ def generate_electricity_npv_rankings(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ):
     """Return electricity NPV ranking DataFrames and optionally save outputs.
 
@@ -635,6 +677,7 @@ def generate_electricity_npv_rankings(
         technologies=technologies,
         sector_name=sector_name,
         financial_metric=financial_metric,
+        retrofit_bau_mode=retrofit_bau_mode,
     )
     output_paths: tuple[Path, ...] = ()
     if save_ranking_outputs and (save_ranking_csv or save_ranking_plots):
@@ -673,7 +716,9 @@ def save_electricity_deterministic_npv_outputs(
     output_date = run_date or date.today()
     config = _electricity_financial_metric_config(financial_metric)
     stem = f"Deterministic_{config['file_metric']}_{sector_name}"
-    results = calculate_deterministic_electricity_results()
+    results = _with_deterministic_retrofit_mode(
+        calculate_deterministic_electricity_results()
+    )
     values = deterministic_metric(
         results_by_item=results,
         labels=ELECTRICITY_TECHNOLOGY_LABELS,
@@ -731,6 +776,7 @@ def save_electricity_npv_outputs(
     save_ranking_csv: bool = True,
     save_ranking_plots: bool = True,
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> tuple[Path, ...]:
     """Save simulated mean and deterministic electricity NPV outputs.
 
@@ -751,6 +797,7 @@ def save_electricity_npv_outputs(
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
             financial_metric=financial_metric,
+            retrofit_bau_mode=retrofit_bau_mode,
         ),
         *save_electricity_deterministic_npv_outputs(
             figure_dir=figure_dir,
@@ -770,6 +817,7 @@ def save_electricity_npv_figures(
     run_date: date | None = None,
     sector_name: str = "Electricity",
     financial_metric: str = "NPV",
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> tuple[Path, Path]:
     """Save both simulated mean and deterministic electricity NPV figures.
 
@@ -781,6 +829,7 @@ def save_electricity_npv_figures(
     simulated_results = simulate_electricity_results(
         sample_size=sample_size,
         random_seed=random_seed,
+        retrofit_bau_mode=retrofit_bau_mode,
     )
     simulated_summary = electricity_npv_distribution_summary(
         simulated_results,
@@ -878,6 +927,12 @@ def parse_args() -> argparse.Namespace:
         help="Random seed for the mean comparison figure.",
     )
     parser.add_argument(
+        "--retrofit-bau-mode",
+        choices=RETROFIT_BAU_MODES,
+        default=DEFAULT_RETROFIT_BAU_MODE,
+        help="BAU baseline mode for retrofit electricity technologies.",
+    )
+    parser.add_argument(
         "--kind",
         choices=("all", "mean", "deterministic"),
         default="all",
@@ -929,6 +984,7 @@ def main() -> None:
                 random_seed=args.random_seed,
                 sector_name=args.sector_name,
                 financial_metric=args.metric,
+                retrofit_bau_mode=args.retrofit_bau_mode,
             )
         elif args.kind == "mean":
             output_paths = (
@@ -938,6 +994,7 @@ def main() -> None:
                     random_seed=args.random_seed,
                     sector_name=args.sector_name,
                     financial_metric=args.metric,
+                    retrofit_bau_mode=args.retrofit_bau_mode,
                 ),
             )
         else:
@@ -955,6 +1012,7 @@ def main() -> None:
                 random_seed=args.random_seed,
                 sector_name=args.sector_name,
                 financial_metric=args.metric,
+                retrofit_bau_mode=args.retrofit_bau_mode,
             )
             output_paths = (
                 *output_paths,
@@ -983,6 +1041,7 @@ def main() -> None:
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
             financial_metric=args.metric,
+            retrofit_bau_mode=args.retrofit_bau_mode,
         )
     elif args.kind == "mean":
         output_paths = save_electricity_mean_npv_outputs(
@@ -996,6 +1055,7 @@ def main() -> None:
             save_ranking_csv=save_ranking_csv,
             save_ranking_plots=save_ranking_plots,
             financial_metric=args.metric,
+            retrofit_bau_mode=args.retrofit_bau_mode,
         )
     else:
         output_paths = save_electricity_deterministic_npv_outputs(
