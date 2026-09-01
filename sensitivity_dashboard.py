@@ -242,6 +242,16 @@ def build_input_controls(sector: str, technology: str, defaults):
         step=max(0.1, defaults.sales_price * 0.05),
         key=f"{sector}_{technology}_sales_price",
     )
+    value_factor = defaults.value_factor
+    if defaults.uses_value_factor:
+        value_factor = st.number_input(
+            "Value factor",
+            min_value=0.0,
+            value=float(value_factor),
+            step=0.01,
+            format="%.3f",
+            key=f"{sector}_{technology}_value_factor",
+        )
     capex = st.number_input(
         capex_label,
         min_value=0.0,
@@ -341,7 +351,8 @@ def build_input_controls(sector: str, technology: str, defaults):
         emissions=emissions,
         carbon_price=carbon_price,
         full_load_hours=full_load_hours,
-        value_factor=defaults.value_factor,
+        value_factor=value_factor,
+        uses_value_factor=defaults.uses_value_factor,
     )
 
 

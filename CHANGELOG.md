@@ -5471,3 +5471,158 @@ range for BECCS, with a streamlined implementation.
 
 Regenerate and review the CCS and BECCS notebook outputs and any selected thesis
 summary figures before using the revised results in the thesis.
+
+## 2026-09-01 16:04 — Update renewable value-factor ranges and sensitivity
+
+### User request
+
+Replace the previous renewable value-factor scenario values with the supplied
+minimum/base/maximum assumptions, include those ranges in electricity Monte
+Carlo simulations, and add value factor to the electricity sensitivity heatmap.
+
+### Files changed (if needed)
+
+- `src/electricity/electricity_parameters.py` — replaced fixed renewable VFs
+  with the supplied triangular minimum/base/maximum distributions.
+- `src/sensitivity_analysis.py` — registered VF as an electricity sensitivity
+  parameter and limited it to technologies that actually use a value factor.
+- `src/sensitivity_deep_dive.py` — included VF in the electricity heatmap scope.
+- `sensitivity_dashboard.py` — added an editable VF control for onshore wind,
+  offshore wind, and PV.
+- `notebooks/scenario_analysis.ipynb` — replaced the old Case 2 / Case 1 / Base
+  scenarios with Min / Base / Max and refreshed all embedded outputs.
+- `notebooks/sensitivity_heatmap.ipynb` — refreshed the embedded heatmaps and
+  sensitivity table with the new electricity VF column.
+- `README.md` and `docs/HANDOVER.md` — documented the distributions,
+  deterministic representatives, and heatmap coverage.
+- `CHANGELOG.md` — documented the implementation and verification.
+
+### What was implemented
+
+- Modelled onshore-wind and PV value factors as triangular 0.80/0.90/1.00
+  distributions and offshore wind as triangular 0.85/0.95/1.00.
+- Used each triangular mode as the deterministic base, giving 0.90 for onshore
+  wind and PV and 0.95 for offshore wind.
+- Reused the existing generic parameter sampler, so Monte Carlo VF uncertainty
+  flows through captured electricity price, revenue, NPV, and LNM while leaving
+  generation, capacity, costs, discounted output, and LCOE unchanged.
+- Added VF to standardized electricity sensitivity. Non-renewable technologies
+  remain not applicable and appear as zero in the common heatmap VF column
+  rather than receiving artificial VF sensitivities.
+- Aligned the scenario notebook directly with the model assumptions using
+  Min / Base / Max labels.
+
+### Verification (if needed)
+
+- Commands run:
+  - Python compilation for `src/` and `sensitivity_dashboard.py`.
+  - Seeded 100,000-draw electricity Monte Carlo range and identity checks.
+  - Temporary-directory electricity CSV and figure export smoke test.
+  - Deterministic representative and LCOE-invariance checks.
+  - Electricity standardized-sensitivity scope and impact checks.
+  - Full in-place execution of `notebooks/scenario_analysis.ipynb` and
+    `notebooks/sensitivity_heatmap.ipynb` with the project `python3` kernel.
+  - Notebook JSON, Python AST, saved-error-output, and embedded-image checks.
+  - Visual inspection of the electricity LNM sensitivity heatmap.
+  - `git diff --check`.
+- Result:
+  - All checks passed.
+  - Every renewable VF draw stayed within its supplied range and had nonzero
+    variance. The seeded means were 0.9001 for onshore wind, 0.9333 for offshore
+    wind, and 0.9001 for PV, consistent with the triangular distributions.
+  - The deterministic Min / Base / Max LNM results are
+    `-4.498 / 4.909 / 14.316 EUR/MWh` for onshore wind,
+    `-6.300 / 3.107 / 7.810 EUR/MWh` for offshore wind, and
+    `-0.917 / 8.490 / 17.897 EUR/MWh` for PV.
+  - The electricity heatmap contains nonzero VF sensitivity only for onshore
+    wind, offshore wind, and PV; the relative impacts are 93%, 91%, and 89% of
+    each technology's largest standardized LNM driver, respectively.
+  - `captured electricity price - LCOE = LNM` passed for every technology and
+    VF changes left LCOE invariant.
+
+### Reproducibility notes
+
+- The two affected notebooks contain freshly executed tables and figures. They
+  write no external artefacts because their save flags remain disabled.
+- No repository raw data, processed data, result files, or standalone figures
+  were generated or changed. Export and visual-inspection files were written
+  only to temporary directories.
+- Existing electricity CSVs, standalone summary figures, the dated standalone
+  sensitivity heatmap, and individual renewable notebook outputs predate the
+  new sampled VF assumptions and must be regenerated if selected for the thesis.
+- The VF ranges were supplied by the user; no source citation was invented.
+
+### Next suggested step
+
+Review the refreshed scenario and sensitivity notebooks, then regenerate only
+the renewable electricity summary artefacts selected for the thesis.
+
+## 2026-09-01 16:14 — Include transport and storage in the cement MACC
+
+### User request
+
+Explain why T&S was absent from the MACC, audit where else it might have been
+omitted, add it to the MACC, and assess whether a Monte Carlo variance-based
+method is more suitable than the current heatmap for nonlinear relationships.
+
+### Files changed (if needed)
+
+- `src/cement/cement_macc.py` — corrected the MACC resource-cost boundary to
+  include all annual non-carbon technology costs, including T&S.
+- `notebooks/cement/cement_macc.ipynb` — refreshed the deterministic MACC table
+  and embedded figure.
+- `README.md` and `docs/HANDOVER.md` — documented that the cement MACC includes
+  T&S while excluding carbon payments and product revenue.
+- `CHANGELOG.md` — documented the correction, audit, and verification.
+
+### What was implemented
+
+- Replaced the MACC's hard-coded sum of fixed OPEX, variable OPEX, fuel, and
+  electricity with `annual_total_cost_eur - annual_emissions_cost_eur`, plus
+  annualized CAPEX.
+- This retains the established resource-cost boundary, includes T&S, and makes
+  the MACC robust to future annual cost components without another manual list
+  update.
+- Updated the MACC figure footer to state explicitly that costs include T&S and
+  exclude carbon payments.
+- Audited downstream financial consumers. NPV, LNM, LCOX, rankings, summary
+  bars, CSV exports, and sensitivity/scenario base metrics already include T&S.
+  Individual notebook component tables do not always display T&S separately,
+  and the deterministic sensitivity parameter list does not vary it separately,
+  but neither omission changes the underlying base financial results.
+
+### Verification (if needed)
+
+- Commands run:
+  - Python compilation for `src/` and `sensitivity_dashboard.py`.
+  - Cross-component deterministic MACC cost-identity checks for every cement
+    technology.
+  - Deterministic and seeded 100,000-draw simulated cement MACC checks.
+  - Full in-place execution of `notebooks/cement/cement_macc.ipynb` with the
+    project `python3` kernel.
+  - Notebook saved-error and embedded-image checks.
+  - Visual inspection of the corrected deterministic MACC.
+- Result:
+  - All checks passed.
+  - Deterministic cement CCS abatement cost increased from 70.521 to
+    83.708 EUR/tCO2.
+  - The aggregate Monte Carlo cement CCS abatement cost increased from 69.558
+    to 82.565 EUR/tCO2 at 100,000 draws and seed 42.
+  - The 18.7% increase matches the T&S share of incremental capture cost; all
+    non-CCS MACC values remain unchanged because their T&S cost is zero.
+
+### Reproducibility notes
+
+- The cement MACC notebook contains a freshly executed table and figure with
+  `SAVE_OUTPUTS=False`; no external repository artefacts were written.
+- Existing standalone dated MACC CSVs and figures predate the correction and
+  must be regenerated if selected for the thesis.
+- No sensitivity-method implementation was added in this change. The current
+  standardized one-at-a-time heatmap remains available while a global method
+  such as Sobol sensitivity is evaluated.
+
+### Next suggested step
+
+Implement a separate global Monte Carlo sensitivity workflow with first-order
+and total-order Sobol indices, while retaining the current heatmap as a clearly
+labelled deterministic ±20% scenario analysis.

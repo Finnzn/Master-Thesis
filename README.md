@@ -188,10 +188,19 @@ uniform T&S cost range.
 
 ## Renewable Electricity Value Factors
 
-PV, onshore wind, and offshore wind each have a fixed base value factor of
-`1.0` in `src/electricity/electricity_parameters.py`. The value factor scales
-the model's existing electricity sales-price proxy to a captured price. The
-parameter names are `VF_PV`, `VF_Wind_onshore`, and `VF_windoffshore`:
+PV, onshore wind, and offshore wind use triangular value-factor distributions
+in `src/electricity/electricity_parameters.py`. The supplied base is the mode
+and deterministic representative value:
+
+| Technology | Minimum | Base / mode | Maximum |
+| --- | ---: | ---: | ---: |
+| Onshore wind | 0.80 | 0.90 | 1.00 |
+| Offshore wind | 0.85 | 0.95 | 1.00 |
+| Solar PV | 0.80 | 0.90 | 1.00 |
+
+The value factor scales the model's existing electricity sales-price proxy to a
+captured price. The parameter names remain `VF_PV`, `VF_Wind_onshore`, and
+`VF_windoffshore`:
 
 ```text
 captured electricity price = electricity sales-price proxy * value factor
@@ -200,8 +209,9 @@ annual electricity revenue = annual generation * captured electricity price
 
 It does not change generation, required capacity, costs, discounted output, or
 LCOE. The separate renewable plot in `notebooks/scenario_analysis.ipynb`
-compares the requested Base / Case 1 / Case 2 factors for PV and both wind
-technologies.
+compares the minimum, base, and maximum factors for PV and both wind
+technologies. Value factor is also included for these three technologies in the
+electricity sensitivity heatmap.
 
 ## Sensitivity Dashboard
 
@@ -332,6 +342,10 @@ cement price - LCOC = cement LNM
 The general deterministic and probabilistic LCOX analysis is in
 `notebooks/lcox_summary.ipynb`. It keeps electricity and cement charts separate
 because LCOE and LCOC measure different products in different units.
+
+The cement MACC annualizes CAPEX and uses all annual technology costs, including
+CCS transport and storage, while excluding carbon payments and product revenue.
+Its bar heights therefore measure resource cost per tonne of direct CO2 avoided.
 
 ## Generated Data and Version Control
 

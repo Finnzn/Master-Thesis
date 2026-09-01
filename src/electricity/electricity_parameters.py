@@ -26,24 +26,31 @@ RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
 )
 
 # Renewable value factors scale the common electricity price to the average
-# price captured by each variable renewable technology. A value of 1.0 keeps
-# the existing base case unchanged.
-VF_PV = FixedParameter(
-    value=1.0,
+# price captured by each variable renewable technology. Their supplied
+# minimum/base/maximum assumptions are modelled as triangular distributions;
+# deterministic calculations use the base value as the representative mode.
+VF_PV = TriangularDistribution(
+    minimum=0.80,
+    mode=0.90,
+    maximum=1.00,
     unit="dimensionless",
-    description="Value factor applied to PV electricity sales revenue.",
+    description="Triangular value-factor distribution for PV electricity sales revenue.",
 )
 
-VF_Wind_onshore = FixedParameter(
-    value=1.0,
+VF_Wind_onshore = TriangularDistribution(
+    minimum=0.80,
+    mode=0.90,
+    maximum=1.00,
     unit="dimensionless",
-    description="Value factor applied to onshore-wind electricity sales revenue.",
+    description="Triangular value-factor distribution for onshore-wind electricity sales revenue.",
 )
 
-VF_windoffshore = FixedParameter(
-    value=1.0,
+VF_windoffshore = TriangularDistribution(
+    minimum=0.85,
+    mode=0.95,
+    maximum=1.00,
     unit="dimensionless",
-    description="Value factor applied to offshore-wind electricity sales revenue.",
+    description="Triangular value-factor distribution for offshore-wind electricity sales revenue.",
 )
 
 # Normalized annual output: every technology is sized to produce this amount so
@@ -568,7 +575,7 @@ ELECTRICITY_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
 
 ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS: Mapping[
     str,
-    Mapping[str, FixedParameter],
+    Mapping[str, FixedParameter | TriangularDistribution],
 ] = {
     # Full-load hours size the plant before CAPEX and fixed OPEX are calculated.
     # Lifetime controls the NPV discount horizon and lifetime-output denominator.

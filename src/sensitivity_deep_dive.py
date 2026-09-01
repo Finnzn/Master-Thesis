@@ -60,6 +60,7 @@ SENSITIVITY_SCOPE: Mapping[str, tuple[str, ...]] = {
     ),
     "electricity": (
         "capex",
+        "value_factor",
         "full_load_hours",
         "lifetime_years",
         "discount_rate",

@@ -54,6 +54,7 @@ class ScenarioInputs:
     carbon_price: float
     full_load_hours: float | None = None
     value_factor: float = 1.0
+    uses_value_factor: bool = False
 
 
 @dataclass(frozen=True)
@@ -97,6 +98,7 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
     "electricity": (
         SensitivityParameter("Investment cost", "capex"),
         SensitivityParameter("Power price", "sales_price"),
+        SensitivityParameter("Value factor", "value_factor"),
         SensitivityParameter("Annual generation", "annual_output"),
         SensitivityParameter("Full-load hours", "full_load_hours", minimum=1.0),
         SensitivityParameter("Lifetime", "lifetime_years", minimum=1.0),
@@ -183,6 +185,9 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             carbon_price=result["carbon_price_eur_per_t"],
             full_load_hours=result["full_load_hours_per_year"],
             value_factor=result["value_factor"],
+            uses_value_factor=(
+                technology in {"wind_offshore", "wind_onshore", "pv"}
+            ),
         )
 
     raise ValueError(f"Unknown sector: {sector!r}.")
@@ -337,6 +342,11 @@ def build_sensitivity_table(
             selected_attributes is not None
             and parameter.attribute not in selected_attributes
         ):
+            continue
+        # A value factor is defined only for variable renewable electricity.
+        # Other electricity technologies use the neutral calculation fallback
+        # of 1.0 and should not show artificial VF sensitivity.
+        if parameter.attribute == "value_factor" and not inputs.uses_value_factor:
             continue
         base_value = getattr(inputs, parameter.attribute)
         low_value = max(parameter.minimum, base_value * (1.0 - variation_fraction))

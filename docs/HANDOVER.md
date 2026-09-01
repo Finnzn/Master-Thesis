@@ -112,9 +112,11 @@ outside the working repository.
   energy, and carbon cost. It excludes product sales revenue.
 - Summary workflows switch explicitly between total NPV (`NPV`), levelized net
   margin (`LNM`), and levelized cost (`LCOX`).
-- PV, onshore wind, and offshore wind have base value factors of 1.0. Their
-  captured electricity price is the model sales-price proxy multiplied by the
-  technology value factor; only electricity revenue, NPV, and LNM change.
+- PV and onshore wind sample triangular value factors of 0.80/0.90/1.00, while
+  offshore wind samples 0.85/0.95/1.00. The modes are the deterministic bases.
+  Captured electricity price is the model sales-price proxy multiplied by the
+  technology value factor; only electricity revenue, NPV, and LNM change. VF is
+  included for these three technologies in the electricity sensitivity heatmap.
 - Under the current constant-price and constant-output models, captured
   electricity price minus LCOE equals electricity LNM, while cement price minus
   LCOC equals cement LNM.
@@ -143,6 +145,9 @@ outside the working repository.
 - Hard-coal CCS, CCGT CCS, and cement CCS add T&S at 18.7% of their levelized
   incremental capture cost relative to BAU, excluding carbon-price effects.
   BECCS instead samples T&S uniformly from 22-29 EUR/MWh_e.
+- The cement MACC includes T&S through annual total technology cost and then
+  removes carbon payments from its resource-cost boundary. Product revenue is
+  also excluded.
 - Check `DEFAULT_RETROFIT_BAU_MODE` and the summary command's
   `--retrofit-bau-mode` option before interpreting Monte Carlo results. The
   deterministic models always use representative BAU and retrofit values.

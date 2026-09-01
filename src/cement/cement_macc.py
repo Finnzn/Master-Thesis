@@ -282,7 +282,7 @@ def plot_cement_macc(
     fig.text(
         0.99,
         0.02,
-        "Costs exclude carbon payments; widths show annual direct emissions avoided.",
+        "Costs include T&S, exclude carbon payments; widths show annual direct emissions avoided.",
         ha="right",
         fontsize=8,
         color="#555555",
@@ -343,10 +343,8 @@ def _annual_cost_excluding_revenue_and_carbon(
     annualized_capex = _array(results["initial_capex_eur"]) / present_value_factor
     return (
         annualized_capex
-        + _array(results["annual_fixed_opex_eur"])
-        + _array(results["annual_variable_opex_eur"])
-        + _array(results["annual_fuel_cost_eur"])
-        + _array(results["annual_electricity_cost_eur"])
+        + _array(results["annual_total_cost_eur"])
+        - _array(results["annual_emissions_cost_eur"])
     )
 
 
