@@ -5390,3 +5390,84 @@ implementation lean and reusable.
 
 Review one representative electricity and cement notebook in Jupyter and use
 the same three-metric order when selecting final thesis figures.
+
+## 2026-09-01 14:55 — Add transport and storage costs to CCS technologies
+
+### User request
+
+Include CO2 transport and storage costs for every CCS technology, using 18.7%
+of BAU-relative capture cost for non-BECCS technologies and a 22-29 EUR/MWh_e
+range for BECCS, with a streamlined implementation.
+
+### Files changed (if needed)
+
+- `src/npv_finance.py` — added the shared cross-sector levelized capture-cost
+  and T&S calculation.
+- `src/general_parameters.py` — registered the common 18.7% T&S share.
+- `src/electricity/electricity_parameters.py` — added the uniform 22-29
+  EUR/MWh_e BECCS T&S range.
+- `src/electricity/electricity_npv_deterministic.py` and
+  `src/electricity/electricity_npv_monte_carlo.py` — applied T&S to hard-coal
+  CCS, CCGT CCS, and BECCS cash flows and exposed traceable cost fields.
+- `src/cement/cement_npv_deterministic.py` and
+  `src/cement/cement_npv_monte_carlo.py` — applied the same BAU-relative T&S
+  method to cement CCS and exposed traceable cost fields.
+- `src/electricity/electricity_npv_summary_figures.py` and
+  `src/cement/cement_npv_summary_figures.py` — included T&S unit costs, capture
+  cost bases, and annual T&S costs in CSV exports.
+- `src/sensitivity_analysis.py` and `sensitivity_dashboard.py` — retained exact
+  deterministic base-case metrics by including T&S in scenario costs and added
+  an editable T&S control for affected technologies.
+- `README.md` and `docs/HANDOVER.md` — documented the model boundary and new
+  scientific assumptions.
+- `CHANGELOG.md` — documented the implementation and verification.
+
+### What was implemented
+
+- Defined non-BECCS T&S as 18.7% of the levelized incremental capture cost
+  `(BAU + CCS) - BAU`. The basis includes incremental CAPEX, OPEX, fuel, and
+  cement electricity costs, but excludes carbon-price effects and T&S itself.
+- Centralized that calculation so hard-coal CCS, CCGT CCS, and cement CCS use
+  one formula in deterministic and Monte Carlo workflows.
+- Modelled BECCS independently with a uniform 22-29 EUR/MWh_e T&S cost and a
+  deterministic midpoint of 25.5 EUR/MWh_e.
+- Added T&S as an annual cost in NPV, LNM, LCOE, and LCOC calculations without
+  folding it into the pre-existing variable-OPEX assumptions.
+- Preserved zero T&S cost for all non-CCS technologies and exposed the capture
+  basis and applied T&S cost in result and export schemas for auditing.
+
+### Verification (if needed)
+
+- Commands run:
+  - Python compilation for `src/` and `sensitivity_dashboard.py`.
+  - Cross-sector deterministic checks for every technology.
+  - Seeded 256-draw Monte Carlo checks for every technology.
+  - Temporary-directory electricity and cement CSV/figure export smoke tests.
+  - `git diff --check`.
+- Result:
+  - All checks passed.
+  - Non-BECCS CCS T&S equals exactly 18.7% of its reported incremental capture
+    cost in deterministic and sampled calculations.
+  - BECCS samples remained within 22-29 EUR/MWh_e and its deterministic value
+    is 25.5 EUR/MWh_e.
+  - Deterministic T&S is 12.906 EUR/MWh_e for hard-coal CCS, 6.177 EUR/MWh_e for
+    CCGT CCS, and 7.200 EUR/t for cement CCS under current representative inputs.
+  - `captured price - LCOE = LNM`, `cement price - LCOC = LNM`, and sensitivity
+    dashboard base-case LCOX equality all passed after adding T&S.
+
+### Reproducibility notes
+
+- No raw data, processed data, repository figure files, results, or notebook
+  outputs were generated or changed. Export smoke-test artefacts were written
+  only to a temporary directory.
+- Existing generated CCS/BECCS CSVs, figures, and executed notebook outputs do
+  not include the new T&S assumption and are now outdated. Regenerate only the
+  artefacts selected for the thesis with the existing summary scripts or
+  notebook execution workflow.
+- The 18.7% input and BECCS range were supplied by the user; no source citation
+  was invented or added.
+
+### Next suggested step
+
+Regenerate and review the CCS and BECCS notebook outputs and any selected thesis
+summary figures before using the revised results in the thesis.

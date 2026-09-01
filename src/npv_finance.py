@@ -150,3 +150,40 @@ def calculate_levelized_cost(
     if np.ndim(levelized_cost) == 0:
         return float(levelized_cost)
     return levelized_cost
+
+
+def calculate_ccs_transport_and_storage_cost_per_output(
+    ccs_initial_capex_eur: float | np.ndarray,
+    bau_initial_capex_eur: float | np.ndarray,
+    ccs_annual_cost_excluding_carbon_eur: float | np.ndarray,
+    bau_annual_cost_excluding_carbon_eur: float | np.ndarray,
+    annual_output: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+    transport_and_storage_share: float,
+) -> tuple[float | np.ndarray, float | np.ndarray]:
+    """Return levelized capture cost and its T&S surcharge.
+
+    Capture cost is the levelized difference between BAU+CCS and BAU across
+    CAPEX and non-carbon annual costs. Carbon-price effects and T&S itself are
+    deliberately outside the basis.
+    """
+
+    if transport_and_storage_share < 0.0:
+        raise ValueError("transport_and_storage_share must be non-negative.")
+
+    capture_cost_excluding_transport_and_storage = calculate_levelized_cost(
+        initial_capex_eur=ccs_initial_capex_eur - bau_initial_capex_eur,
+        annual_cost_eur=(
+            ccs_annual_cost_excluding_carbon_eur
+            - bau_annual_cost_excluding_carbon_eur
+        ),
+        annual_output=annual_output,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    transport_and_storage_cost = (
+        transport_and_storage_share
+        * capture_cost_excluding_transport_and_storage
+    )
+    return capture_cost_excluding_transport_and_storage, transport_and_storage_cost

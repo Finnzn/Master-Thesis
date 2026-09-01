@@ -140,6 +140,9 @@ outside the working repository.
 - Retrofit cost changes are added to BAU costs. Physical reductions resolve as
   `BAU value * (1 - reduction fraction)`, so positive fractions are reductions
   and negative reduction fractions are increases.
+- Hard-coal CCS, CCGT CCS, and cement CCS add T&S at 18.7% of their levelized
+  incremental capture cost relative to BAU, excluding carbon-price effects.
+  BECCS instead samples T&S uniformly from 22-29 EUR/MWh_e.
 - Check `DEFAULT_RETROFIT_BAU_MODE` and the summary command's
   `--retrofit-bau-mode` option before interpreting Monte Carlo results. The
   deterministic models always use representative BAU and retrofit values.

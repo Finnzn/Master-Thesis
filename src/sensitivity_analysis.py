@@ -49,6 +49,7 @@ class ScenarioInputs:
     fuel_price: float
     electricity_consumption: float
     electricity_price: float
+    transport_and_storage_cost: float
     emissions: float
     carbon_price: float
     full_load_hours: float | None = None
@@ -152,6 +153,9 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             fuel_price=result["fuel_price_eur_per_mwh_th"],
             electricity_consumption=result["electricity_consumption_mwh_per_t"],
             electricity_price=result["electricity_price_eur_per_mwh"],
+            transport_and_storage_cost=result[
+                "transport_and_storage_cost_eur_per_t"
+            ],
             emissions=result["emissions_tco2_per_t"],
             carbon_price=result["carbon_price_eur_per_t"],
         )
@@ -172,6 +176,9 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             fuel_price=result["fuel_price_eur_per_mwh_th"],
             electricity_consumption=0.0,
             electricity_price=0.0,
+            transport_and_storage_cost=result[
+                "transport_and_storage_cost_eur_per_mwh"
+            ],
             emissions=result["emissions_tco2_per_mwh_e"],
             carbon_price=result["carbon_price_eur_per_t"],
             full_load_hours=result["full_load_hours_per_year"],
@@ -231,6 +238,7 @@ def _sector_financial_components(
         + annual_variable_opex_eur
         + annual_fuel_cost_eur
         + annual_electricity_cost_eur
+        + inputs.annual_output * inputs.transport_and_storage_cost
         + annual_emissions_cost_eur
     )
     return initial_capex_eur, annual_revenue_eur, annual_total_cost_eur

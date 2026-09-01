@@ -35,6 +35,15 @@ INTEREST_RATE = FixedParameter(
     description="Annual interest rate.",
 )
 
+# Transport and storage (T&S) is added to the incremental capture cost of CCS
+# retrofits. The capture-cost basis is the levelized cost difference between
+# BAU+CCS and BAU before carbon-price effects and before T&S itself.
+CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST = FixedParameter(
+    value=0.187,
+    unit="fraction",
+    description="T&S cost as a share of the BAU-relative CCS capture cost.",
+)
+
 NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
     value=2.8,
     unit="EUR/MWh_th",
@@ -99,6 +108,9 @@ BIOFUEL_PRICE_DISTRIBUTION = UniformDistribution(
 GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "carbon_price_eur_per_t": CARBON_PRICE_EUR_PER_T,
     "interest_rate": INTEREST_RATE,
+    "ccs_transport_storage_share_of_capture_cost": (
+        CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST
+    ),
     "nuclear_fuel_price_eur_per_mwh_th": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
     "biogas_price_eur_per_mwh_th": BIOGAS_PRICE_EUR_PER_MWH_TH,
     "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,

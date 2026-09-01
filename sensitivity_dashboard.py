@@ -315,6 +315,15 @@ def build_input_controls(sector: str, technology: str, defaults):
         step=max(0.1, defaults.carbon_price * 0.05),
         key=f"{sector}_{technology}_carbon_price",
     )
+    transport_and_storage_cost = defaults.transport_and_storage_cost
+    if transport_and_storage_cost > 0.0:
+        transport_and_storage_cost = st.number_input(
+            f"Transport and storage cost (EUR/{unit})",
+            min_value=0.0,
+            value=float(transport_and_storage_cost),
+            step=max(0.1, transport_and_storage_cost * 0.05),
+            key=f"{sector}_{technology}_transport_and_storage_cost",
+        )
 
     return defaults.__class__(
         annual_output=annual_output,
@@ -328,6 +337,7 @@ def build_input_controls(sector: str, technology: str, defaults):
         fuel_price=fuel_price,
         electricity_consumption=electricity_consumption,
         electricity_price=electricity_price,
+        transport_and_storage_cost=transport_and_storage_cost,
         emissions=emissions,
         carbon_price=carbon_price,
         full_load_hours=full_load_hours,

@@ -146,6 +146,7 @@ and LCOE pipeline as the other electricity technologies. Its assumptions are:
 | CAPEX | Uniform, 2,454-4,239 EUR/kW |
 | Fixed OPEX | Uniform, 128.4-229.1 EUR/kW/year |
 | Variable OPEX excluding fuel | Uniform, 1.16-2.31 EUR/MWh |
+| CO2 transport and storage | Uniform, 22-29 EUR/MWh_e |
 | Biomass consumption | Uniform, 2.42-3.27 MWh_th/MWh_e |
 | Net emissions | Uniform, -1.33 to -1.01 tCO2/MWh_e |
 | Full-load hours | Fixed at 7,665 h/year, the average of 7,446-7,884 |
@@ -178,6 +179,12 @@ applicable, and emissions follow `BAU value * (1 - reduction fraction)`. Positiv
 fractions therefore reduce the BAU value, while negative reduction fractions
 represent increases. Deterministic calculations always use representative BAU
 and retrofit values; the selectable mode controls Monte Carlo calculations.
+
+CCS transport and storage (T&S) adds 18.7% of the levelized incremental capture
+cost, defined as `(BAU + CCS) - BAU` across CAPEX, OPEX, and fuel/electricity
+costs before carbon-price effects and before T&S. This applies to hard-coal CCS,
+CCGT CCS, and cement CCS. BECCS instead uses its independent 22-29 EUR/MWh_e
+uniform T&S cost range.
 
 ## Renewable Electricity Value Factors
 

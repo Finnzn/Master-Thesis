@@ -33,11 +33,13 @@ from distributions import (
 from general_parameters import (
     BIOFUEL_PRICE_DISTRIBUTION,
     CARBON_PRICE_EUR_PER_T,
+    CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
     COAL_PRICE_DISTRIBUTION,
     ELECTRICITY_PRICE_DISTRIBUTION,
     INTEREST_RATE,
 )
 from npv_finance import (
+    calculate_ccs_transport_and_storage_cost_per_output,
     calculate_discounted_lifetime_output,
     calculate_levelized_cost,
     calculate_levelized_net_margin,
@@ -207,6 +209,47 @@ def calculate_deterministic_cement_result(
         * electricity_consumption_mwh_per_t
         * electricity_price_eur_per_mwh
     )
+    capture_cost_excluding_transport_and_storage_eur_per_t = float("nan")
+    transport_and_storage_cost_eur_per_t = 0.0
+    if technology == "ccs":
+        bau_values = _deterministic_bau_values()
+        bau_initial_capex_eur = annual_output_t * bau_values["capex_eur_per_t"]
+        bau_annual_cost_excluding_carbon_eur = annual_output_t * (
+            bau_values["fixed_opex_eur_per_t"]
+            + bau_values["variable_opex_eur_per_t"]
+            + bau_values["fuel_consumption_mwh_th_per_t"]
+            * fuel_price_eur_per_mwh_th
+            + bau_values["electricity_consumption_mwh_per_t"]
+            * electricity_price_eur_per_mwh
+        )
+        annual_cost_excluding_carbon_eur = (
+            annual_fixed_opex_eur
+            + annual_variable_opex_eur
+            + annual_fuel_cost_eur
+            + annual_electricity_cost_eur
+        )
+        (
+            capture_cost_excluding_transport_and_storage_eur_per_t,
+            transport_and_storage_cost_eur_per_t,
+        ) = calculate_ccs_transport_and_storage_cost_per_output(
+            ccs_initial_capex_eur=initial_capex_eur,
+            bau_initial_capex_eur=bau_initial_capex_eur,
+            ccs_annual_cost_excluding_carbon_eur=(
+                annual_cost_excluding_carbon_eur
+            ),
+            bau_annual_cost_excluding_carbon_eur=(
+                bau_annual_cost_excluding_carbon_eur
+            ),
+            annual_output=annual_output_t,
+            lifetime_years=int(lifetime_years),
+            discount_rate=INTEREST_RATE.value,
+            transport_and_storage_share=(
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            ),
+        )
+    annual_transport_and_storage_cost_eur = (
+        annual_output_t * transport_and_storage_cost_eur_per_t
+    )
     annual_emissions_cost_eur = (
         annual_output_t * emissions_tco2_per_t * CARBON_PRICE_EUR_PER_T.value
     )
@@ -216,6 +259,7 @@ def calculate_deterministic_cement_result(
         - annual_variable_opex_eur
         - annual_fuel_cost_eur
         - annual_electricity_cost_eur
+        - annual_transport_and_storage_cost_eur
         - annual_emissions_cost_eur
     )
     annual_total_cost_eur = (
@@ -223,6 +267,7 @@ def calculate_deterministic_cement_result(
         + annual_variable_opex_eur
         + annual_fuel_cost_eur
         + annual_electricity_cost_eur
+        + annual_transport_and_storage_cost_eur
         + annual_emissions_cost_eur
     )
     npv_eur = float(
@@ -282,12 +327,21 @@ def calculate_deterministic_cement_result(
         "electricity_price_eur_per_mwh": [electricity_price_eur_per_mwh],
         "cement_price_eur_per_t": [RETAIL_PRICE_CEMENT_EUR_PER_T.value],
         "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
+        "capture_cost_excluding_transport_and_storage_eur_per_t": [
+            capture_cost_excluding_transport_and_storage_eur_per_t
+        ],
+        "transport_and_storage_cost_eur_per_t": [
+            transport_and_storage_cost_eur_per_t
+        ],
         "initial_capex_eur": [initial_capex_eur],
         "annual_revenue_eur": [annual_revenue_eur],
         "annual_fixed_opex_eur": [annual_fixed_opex_eur],
         "annual_variable_opex_eur": [annual_variable_opex_eur],
         "annual_fuel_cost_eur": [annual_fuel_cost_eur],
         "annual_electricity_cost_eur": [annual_electricity_cost_eur],
+        "annual_transport_and_storage_cost_eur": [
+            annual_transport_and_storage_cost_eur
+        ],
         "annual_emissions_cost_eur": [annual_emissions_cost_eur],
         "annual_total_cost_eur": [annual_total_cost_eur],
         "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],

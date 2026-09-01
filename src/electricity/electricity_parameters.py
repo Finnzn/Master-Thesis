@@ -520,6 +520,13 @@ BECCS_VARIABLE_OPEX_DISTRIBUTION = UniformDistribution(
     description="Uniform distribution for BECCS variable OPEX excluding fuel and electricity.",
 )
 
+BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION = UniformDistribution(
+    lower_bound=22.0,
+    upper_bound=29.0,
+    unit="EUR/MWh_e",
+    description="Uniform distribution for BECCS CO2 transport and storage cost.",
+)
+
 BECCS_FUEL_CONSUMPTION_DISTRIBUTION = UniformDistribution(
     lower_bound=2.42,
     upper_bound=3.27,

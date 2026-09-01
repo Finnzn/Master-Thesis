@@ -23,6 +23,7 @@ from distributions import (
 from electricity.electricity_capacity_calculation import calculate_capacity_kw
 from electricity.electricity_parameters import (
     ANNUAL_ELECTRICITY_OUTPUT_MWH,
+    BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION,
     ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES,
     ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
@@ -33,6 +34,7 @@ from general_parameters import (
     BIOMASS_PRICE_DISTRIBUTION,
     BIOGAS_PRICE_EUR_PER_MWH_TH,
     CARBON_PRICE_EUR_PER_T,
+    CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
     COAL_PRICE_DISTRIBUTION,
     GAS_PRICE_DISTRIBUTION,
     INTEREST_RATE,
@@ -41,6 +43,7 @@ from general_parameters import (
 )
 from npv_summary import representative_value
 from npv_finance import (
+    calculate_ccs_transport_and_storage_cost_per_output,
     calculate_discounted_lifetime_output,
     calculate_levelized_cost,
     calculate_levelized_net_margin,
@@ -202,6 +205,53 @@ def calculate_deterministic_electricity_result(
         * fuel_consumption_mwh_th_per_mwh_e
         * fuel_price_eur_per_mwh_th
     )
+    capture_cost_excluding_transport_and_storage_eur_per_mwh = float("nan")
+    transport_and_storage_cost_eur_per_mwh = 0.0
+    if technology in ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES:
+        bau_values = _representative_values(
+            ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[
+                ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
+            ]
+        )
+        bau_initial_capex_eur = capacity_kw * bau_values["capex_eur_per_kw"]
+        bau_annual_cost_excluding_carbon_eur = (
+            capacity_kw * bau_values["fixed_opex_eur_per_kw_year"]
+            + annual_output_mwh * bau_values["variable_opex_eur_per_mwh"]
+            + annual_output_mwh
+            * bau_values["fuel_consumption_mwh_th_per_mwh_e"]
+            * fuel_price_eur_per_mwh_th
+        )
+        annual_cost_excluding_carbon_eur = (
+            annual_fixed_opex_eur
+            + annual_variable_opex_eur
+            + annual_fuel_cost_eur
+        )
+        (
+            capture_cost_excluding_transport_and_storage_eur_per_mwh,
+            transport_and_storage_cost_eur_per_mwh,
+        ) = calculate_ccs_transport_and_storage_cost_per_output(
+            ccs_initial_capex_eur=initial_capex_eur,
+            bau_initial_capex_eur=bau_initial_capex_eur,
+            ccs_annual_cost_excluding_carbon_eur=(
+                annual_cost_excluding_carbon_eur
+            ),
+            bau_annual_cost_excluding_carbon_eur=(
+                bau_annual_cost_excluding_carbon_eur
+            ),
+            annual_output=annual_output_mwh,
+            lifetime_years=int(lifetime_years),
+            discount_rate=INTEREST_RATE.value,
+            transport_and_storage_share=(
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            ),
+        )
+    elif technology == "beccs":
+        transport_and_storage_cost_eur_per_mwh = representative_value(
+            BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION
+        )
+    annual_transport_and_storage_cost_eur = (
+        annual_output_mwh * transport_and_storage_cost_eur_per_mwh
+    )
     # Negative BECCS emissions produce a negative carbon-cost value. Subtracting
     # that value below turns the carbon term into revenue without a separate
     # technology-specific cash-flow formula.
@@ -213,12 +263,14 @@ def calculate_deterministic_electricity_result(
         - annual_fixed_opex_eur
         - annual_variable_opex_eur
         - annual_fuel_cost_eur
+        - annual_transport_and_storage_cost_eur
         - annual_emissions_cost_eur
     )
     annual_total_cost_eur = (
         annual_fixed_opex_eur
         + annual_variable_opex_eur
         + annual_fuel_cost_eur
+        + annual_transport_and_storage_cost_eur
         + annual_emissions_cost_eur
     )
     npv_eur = float(
@@ -282,6 +334,12 @@ def calculate_deterministic_electricity_result(
             captured_electricity_price_eur_per_mwh
         ],
         "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
+        "capture_cost_excluding_transport_and_storage_eur_per_mwh": [
+            capture_cost_excluding_transport_and_storage_eur_per_mwh
+        ],
+        "transport_and_storage_cost_eur_per_mwh": [
+            transport_and_storage_cost_eur_per_mwh
+        ],
         "capacity_mw": [capacity_kw / 1_000.0],
         "capacity_kw": [capacity_kw],
         "initial_capex_eur": [initial_capex_eur],
@@ -289,6 +347,9 @@ def calculate_deterministic_electricity_result(
         "annual_fixed_opex_eur": [annual_fixed_opex_eur],
         "annual_variable_opex_eur": [annual_variable_opex_eur],
         "annual_fuel_cost_eur": [annual_fuel_cost_eur],
+        "annual_transport_and_storage_cost_eur": [
+            annual_transport_and_storage_cost_eur
+        ],
         "annual_emissions_cost_eur": [annual_emissions_cost_eur],
         "annual_total_cost_eur": [annual_total_cost_eur],
         "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
