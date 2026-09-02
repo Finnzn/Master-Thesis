@@ -58,6 +58,24 @@ BIOGAS_PRICE_EUR_PER_MWH_TH = FixedParameter(
     ),
 )
 
+PCI_COKING_COAL_MIX_PRICE_EUR_PER_MWH_TH = FixedParameter(
+    value=23.0,
+    unit="EUR/MWh_th",
+    description="PCI and coking-coal mix fuel price for BF-BOF steel production.",
+)
+
+CHARCOAL_PRICE_EUR_PER_MWH_TH = FixedParameter(
+    value=81.0,
+    unit="EUR/MWh_th",
+    description="Charcoal fuel price.",
+)
+
+GREEN_HYDROGEN_PRICE_EUR_PER_MWH_TH = FixedParameter(
+    value=229.65,
+    unit="EUR/MWh_th",
+    description="Green-hydrogen fuel price.",
+)
+
 BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
     minimum=17.36,
     mode=28.93,
@@ -121,6 +139,11 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     ),
     "nuclear_fuel_price_eur_per_mwh_th": NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
     "biogas_price_eur_per_mwh_th": BIOGAS_PRICE_EUR_PER_MWH_TH,
+    "pci_coking_coal_mix_price_eur_per_mwh_th": (
+        PCI_COKING_COAL_MIX_PRICE_EUR_PER_MWH_TH
+    ),
+    "charcoal_price_eur_per_mwh_th": CHARCOAL_PRICE_EUR_PER_MWH_TH,
+    "green_hydrogen_price_eur_per_mwh_th": GREEN_HYDROGEN_PRICE_EUR_PER_MWH_TH,
     "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,
 }
 

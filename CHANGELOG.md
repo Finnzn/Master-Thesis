@@ -5698,3 +5698,94 @@ cross-technology absolute-effect comparisons.
 The figure footer and documentation also state that grouped Fuel, Electricity,
 and Emissions cells report the larger constituent one-at-a-time effect rather
 than a joint change or interaction measure.
+
+## 2026-09-02 — Add steel-sector fuel-price assumptions
+
+### User request
+
+Start the steel-sector implementation by adding prices for the PCI/coking-coal
+mix, charcoal, and green hydrogen.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added the first steel-sector parameter
+  catalogue with the three fixed fuel prices.
+- `CHANGELOG.md` — recorded the new scientific assumptions and their modelling
+  convention.
+
+### What was implemented
+
+- Added a fixed PCI/coking-coal mix price of 23 EUR/MWh_th for BF-BOF steel
+  production.
+- Added a fixed charcoal price of 81 EUR/MWh_th.
+- Added a fixed green-hydrogen price of 229.65 EUR/MWh_th.
+- Exposed all three inputs through `STEEL_FIXED_PARAMETERS` for reuse by later
+  steel technology and financial-model modules.
+- Interpreted the supplied EUR/MWh values as thermal fuel-energy prices, matching
+  the existing model's fuel-price unit convention.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact value/unit assertions for all entries in
+    `STEEL_FIXED_PARAMETERS`.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- No simulations, numerical outputs, notebooks, or figures were generated.
+- These are fixed assumptions; no uncertainty distributions or source citations
+  were supplied or inferred.
+
+### Next suggested step
+
+Add the steel technologies and assign each technology its applicable fuel and
+fuel-consumption intensity.
+
+## 2026-09-02 — Correct scope of newly added fuel prices
+
+### User request
+
+Move the PCI/coking-coal mix, charcoal, and green-hydrogen prices from the steel
+sector module to the general parameter catalogue because they are fuel values.
+
+### Files changed
+
+- `src/general_parameters.py` — added the three fixed fuel prices to the shared
+  general assumptions and `GENERAL_FIXED_PARAMETERS`.
+- `src/steel/steel_parameters.py` — removed the incorrectly scoped module.
+- `CHANGELOG.md` — recorded the scope correction while preserving the previous
+  changelog entry.
+
+### What was implemented
+
+- Moved the fixed PCI/coking-coal mix price of 23 EUR/MWh_th, charcoal price of
+  81 EUR/MWh_th, and green-hydrogen price of 229.65 EUR/MWh_th into the general
+  parameter catalogue.
+- Registered the three prices in `GENERAL_FIXED_PARAMETERS` so future sector
+  models can share them.
+- Removed the initial steel-specific parameter file because no steel-sector
+  parameters have been supplied yet.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Import and exact value/unit assertions for the new general parameters.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- This correction changes only where the assumptions are defined; their values
+  and units are unchanged.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the first steel technology parameters while importing applicable fuel prices
+from the general catalogue.
