@@ -211,7 +211,11 @@ def calculate_deterministic_cement_result(
     )
     capture_cost_excluding_transport_and_storage_eur_per_t = float("nan")
     transport_and_storage_cost_eur_per_t = 0.0
+    transport_and_storage_share_of_capture_cost = float("nan")
     if technology == "ccs":
+        transport_and_storage_share_of_capture_cost = (
+            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+        )
         bau_values = _deterministic_bau_values()
         bau_initial_capex_eur = annual_output_t * bau_values["capex_eur_per_t"]
         bau_annual_cost_excluding_carbon_eur = annual_output_t * (
@@ -244,7 +248,7 @@ def calculate_deterministic_cement_result(
             lifetime_years=int(lifetime_years),
             discount_rate=INTEREST_RATE.value,
             transport_and_storage_share=(
-                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+                transport_and_storage_share_of_capture_cost
             ),
         )
     annual_transport_and_storage_cost_eur = (
@@ -332,6 +336,9 @@ def calculate_deterministic_cement_result(
         ],
         "transport_and_storage_cost_eur_per_t": [
             transport_and_storage_cost_eur_per_t
+        ],
+        "transport_and_storage_share_of_capture_cost": [
+            transport_and_storage_share_of_capture_cost
         ],
         "initial_capex_eur": [initial_capex_eur],
         "annual_revenue_eur": [annual_revenue_eur],

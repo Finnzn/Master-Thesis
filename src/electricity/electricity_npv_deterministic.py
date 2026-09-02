@@ -207,7 +207,11 @@ def calculate_deterministic_electricity_result(
     )
     capture_cost_excluding_transport_and_storage_eur_per_mwh = float("nan")
     transport_and_storage_cost_eur_per_mwh = 0.0
+    transport_and_storage_share_of_capture_cost = float("nan")
     if technology in ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES:
+        transport_and_storage_share_of_capture_cost = (
+            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+        )
         bau_values = _representative_values(
             ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[
                 ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
@@ -242,7 +246,7 @@ def calculate_deterministic_electricity_result(
             lifetime_years=int(lifetime_years),
             discount_rate=INTEREST_RATE.value,
             transport_and_storage_share=(
-                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+                transport_and_storage_share_of_capture_cost
             ),
         )
     elif technology == "beccs":
@@ -339,6 +343,9 @@ def calculate_deterministic_electricity_result(
         ],
         "transport_and_storage_cost_eur_per_mwh": [
             transport_and_storage_cost_eur_per_mwh
+        ],
+        "transport_and_storage_share_of_capture_cost": [
+            transport_and_storage_share_of_capture_cost
         ],
         "capacity_mw": [capacity_kw / 1_000.0],
         "capacity_kw": [capacity_kw],

@@ -25,13 +25,31 @@ from electricity.electricity_capacity_calculation import calculate_capacity_kw
 from electricity.electricity_npv_deterministic import (
     calculate_deterministic_electricity_result,
 )
-from electricity.electricity_parameters import ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS
-from general_parameters import INTEREST_RATE
+from electricity.electricity_parameters import (
+    ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES,
+    ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,
+)
+from general_parameters import (
+    CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
+    INTEREST_RATE,
+)
 from npv_finance import (
+    calculate_ccs_transport_and_storage_cost_per_output,
     calculate_level_cash_flow_present_value_factor,
     calculate_levelized_cost,
     calculate_levelized_net_margin,
 )
+
+
+@dataclass(frozen=True)
+class CaptureCostBaseline:
+    """BAU intensities used to recalculate a CCS capture-cost surcharge."""
+
+    capex: float
+    fixed_opex: float
+    variable_opex: float
+    fuel_consumption: float
+    electricity_consumption: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -50,6 +68,8 @@ class ScenarioInputs:
     electricity_consumption: float
     electricity_price: float
     transport_and_storage_cost: float
+    transport_and_storage_share: float
+    capture_cost_baseline: CaptureCostBaseline | None
     emissions: float
     carbon_price: float
     full_load_hours: float | None = None
@@ -92,6 +112,8 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
         SensitivityParameter("Fuel price", "fuel_price"),
         SensitivityParameter("Electricity use", "electricity_consumption"),
         SensitivityParameter("Electricity price", "electricity_price"),
+        SensitivityParameter("T&S share", "transport_and_storage_share"),
+        SensitivityParameter("T&S cost", "transport_and_storage_cost"),
         SensitivityParameter("Direct emissions", "emissions"),
         SensitivityParameter("Carbon price", "carbon_price"),
     ),
@@ -107,6 +129,8 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
         SensitivityParameter("Variable OPEX", "variable_opex"),
         SensitivityParameter("Fuel use", "fuel_consumption"),
         SensitivityParameter("Fuel price", "fuel_price"),
+        SensitivityParameter("T&S share", "transport_and_storage_share"),
+        SensitivityParameter("T&S cost", "transport_and_storage_cost"),
         # Negative emissions must remain available for BECCS. Other technology
         # base cases remain positive, so removing the zero floor does not alter
         # their standard ±variation calculation.
@@ -143,6 +167,24 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
 
     if sector == "cement":
         result = _single_value_result(calculate_deterministic_cement_result(technology))
+        capture_cost_baseline = None
+        transport_and_storage_share = 0.0
+        if technology == "ccs":
+            bau_result = _single_value_result(
+                calculate_deterministic_cement_result("bau")
+            )
+            capture_cost_baseline = CaptureCostBaseline(
+                capex=bau_result["capex_eur_per_t"],
+                fixed_opex=bau_result["fixed_opex_eur_per_t"],
+                variable_opex=bau_result["variable_opex_eur_per_t"],
+                fuel_consumption=bau_result["fuel_consumption_mwh_th_per_t"],
+                electricity_consumption=bau_result[
+                    "electricity_consumption_mwh_per_t"
+                ],
+            )
+            transport_and_storage_share = (
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            )
         return ScenarioInputs(
             annual_output=result["annual_output_t"],
             lifetime_years=result["lifetime_years"],
@@ -158,6 +200,8 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             transport_and_storage_cost=result[
                 "transport_and_storage_cost_eur_per_t"
             ],
+            transport_and_storage_share=transport_and_storage_share,
+            capture_cost_baseline=capture_cost_baseline,
             emissions=result["emissions_tco2_per_t"],
             carbon_price=result["carbon_price_eur_per_t"],
         )
@@ -166,6 +210,24 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
         result = _single_value_result(
             calculate_deterministic_electricity_result(technology)
         )
+        capture_cost_baseline = None
+        transport_and_storage_share = 0.0
+        if technology in ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES:
+            bau_technology = ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
+            bau_result = _single_value_result(
+                calculate_deterministic_electricity_result(bau_technology)
+            )
+            capture_cost_baseline = CaptureCostBaseline(
+                capex=bau_result["capex_eur_per_kw"],
+                fixed_opex=bau_result["fixed_opex_eur_per_kw_year"],
+                variable_opex=bau_result["variable_opex_eur_per_mwh"],
+                fuel_consumption=bau_result[
+                    "fuel_consumption_mwh_th_per_mwh_e"
+                ],
+            )
+            transport_and_storage_share = (
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            )
         return ScenarioInputs(
             annual_output=result["annual_output_mwh"],
             lifetime_years=result["lifetime_years"],
@@ -181,6 +243,8 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             transport_and_storage_cost=result[
                 "transport_and_storage_cost_eur_per_mwh"
             ],
+            transport_and_storage_share=transport_and_storage_share,
+            capture_cost_baseline=capture_cost_baseline,
             emissions=result["emissions_tco2_per_mwh_e"],
             carbon_price=result["carbon_price_eur_per_t"],
             full_load_hours=result["full_load_hours_per_year"],
@@ -191,6 +255,96 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
         )
 
     raise ValueError(f"Unknown sector: {sector!r}.")
+
+
+def calculate_transport_and_storage_cost_per_output(
+    sector: str,
+    inputs: ScenarioInputs,
+) -> float:
+    """Return the applied T&S cost after resolving capture-cost dependencies.
+
+    BECCS uses its independent fixed scenario input directly. For the three
+    BAU-relative CCS retrofits, T&S is a share of levelized incremental capture
+    cost and must therefore be recalculated whenever an input in that capture
+    cost changes.
+    """
+
+    baseline = inputs.capture_cost_baseline
+    if baseline is None:
+        return inputs.transport_and_storage_cost
+    if inputs.full_load_hours is None and sector == "electricity":
+        raise ValueError("Electricity scenarios require full_load_hours.")
+
+    if sector == "cement":
+        ccs_initial_capex_eur = inputs.annual_output * inputs.capex
+        bau_initial_capex_eur = inputs.annual_output * baseline.capex
+        ccs_annual_cost_excluding_carbon_eur = inputs.annual_output * (
+            inputs.fixed_opex
+            + inputs.variable_opex
+            + inputs.fuel_consumption * inputs.fuel_price
+            + inputs.electricity_consumption * inputs.electricity_price
+        )
+        bau_annual_cost_excluding_carbon_eur = inputs.annual_output * (
+            baseline.fixed_opex
+            + baseline.variable_opex
+            + baseline.fuel_consumption * inputs.fuel_price
+            + baseline.electricity_consumption * inputs.electricity_price
+        )
+    elif sector == "electricity":
+        capacity_kw = calculate_capacity_kw(
+            annual_electricity_output_mwh=inputs.annual_output,
+            full_load_hours_per_year=inputs.full_load_hours,
+        )
+        ccs_initial_capex_eur = capacity_kw * inputs.capex
+        bau_initial_capex_eur = capacity_kw * baseline.capex
+        ccs_annual_cost_excluding_carbon_eur = (
+            capacity_kw * inputs.fixed_opex
+            + inputs.annual_output * inputs.variable_opex
+            + inputs.annual_output * inputs.fuel_consumption * inputs.fuel_price
+        )
+        bau_annual_cost_excluding_carbon_eur = (
+            capacity_kw * baseline.fixed_opex
+            + inputs.annual_output * baseline.variable_opex
+            + inputs.annual_output * baseline.fuel_consumption * inputs.fuel_price
+        )
+    else:
+        raise ValueError(f"Unknown sector: {sector!r}.")
+
+    _, transport_and_storage_cost = (
+        calculate_ccs_transport_and_storage_cost_per_output(
+            ccs_initial_capex_eur=ccs_initial_capex_eur,
+            bau_initial_capex_eur=bau_initial_capex_eur,
+            ccs_annual_cost_excluding_carbon_eur=(
+                ccs_annual_cost_excluding_carbon_eur
+            ),
+            bau_annual_cost_excluding_carbon_eur=(
+                bau_annual_cost_excluding_carbon_eur
+            ),
+            annual_output=inputs.annual_output,
+            lifetime_years=int(round(inputs.lifetime_years)),
+            discount_rate=inputs.discount_rate,
+            transport_and_storage_share=inputs.transport_and_storage_share,
+        )
+    )
+    return float(transport_and_storage_cost)
+
+
+def sensitivity_parameter_is_applicable(
+    inputs: ScenarioInputs,
+    attribute: str,
+) -> bool:
+    """Return whether a sensitivity input has meaning for this technology."""
+
+    if attribute == "value_factor":
+        return inputs.uses_value_factor
+    if attribute == "transport_and_storage_share":
+        return inputs.capture_cost_baseline is not None
+    if attribute == "transport_and_storage_cost":
+        return (
+            inputs.capture_cost_baseline is None
+            and inputs.transport_and_storage_cost > 0.0
+        )
+    return True
 
 
 def _sector_financial_components(
@@ -238,12 +392,16 @@ def _sector_financial_components(
     else:
         raise ValueError(f"Unknown sector: {sector!r}.")
 
+    transport_and_storage_cost = calculate_transport_and_storage_cost_per_output(
+        sector,
+        inputs,
+    )
     annual_total_cost_eur = (
         annual_fixed_opex_eur
         + annual_variable_opex_eur
         + annual_fuel_cost_eur
         + annual_electricity_cost_eur
-        + inputs.annual_output * inputs.transport_and_storage_cost
+        + inputs.annual_output * transport_and_storage_cost
         + annual_emissions_cost_eur
     )
     return initial_capex_eur, annual_revenue_eur, annual_total_cost_eur
@@ -332,6 +490,9 @@ def build_sensitivity_table(
     attribute is listed are included. The default remains all sector parameters.
     """
 
+    if variation_fraction < 0.0:
+        raise ValueError("variation_fraction must be non-negative.")
+
     base_metric_value = calculate_metric_value(sector, inputs, metric)
     selected_attributes = (
         None if included_attributes is None else set(included_attributes)
@@ -343,10 +504,7 @@ def build_sensitivity_table(
             and parameter.attribute not in selected_attributes
         ):
             continue
-        # A value factor is defined only for variable renewable electricity.
-        # Other electricity technologies use the neutral calculation fallback
-        # of 1.0 and should not show artificial VF sensitivity.
-        if parameter.attribute == "value_factor" and not inputs.uses_value_factor:
+        if not sensitivity_parameter_is_applicable(inputs, parameter.attribute):
             continue
         base_value = getattr(inputs, parameter.attribute)
         low_value = max(parameter.minimum, base_value * (1.0 - variation_fraction))

@@ -83,6 +83,7 @@ CEMENT_RAW_INPUT_COLUMNS = (
     "electricity_price_eur_per_mwh",
     "cement_price_eur_per_t",
     "carbon_price_eur_per_t",
+    "transport_and_storage_share_of_capture_cost",
     "transport_and_storage_cost_eur_per_t",
 )
 

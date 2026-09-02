@@ -55,6 +55,8 @@ SENSITIVITY_SCOPE: Mapping[str, tuple[str, ...]] = {
         "fuel_price",
         "electricity_consumption",
         "electricity_price",
+        "transport_and_storage_share",
+        "transport_and_storage_cost",
         "emissions",
         "carbon_price",
     ),
@@ -68,6 +70,8 @@ SENSITIVITY_SCOPE: Mapping[str, tuple[str, ...]] = {
         "variable_opex",
         "fuel_consumption",
         "fuel_price",
+        "transport_and_storage_share",
+        "transport_and_storage_cost",
         "emissions",
         "carbon_price",
     ),
@@ -79,12 +83,16 @@ HEATMAP_PARAMETER_GROUPS: Mapping[str, Mapping[str, str]] = {
         "Fuel price": "Fuel",
         "Electricity use": "Electricity",
         "Electricity price": "Electricity",
+        "T&S share": "T&S",
+        "T&S cost": "T&S",
         "Direct emissions": "Emissions",
         "Carbon price": "Emissions",
     },
     "electricity": {
         "Fuel use": "Fuel",
         "Fuel price": "Fuel",
+        "T&S share": "T&S",
+        "T&S cost": "T&S",
         "Direct emissions": "Emissions",
         "Carbon price": "Emissions",
     },
@@ -253,11 +261,13 @@ def build_sensitivity_heatmap_figure(
         0.01,
         f"100 = largest absolute change in {_metric_title_label(metric)} "
         "for that technology. "
-        "A value of 17 means 17% of that row's largest impact.",
+        "A value of 17 means 17% of that row's largest impact.\n"
+        "Grouped Fuel, Electricity, and Emissions cells show the larger "
+        "constituent one-at-a-time impact; inputs are not changed jointly.",
         fontsize=8,
         color="#555555",
     )
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.tight_layout(rect=(0, 0.065, 1, 1))
     return fig
 
 

@@ -145,6 +145,13 @@ outside the working repository.
 - Hard-coal CCS, CCGT CCS, and cement CCS add T&S at 18.7% of their levelized
   incremental capture cost relative to BAU, excluding carbon-price effects.
   BECCS instead samples T&S uniformly from 22-29 EUR/MWh_e.
+- Sensitivity and deterministic scenario calculations recompute capture-share
+  T&S from the current CAPEX, OPEX, energy, full-load-hour, lifetime, and
+  discount-rate inputs. The heatmap varies the 18.7% share for the three
+  BAU-relative CCS technologies and the direct T&S unit cost for BECCS.
+- Heatmap `Fuel`, `Electricity`, and `Emissions` groups display the larger
+  constituent one-factor-at-a-time effect, not a joint perturbation or an
+  interaction index. Use a global method such as Sobol analysis for interactions.
 - The cement MACC includes T&S through annual total technology cost and then
   removes carbon payments from its resource-cost boundary. Product revenue is
   also excluded.

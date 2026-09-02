@@ -184,7 +184,10 @@ CCS transport and storage (T&S) adds 18.7% of the levelized incremental capture
 cost, defined as `(BAU + CCS) - BAU` across CAPEX, OPEX, and fuel/electricity
 costs before carbon-price effects and before T&S. This applies to hard-coal CCS,
 CCGT CCS, and cement CCS. BECCS instead uses its independent 22-29 EUR/MWh_e
-uniform T&S cost range.
+uniform T&S cost range. The capture-share calculation is evaluated from the
+current inputs rather than stored as a fixed surcharge: changing CAPEX, OPEX,
+fuel or electricity inputs, full-load hours, lifetime, or discount rate therefore
+also updates T&S wherever those inputs enter the incremental capture cost.
 
 ## Renewable Electricity Value Factors
 
@@ -245,7 +248,9 @@ the impact. Downloaded or in-app saved dashboard figures can be written to
 
 Each sector tab also contains a **Variables in sensitivity analysis** panel.
 Check or uncheck inputs there to control which variables are recalculated and
-shown in the tornado diagram.
+shown in the tornado diagram. For hard-coal CCS, CCGT CCS, and cement CCS the
+dashboard exposes the T&S share of capture cost; for BECCS it exposes the direct
+T&S cost. The same assumptions appear in the standardized heatmaps as `T&S`.
 
 The dashboard is a deterministic scenario tool. It does not change stored model
 assumptions, and it currently varies annual production/generation consistently
@@ -262,7 +267,13 @@ The heatmaps compare equal relative input changes using the selected `NPV`,
 `LNM`, or `LCOX` metric. Annual output and product selling prices are excluded
 from these cross-technology heatmaps because they are common comparison
 assumptions rather than technology-development inputs. Lifetime and discount
-rate remain included as common financial assumptions.
+rate remain included as common financial assumptions. Every row is a
+one-factor-at-a-time calculation, but all downstream equations are evaluated:
+for example full-load hours resize electricity capacity, value factor changes
+captured revenue, and capture-share T&S follows its current capture-cost basis.
+Grouped `Fuel`, `Electricity`, and `Emissions` heatmap cells show the larger of
+their two constituent one-at-a-time impacts; they do not vary both inputs jointly
+or estimate interaction effects.
 The derived sensitivity CSV is written to `data/processed/`; heatmaps are
 written to `figures/`.
 
@@ -370,5 +381,5 @@ PYTHONPATH=src python -m cement.cement_npv_summary_figures \
   --sample-size 100 --no-data --ranking-output none
 ```
 
-There is not yet a formal automated test suite. The commands above are the
-minimum project smoke checks.
+Compilation and the two small-sample workflow commands are the minimum smoke
+checks for the output pipeline.

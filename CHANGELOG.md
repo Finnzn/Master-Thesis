@@ -5626,3 +5626,75 @@ method is more suitable than the current heatmap for nonlinear relationships.
 Implement a separate global Monte Carlo sensitivity workflow with first-order
 and total-order Sobol indices, while retaining the current heatmap as a clearly
 labelled deterministic ±20% scenario analysis.
+
+## 2026-09-02 — Audit sensitivity dependencies and recent model additions
+
+### User request
+
+Check whether T&S and other derived quantities are recalculated when a heatmap
+input changes, then audit the recent code and notebooks for missing connections
+or logic errors.
+
+### Findings and fixes
+
+- Fixed a sensitivity-layer dependency error: the dashboard, scenario notebook,
+  and standardized heatmap previously loaded capture-share T&S once from the
+  deterministic result and then held the EUR/unit surcharge fixed. Hard-coal
+  CCS, CCGT CCS, and cement CCS now recompute T&S from the current incremental
+  CAPEX, OPEX, fuel/electricity, full-load-hour, lifetime, and discount-rate
+  inputs on every metric evaluation.
+- Kept BECCS T&S as an independent direct EUR/MWh input, matching its separate
+  22-29 EUR/MWh distribution rather than the 18.7% capture-cost method.
+- Added `T&S share` sensitivity for the three BAU-relative CCS technologies and
+  `T&S cost` sensitivity for BECCS. Both appear as one `T&S` heatmap column,
+  with not-applicable technologies shown as zero.
+- Changed the dashboard control for capture-share CCS from an editable derived
+  EUR/unit value to the underlying share assumption. The applied EUR/unit T&S
+  value is displayed after recalculation. BECCS retains the direct cost control.
+- Added the 18.7% share to deterministic and Monte Carlo result schemas and raw
+  input exports so the T&S basis is traceable rather than implicit.
+- Corrected the individual hard-coal CCS, CCGT CCS, BECCS, and cement CCS
+  notebooks so their input/output and annual-component tables display T&S.
+  Previously the total cost and NPV included T&S but the displayed components
+  did not reconcile visibly.
+
+### Relationship audit
+
+- Verified that electricity full-load hours resize capacity and therefore
+  CAPEX and fixed OPEX.
+- Verified that annual output scales plant size and all annual cash flows; under
+  the normalized setup it does not change per-unit LNM, LCOX, or capture-share
+  T&S.
+- Verified that value factor changes captured electricity price, revenue, NPV,
+  and LNM while leaving costs and LCOE unchanged.
+- Verified that fuel use × fuel price, cement electricity use × electricity
+  price, and emissions × carbon price are recalculated from the varied inputs.
+- Verified that negative BECCS emissions continue to produce a carbon credit in
+  NPV/LNM and LCOE under the documented model boundary.
+- Verified that the cement MACC includes T&S and excludes emissions payments and
+  product revenue.
+
+### Verification
+
+- `.venv/bin/python -m compileall -q src sensitivity_dashboard.py`
+- Seeded 512-draw electricity and cement Monte Carlo identity checks, including
+  `T&S = 0.187 × capture cost` for every BAU-relative CCS draw.
+- Deterministic NPV, LNM, and LCOX equality checks between the sensitivity layer
+  and both sector engines for every technology.
+- Small-sample electricity and cement summary workflow smoke tests.
+- Full in-place execution of the scenario, sensitivity heatmap, cement MACC,
+  and affected individual CCS/BECCS notebooks.
+- Notebook JSON, Python AST, saved-error-output, and T&S component checks.
+- Visual inspection of both updated LNM heatmaps.
+- `git diff --check`.
+
+### Result
+
+All checks passed. The updated heatmaps show T&S sensitivity only where it is
+applicable: 21.2% of the largest cement-CCS driver, 8.7% for hard-coal CCS, 6.9%
+for CCGT CCS, and 27.2% for BECCS under the standardized ±20% LNM analysis.
+These percentages are normalized within each technology row and are not
+cross-technology absolute-effect comparisons.
+The figure footer and documentation also state that grouped Fuel, Electricity,
+and Emissions cells report the larger constituent one-at-a-time effect rather
+than a joint change or interaction measure.

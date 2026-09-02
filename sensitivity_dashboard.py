@@ -25,10 +25,12 @@ from sensitivity_analysis import (  # noqa: E402
     base_inputs,
     build_sensitivity_table,
     calculate_metric_value,
+    calculate_transport_and_storage_cost_per_output,
     display_label,
     figure_to_png_bytes,
     metric_axis_label,
     plot_tornado,
+    sensitivity_parameter_is_applicable,
 )
 
 
@@ -82,7 +84,7 @@ def render_sector_dashboard(sector: str) -> None:
             format_func=lambda value: format_metric_option(sector, value),
             key=f"{sector}_metric",
         )
-        included_attributes = build_parameter_checkboxes(sector)
+        included_attributes = build_parameter_checkboxes(sector, defaults)
         scenario_inputs = build_input_controls(sector, technology, defaults)
 
     base_metric_value = calculate_metric_value(sector, scenario_inputs, metric)
@@ -154,7 +156,7 @@ def render_sector_dashboard(sector: str) -> None:
     plt.close(fig)
 
 
-def build_parameter_checkboxes(sector: str) -> tuple[str, ...]:
+def build_parameter_checkboxes(sector: str, defaults) -> tuple[str, ...]:
     """Render checkboxes and return the selected sensitivity attributes."""
 
     selected = []
@@ -162,6 +164,11 @@ def build_parameter_checkboxes(sector: str) -> tuple[str, ...]:
         st.caption("Checked variables appear in the tornado chart.")
         columns = st.columns(2)
         for index, parameter in enumerate(SENSITIVITY_PARAMETERS[sector]):
+            if not sensitivity_parameter_is_applicable(
+                defaults,
+                parameter.attribute,
+            ):
+                continue
             included = columns[index % 2].checkbox(
                 parameter.label,
                 value=True,
@@ -326,7 +333,17 @@ def build_input_controls(sector: str, technology: str, defaults):
         key=f"{sector}_{technology}_carbon_price",
     )
     transport_and_storage_cost = defaults.transport_and_storage_cost
-    if transport_and_storage_cost > 0.0:
+    transport_and_storage_share = defaults.transport_and_storage_share
+    if defaults.capture_cost_baseline is not None:
+        transport_and_storage_share_percent = st.number_input(
+            "T&S share of capture cost (%)",
+            min_value=0.0,
+            value=float(transport_and_storage_share * 100.0),
+            step=0.5,
+            key=f"{sector}_{technology}_transport_and_storage_share",
+        )
+        transport_and_storage_share = transport_and_storage_share_percent / 100.0
+    elif transport_and_storage_cost > 0.0:
         transport_and_storage_cost = st.number_input(
             f"Transport and storage cost (EUR/{unit})",
             min_value=0.0,
@@ -335,7 +352,7 @@ def build_input_controls(sector: str, technology: str, defaults):
             key=f"{sector}_{technology}_transport_and_storage_cost",
         )
 
-    return defaults.__class__(
+    scenario_inputs = defaults.__class__(
         annual_output=annual_output,
         lifetime_years=lifetime_years,
         discount_rate=discount_rate_percent / 100.0,
@@ -348,12 +365,26 @@ def build_input_controls(sector: str, technology: str, defaults):
         electricity_consumption=electricity_consumption,
         electricity_price=electricity_price,
         transport_and_storage_cost=transport_and_storage_cost,
+        transport_and_storage_share=transport_and_storage_share,
+        capture_cost_baseline=defaults.capture_cost_baseline,
         emissions=emissions,
         carbon_price=carbon_price,
         full_load_hours=full_load_hours,
         value_factor=value_factor,
         uses_value_factor=defaults.uses_value_factor,
     )
+    if defaults.capture_cost_baseline is not None:
+        applied_transport_and_storage_cost = (
+            calculate_transport_and_storage_cost_per_output(
+                sector,
+                scenario_inputs,
+            )
+        )
+        st.caption(
+            "Applied T&S cost after recalculation: "
+            f"{applied_transport_and_storage_cost:,.2f} EUR/{unit}"
+        )
+    return scenario_inputs
 
 
 def format_metric_option(sector: str, metric: str) -> str:

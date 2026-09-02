@@ -387,7 +387,12 @@ def simulate_electricity_technology_npv(
         size, np.nan
     )
     transport_and_storage_cost_eur_per_mwh = np.zeros(size)
+    transport_and_storage_share_of_capture_cost = np.full(size, np.nan)
     if baseline_values is not None:
+        transport_and_storage_share_of_capture_cost = np.full(
+            size,
+            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value,
+        )
         bau_initial_capex_eur = capacity_kw * baseline_values["capex_eur_per_kw"]
         bau_annual_cost_excluding_carbon_eur = (
             capacity_kw * baseline_values["fixed_opex_eur_per_kw_year"]
@@ -511,6 +516,9 @@ def simulate_electricity_technology_npv(
         ),
         "transport_and_storage_cost_eur_per_mwh": (
             transport_and_storage_cost_eur_per_mwh
+        ),
+        "transport_and_storage_share_of_capture_cost": (
+            transport_and_storage_share_of_capture_cost
         ),
         "initial_capex_eur": initial_capex_eur,
         "annual_revenue_eur": annual_revenue_eur,

@@ -298,9 +298,14 @@ def _calculate_cement_cash_flow_result(
         size, np.nan
     )
     transport_and_storage_cost_eur_per_t = np.zeros(size)
+    transport_and_storage_share_of_capture_cost = np.full(size, np.nan)
     if technology == "ccs":
         if bau_values is None:
             raise ValueError("CCS requires BAU values for its T&S cost basis.")
+        transport_and_storage_share_of_capture_cost = np.full(
+            size,
+            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value,
+        )
         bau_initial_capex_eur = annual_output_t * bau_values["capex_eur_per_t"]
         bau_annual_cost_excluding_carbon_eur = annual_output_t * (
             bau_values["fixed_opex_eur_per_t"]
@@ -415,6 +420,9 @@ def _calculate_cement_cash_flow_result(
         ),
         "transport_and_storage_cost_eur_per_t": (
             transport_and_storage_cost_eur_per_t
+        ),
+        "transport_and_storage_share_of_capture_cost": (
+            transport_and_storage_share_of_capture_cost
         ),
         "initial_capex_eur": initial_capex_eur,
         "annual_revenue_eur": np.full(size, annual_revenue_eur),
