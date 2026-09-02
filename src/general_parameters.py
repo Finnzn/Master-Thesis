@@ -53,7 +53,9 @@ NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
 BIOGAS_PRICE_EUR_PER_MWH_TH = FixedParameter(
     value=87.5,
     unit="EUR/MWh_th",
-    description="Biogas fuel price.",
+    description=(
+        "Biogas fuel price used for the biogas electricity-generation technology."
+    ),
 )
 
 BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
@@ -61,7 +63,10 @@ BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
     mode=28.93,
     maximum=46.28,
     unit="EUR/MWh_th",
-    description="Triangular biomass fuel-price distribution for BECCS.",
+    description=(
+        "Triangular biomass fuel-price distribution used for the BECCS "
+        "electricity-generation technology."
+    ),
 )
 
 NO_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
@@ -102,7 +107,10 @@ BIOFUEL_PRICE_DISTRIBUTION = UniformDistribution(
     lower_bound=5.4,
     upper_bound=32.4,
     unit="EUR/MWh_th",
-    description="Uniform distribution for biofuel price converted from 1.5-9 EUR/GJ.",
+    description=(
+        "Uniform biofuel price distribution used for the alternative-fuels cement "
+        "retrofit, converted from 1.5-9 EUR/GJ."
+    ),
 )
 
 GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
