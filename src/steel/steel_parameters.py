@@ -22,7 +22,7 @@ LIFETIME_STEEL_YEARS = FixedParameter(
 # Steel revenue is calculated from this fixed crude-steel retail price and the
 # normalized annual output.
 RETAIL_PRICE_STEEL_EUR_PER_TCS = FixedParameter(
-    value=450.0,
+    value=650.0,
     unit="EUR/tCS",
     description="Retail price of crude steel used in the steel-sector setup.",
 )
