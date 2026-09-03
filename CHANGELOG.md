@@ -5789,3 +5789,758 @@ sector module to the general parameter catalogue because they are fuel values.
 
 Add the first steel technology parameters while importing applicable fuel prices
 from the general catalogue.
+
+## 2026-09-03 10:29 — Add BF-BOF BAU steel parameters
+
+### User request
+
+Create the steel notebooks folder and start the steel-sector parameter catalogue
+with the supplied greenfield European BF-BOF BAU technology assumptions.
+
+### Files changed
+
+- `notebooks/steel/.gitkeep` — added a tracked placeholder for the new steel
+  notebooks folder.
+- `src/steel/steel_parameters.py` — added the BF-BOF BAU input distributions
+  and steel technology registry.
+- `CHANGELOG.md` — recorded the new steel-sector setup and scientific inputs.
+
+### What was implemented
+
+- Added triangular distributions for BF-BOF BAU CAPEX, fixed OPEX, variable
+  OPEX, fuel/reductant consumption, and direct emissions using the supplied base
+  values as distribution modes.
+- Added purchased-electricity consumption as a fixed parameter of 0.115
+  MWh/tCS.
+- Registered the technology as `bf_bof_bau` in
+  `STEEL_TECHNOLOGY_DISTRIBUTIONS`, following the electricity and cement
+  parameter-catalogue pattern.
+- Converted direct emissions exactly from kgCO2/tCS to tCO2/tCS so the parameter
+  is compatible with the project's EUR/tCO2 carbon-price convention.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact value/type/key assertions for the complete BF-BOF BAU
+    parameter registry, including bounded sampling checks.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- No simulations, numerical outputs, or figures were generated.
+- The source values of 1,770/1,820/1,870 kgCO2/tCS are stored as the exactly
+  equivalent 1.770/1.820/1.870 tCO2/tCS.
+- No steel retail price, annual output, lifetime, or other financial assumptions
+  were supplied, so none were added.
+
+### Next suggested step
+
+Implement the deterministic BF-BOF BAU steel NPV model after supplying the
+remaining sector-wide assumptions required by the cash-flow calculation.
+
+## 2026-09-03 10:37 — Add general steel lifetime and output
+
+### User request
+
+Remove the annual-capacity qualifier from the BF-BOF CAPEX unit and add a
+general steel-sector lifetime of 20 years and annual crude-steel output of one
+million tonnes.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — aligned the CAPEX convention and added the
+  two sector-wide fixed parameters.
+- `CHANGELOG.md` — recorded the revised CAPEX convention and new assumptions.
+
+### What was implemented
+
+- Changed the BF-BOF BAU CAPEX unit from `EUR/(tCS/year)` to `EUR/tCS` and its
+  registry key from `capex_eur_per_tcs_annual_capacity` to
+  `capex_eur_per_tcs`.
+- Added a fixed 20-year steel-sector economic lifetime.
+- Added a normalized annual output of 1,000,000 tCS/year.
+- Exposed both general assumptions through `STEEL_FIXED_PARAMETERS`, following
+  the cement-sector parameter-catalogue structure.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact value, unit, registry, and renamed-key assertions.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- Future steel calculations should use the 20-year discount horizon and annual
+  output normalization of 1,000,000 tCS/year.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the remaining sector-wide revenue assumption and implement the deterministic
+BF-BOF BAU steel NPV calculation.
+
+## 2026-09-03 10:46 — Add steel retail price
+
+### User request
+
+Add a crude-steel retail price of 450 EUR/tCS to the steel parameter catalogue.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added and registered the fixed steel retail
+  price.
+- `CHANGELOG.md` — recorded the new steel-sector revenue assumption.
+
+### What was implemented
+
+- Added `RETAIL_PRICE_STEEL_EUR_PER_TCS` as a fixed parameter with a value of
+  450 EUR/tCS.
+- Registered the price as `retail_price_steel_eur_per_tcs` in
+  `STEEL_FIXED_PARAMETERS` for use by future steel cash-flow calculations.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact value, unit, registry membership, and registry-key
+    assertions.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- Future steel revenue calculations should apply the fixed 450 EUR/tCS price to
+  the normalized annual crude-steel output.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Implement the deterministic BF-BOF BAU steel NPV calculation using the completed
+sector-wide lifetime, output, and retail-price assumptions.
+
+## 2026-09-03 10:53 — Add Scrap-EAF steel parameters
+
+### User request
+
+Add the supplied greenfield European Scrap-EAF technology assumptions to the
+steel-sector parameter catalogue.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added Scrap-EAF input parameters and
+  registered the technology.
+- `CHANGELOG.md` — recorded the new technology and its scientific inputs.
+
+### What was implemented
+
+- Added triangular distributions for Scrap-EAF CAPEX, fixed OPEX, variable
+  OPEX, purchased-electricity consumption, and direct emissions, using each
+  supplied base value as the distribution mode.
+- Added fixed charcoal fuel/reductant consumption of 0.103 MWh_th/tCS.
+- Registered the technology as `scrap_eaf` in
+  `STEEL_TECHNOLOGY_DISTRIBUTIONS` using the same six standard parameter keys as
+  BF-BOF BAU.
+- Kept CAPEX in `EUR/tCS`, following the revised steel-sector convention.
+- Converted direct emissions exactly from 10/40/40 kgCO2/tCS to
+  0.010/0.040/0.040 tCO2/tCS for compatibility with the project's carbon-price
+  unit.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact type, value, unit, key, technology-registry, and bounded
+    sampling assertions for all Scrap-EAF parameters.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- The existing shared charcoal price in `src/general_parameters.py` was not
+  duplicated; the future steel calculation module should map `scrap_eaf` to
+  that general price assumption.
+- The asterisk attached to variable OPEX in the supplied table had no associated
+  footnote, so the values were stored without adding an unsupported
+  interpretation.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Implement the deterministic steel NPV calculation for BF-BOF BAU and Scrap-EAF,
+including their mappings to the shared PCI/coking-coal and charcoal prices.
+
+## 2026-09-03 10:57 — Add NG-DRI-EAF BAU steel parameters
+
+### User request
+
+Add the supplied greenfield European natural-gas DRI-EAF business-as-usual
+technology assumptions to the steel-sector parameter catalogue.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added NG-DRI-EAF BAU parameters and
+  registered the technology.
+- `CHANGELOG.md` — recorded the new technology and its scientific inputs.
+
+### What was implemented
+
+- Added triangular distributions for NG-DRI-EAF BAU CAPEX, natural-gas
+  consumption, and direct emissions using the supplied base values as modes.
+- Added fixed OPEX of 32.5 EUR/tCS, approximate variable OPEX of 312 EUR/tCS,
+  and fixed purchased-electricity consumption of 1.06 MWh/tCS.
+- Registered the technology as `ng_dri_eaf_bau` in
+  `STEEL_TECHNOLOGY_DISTRIBUTIONS` with the standard six steel parameter keys.
+- Kept CAPEX in `EUR/tCS`, following the established steel-sector convention.
+- Converted direct emissions exactly from 550/590/1,000 kgCO2/tCS to
+  0.550/0.590/1.000 tCO2/tCS for compatibility with carbon pricing.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact type, value, unit, key, technology-registry, and bounded
+    sampling assertions for all NG-DRI-EAF BAU parameters.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- The supplied `~312 EUR/tCS` variable OPEX is stored as a fixed 312 EUR/tCS
+  input and explicitly described as approximate.
+- The existing shared natural-gas price distribution in
+  `src/general_parameters.py` was not duplicated; a future steel calculation
+  module should map `ng_dri_eaf_bau` to that assumption.
+- The variable-OPEX asterisk had no associated footnote, so no unsupported
+  interpretation was added.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the next steel technology or implement the deterministic steel NPV module
+with fuel-price mappings for all currently registered technologies.
+
+## 2026-09-03 11:02 — Add H2-DRI-EAF steel parameters
+
+### User request
+
+Add the supplied greenfield European hydrogen DRI-EAF technology assumptions to
+the steel-sector parameter catalogue.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added H2-DRI-EAF parameters and registered
+  the technology.
+- `CHANGELOG.md` — recorded the new technology and its scientific inputs.
+
+### What was implemented
+
+- Added triangular distributions for H2-DRI-EAF CAPEX, fixed OPEX, variable
+  OPEX, hydrogen consumption, purchased-electricity consumption, and direct
+  emissions using the supplied base values as modes.
+- Added fixed charcoal consumption of 0.147 MWh_th/tCS.
+- Registered the technology as `h2_dri_eaf` in
+  `STEEL_TECHNOLOGY_DISTRIBUTIONS`.
+- Stored hydrogen and charcoal as separate technology parameters because their
+  supplied intensities use different units: `kg/tCS` and `MWh_th/tCS`.
+- Kept CAPEX in `EUR/tCS`, following the established steel-sector convention.
+- Converted direct emissions exactly from 5/5/10 kgCO2/tCS to
+  0.005/0.005/0.010 tCO2/tCS for compatibility with carbon pricing.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src/steel`
+  - Import and exact type, value, unit, key, technology-registry, and bounded
+    sampling assertions for all H2-DRI-EAF parameters.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- No hydrogen mass-to-energy conversion was introduced. The future steel NPV
+  calculation must state its conversion basis before applying the shared green-
+  hydrogen price in EUR/MWh_th to hydrogen consumption in kg/tCS.
+- The existing shared green-hydrogen and charcoal prices in
+  `src/general_parameters.py` were not duplicated.
+- The variable-OPEX asterisk had no associated footnote, so no unsupported
+  interpretation was added.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the next steel technology or define the hydrogen mass-to-energy convention
+needed for the deterministic H2-DRI-EAF fuel-cost calculation.
+
+## 2026-09-03 11:07 — Update hydrogen price and add MOE parameters
+
+### User request
+
+Change the green-hydrogen price to 7.5 EUR/kg and add the supplied greenfield
+European molten oxide electrolysis technology assumptions to the steel-sector
+parameter catalogue.
+
+### Files changed
+
+- `src/general_parameters.py` — replaced the green-hydrogen energy price with
+  the supplied mass-based price.
+- `src/steel/steel_parameters.py` — added MOE input parameters and registered
+  the technology.
+- `CHANGELOG.md` — recorded the changed price assumption and new technology.
+
+### What was implemented
+
+- Replaced `GREEN_HYDROGEN_PRICE_EUR_PER_MWH_TH` at 229.65 EUR/MWh_th with
+  `GREEN_HYDROGEN_PRICE_EUR_PER_KG` at 7.5 EUR/kg.
+- Updated the corresponding `GENERAL_FIXED_PARAMETERS` key to
+  `green_hydrogen_price_eur_per_kg`.
+- Added triangular distributions for MOE CAPEX, fixed OPEX, variable OPEX, and
+  purchased-electricity consumption using the supplied base values as modes.
+- Added fixed zero fuel/reductant consumption and fixed zero direct emissions.
+- Registered the technology as `moe` in `STEEL_TECHNOLOGY_DISTRIBUTIONS` with
+  the six standard steel parameter keys.
+- Kept MOE CAPEX in `EUR/tCS`, following the established steel convention.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Import and exact type, value, unit, key, technology-registry, and bounded
+    sampling assertions for the hydrogen price and all MOE parameters.
+  - Search confirming no source references remain to the old hydrogen-price
+    symbol or registry key.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- H2-DRI-EAF fuel cost can now be calculated directly by multiplying hydrogen
+  consumption in kg/tCS by the green-hydrogen price in EUR/kg; no heating-value
+  conversion is required.
+- The hydrogen-price change replaces the earlier 229.65 EUR/MWh_th assumption;
+  it is not treated as a unit conversion.
+- The variable-OPEX asterisk had no associated footnote, so no unsupported
+  interpretation was added.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the next steel technology or implement the deterministic steel NPV model
+for the five technologies currently registered.
+
+## 2026-09-03 11:23 — Add AEL-EAF steel parameters
+
+### User request
+
+Add the supplied greenfield European alkaline-electrolysis EAF technology
+assumptions to the steel-sector parameter catalogue.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added AEL-EAF parameters, enabled uniform
+  distributions in the steel catalogue, and registered the technology.
+- `CHANGELOG.md` — recorded the new technology and its scientific inputs.
+
+### What was implemented
+
+- Added a triangular CAPEX distribution of 400/434/800 EUR/tCS using the
+  supplied base as its mode.
+- Added uniform fixed-OPEX and variable-OPEX distributions over 43-88 EUR/tCS
+  and 246-250 EUR/tCS because no base values were supplied for those ranges.
+- Added fixed charcoal consumption of 0.103 MWh_th/tCS and fixed purchased-
+  electricity consumption of 3.81 MWh/tCS.
+- Added fixed direct emissions of 0.010 tCO2/tCS, converted exactly from the
+  supplied 10 kgCO2/tCS.
+- Registered the technology as `ael_eaf` in
+  `STEEL_TECHNOLOGY_DISTRIBUTIONS` with the six standard steel parameter keys.
+- Kept CAPEX in `EUR/tCS`, following the established steel-sector convention.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Import and exact type, value, unit, key, technology-registry, and bounded
+    triangular/uniform sampling assertions for all AEL-EAF parameters.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- Uniform distributions encode the supplied OPEX ranges without inventing
+  representative base values.
+- The existing shared charcoal price in `src/general_parameters.py` was not
+  duplicated; a future steel calculation module should map `ael_eaf` to it.
+- The variable-OPEX asterisk had no associated footnote, so no unsupported
+  interpretation was added.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the next steel technology or implement the deterministic steel NPV model
+for the six technologies currently registered.
+
+## 2026-09-03 11:25 — Add BF-BOF post-combustion CCS retrofit
+
+### User request
+
+Add BF-BOF post-combustion CCS as the first incremental steel CCS technology,
+following the electricity and cement retrofit conventions.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added the incremental CCS parameters, base-
+  technology mapping, and steel retrofit registry.
+- `CHANGELOG.md` — recorded the retrofit structure and sign conventions.
+
+### What was implemented
+
+- Added uniform incremental CAPEX, fixed-OPEX, and variable-OPEX distributions
+  over 177-231, 6.1-8.1, and 4.1-4.9 EUR/tCS because no base values were
+  supplied for these ranges.
+- Encoded the supplied 0% to +22% fuel change as a BAU-relative reduction
+  fraction from -0.22 to 0.0.
+- Encoded the supplied 0% to +570% purchased-electricity change as a BAU-
+  relative reduction fraction from -5.70 to 0.0.
+- Added a triangular direct-emissions reduction distribution of 52%/73%/73%.
+- Registered `bf_bof_post_combustion_ccs` in
+  `STEEL_RETROFIT_TECHNOLOGY_DISTRIBUTIONS` and mapped its base technology to
+  `bf_bof_bau` through `STEEL_RETROFIT_BASE_TECHNOLOGIES`.
+- Kept the CCS option out of the standalone technology registry so future
+  calculations must add costs and apply physical changes to BF-BOF BAU.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Import and exact type, value, unit, key, base-mapping, registry-separation,
+    and bounded sampling assertions for all retrofit parameters.
+  - Formula assertions confirming -0.22 produces 1.22 times BAU fuel use and
+    -5.70 produces 6.70 times BAU electricity use under the established
+    `BAU * (1 - reduction_fraction)` convention.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- Negative physical reduction fractions denote consumption increases, matching
+  the existing cement and electricity CCS implementations.
+- Uniform distributions encode cost and consumption-change ranges that lack
+  supplied base values without inventing modes.
+- The variable-OPEX asterisk had no associated footnote, so no unsupported
+  interpretation was added.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Add the next incremental steel CCS option or implement retrofit resolution in
+the deterministic steel NPV module.
+
+## 2026-09-03 11:29 — Add NG-DRI-EAF CCS retrofit
+
+### User request
+
+Add the incremental natural-gas DRI-EAF CCS retrofit and link it to the existing
+NG-DRI-EAF BAU technology.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — added the incremental NG-DRI-EAF CCS
+  parameters and extended the steel retrofit registries.
+- `CHANGELOG.md` — recorded the retrofit inputs and electricity-change
+  conversion.
+
+### What was implemented
+
+- Added fixed CAPEX and fixed-OPEX increases of 200 EUR/tCS and 11.8 EUR/tCS.
+- Added a triangular variable-OPEX increase distribution of
+  1.2/1.5/1.5 EUR/tCS.
+- Added a fixed zero natural-gas consumption reduction, preserving the supplied
+  0% fuel change.
+- Stored the exact purchased-electricity increase of 0.30 MWh/tCS and derived a
+  reduction fraction of `-(0.30 / 1.06)`, or approximately -28.30%, for the
+  common retrofit schema.
+- Added a fixed approximate direct-emissions reduction of 64%.
+- Registered `ng_dri_eaf_ccs` in
+  `STEEL_RETROFIT_TECHNOLOGY_DISTRIBUTIONS` and mapped its base technology to
+  `ng_dri_eaf_bau` in `STEEL_RETROFIT_BASE_TECHNOLOGIES`.
+- Kept the retrofit out of the standalone technology registry.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Import and exact type, value, unit, key, base-mapping, registry-separation,
+    and bounded triangular-sampling assertions for all retrofit parameters.
+  - Formula assertions confirming the derived reduction fraction resolves the
+    1.06 MWh/tCS BAU intensity to 1.36 MWh/tCS, an exact 0.30 MWh/tCS increase.
+  - `git diff --check`
+- Result:
+  - All checks passed.
+
+### Reproducibility notes
+
+- The exact absolute electricity increment is retained instead of replacing it
+  with the rounded supplied estimate of approximately +28%.
+- The approximate 64% emissions reduction is stored as a fixed 0.64 fraction
+  because no range was supplied.
+- The variable-OPEX asterisk had no associated footnote, so no unsupported
+  interpretation was added.
+- No simulations, numerical outputs, notebooks, or figures were generated.
+
+### Next suggested step
+
+Implement deterministic steel retrofit resolution and NPV calculations for the
+complete set of standalone and CCS technologies.
+
+## 2026-09-03 11:51 — Implement the steel NPV simulation workflow
+
+### User request
+
+Implement the steel-sector deterministic NPV, Monte Carlo, and summary-figure
+code using the current electricity and cement architecture, before creating the
+first steel notebooks.
+
+### Files changed
+
+- `src/steel/steel_npv_deterministic.py` — added deterministic technology,
+  retrofit, energy-cost, CCS T&S, and financial calculations.
+- `src/steel/steel_npv_monte_carlo.py` — added reproducible sampling, shared
+  market draws, correlated parent-BAU draws, retrofit resolution, and financial
+  simulations.
+- `src/steel/steel_npv_summary_figures.py` — added metric summaries, rankings,
+  CSV exports, figures, and command-line orchestration.
+- `CHANGELOG.md` — recorded the completed steel simulation workflow.
+
+### What was implemented
+
+- Added deterministic and Monte Carlo calculations for the six standalone steel
+  technologies and two incremental CCS retrofits.
+- Calculated CAPEX, revenue, fixed and variable OPEX, carrier-specific fuel
+  costs, purchased-electricity cost, direct-emissions cost, annual total cost,
+  annual net cash flow, NPV, discounted lifetime output, LCOS, and levelized net
+  margin.
+- Mapped BF-BOF to the fixed PCI/coking-coal mix price, Scrap-EAF and AEL-EAF
+  to charcoal, NG-DRI-EAF to the shared natural-gas distribution, MOE to zero
+  fuel cost, and H2-DRI-EAF to separate hydrogen and charcoal cost components.
+- Applied H2-DRI-EAF hydrogen consumption directly in kg/tCS against the shared
+  EUR/kg price and added its charcoal energy cost separately.
+- Resolved both CCS options against their mapped BAU technology using additive
+  cost changes and multiplicative fuel, electricity, and emissions reductions.
+- Applied the shared CCS transport-and-storage surcharge to the levelized
+  incremental capture cost, consistently with cement and electricity.
+- Reused each sampled parent-BAU array for its standalone and retrofit results
+  under aligned run IDs; deterministic parent values remain available through
+  `retrofit_bau_mode="deterministic"`.
+- Sampled gas and electricity prices once per run ID and reused those arrays
+  across all technologies for internally consistent rankings.
+- Added individual technology simulation wrappers and top-level deterministic
+  and Monte Carlo entry points with the established defaults of 100,000 samples
+  and random seed 42.
+- Added NPV, LNM, and LCOS summaries, percentile figures, technology rankings,
+  raw-input and processed-output CSV exports, and a CLI matching the existing
+  sector workflows.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src`
+  - Deterministic calculations for all eight technologies with finite-result,
+    cost-component reconciliation, net-cash-flow identity, dual-fuel, retrofit,
+    electricity-increment, and CCS T&S assertions.
+  - Seeded 256-run Monte Carlo checks covering repeatability, result lengths,
+    financial identities, shared market arrays, sampled parent-BAU reuse,
+    deterministic parent baselines, and H2/charcoal cost calculations.
+  - Summary and ranking assertions for NPV, LNM, and LCOX/LCOS.
+  - Temporary end-to-end generation of 13 figure and CSV artifacts, including
+    512-row raw and processed Monte Carlo exports for 64 runs across eight
+    technologies.
+  - Default-scale simulation of 100,000 runs across all eight technologies.
+  - `PYTHONPATH=src .venv/bin/python -m steel.steel_npv_summary_figures --help`
+  - `git diff --check` and whitespace checks for all new steel source files.
+- Result:
+  - All completed checks passed. An initial temporary-export command was blocked
+    before execution because its shell cleanup pattern was rejected; the same
+    verification then passed with an automatically managed temporary directory.
+  - Ruff and Black checks were unavailable because neither executable is
+    installed in the project virtual environment.
+
+### Reproducibility notes
+
+- `simulate_steel_results()` reproduces the default run with 100,000 samples and
+  seed 42; callers can override both values and select sampled or deterministic
+  retrofit BAU baselines.
+- Result mappings retain sampled inputs, carrier prices, resolved retrofit
+  values, parent-BAU values, and derived financial outputs for traceable CSVs.
+- Temporary QA figures and CSVs were automatically removed; no numerical
+  results, notebooks, or figures were persisted in the repository.
+- Existing cement and electricity source files and results were not changed.
+
+### Next suggested step
+
+Create the deterministic and Monte Carlo steel notebooks, beginning with
+BF-BOF BAU and following the established notebook workflow.
+
+## 2026-09-03 11:59 — Add steel technology plot notebooks
+
+### Files changed
+
+- `notebooks/steel/plot_bf_bof_bau_npv.ipynb` — added the BF-BOF BAU plot
+  workflow.
+- `notebooks/steel/plot_scrap_eaf_npv.ipynb` — added the Scrap-EAF plot
+  workflow.
+- `notebooks/steel/plot_ng_dri_eaf_bau_npv.ipynb` — added the NG-DRI-EAF BAU
+  plot workflow.
+- `notebooks/steel/plot_h2_dri_eaf_npv.ipynb` — added the H2-DRI-EAF plot
+  workflow.
+- `notebooks/steel/plot_moe_npv.ipynb` — added the MOE plot workflow.
+- `notebooks/steel/plot_ael_eaf_npv.ipynb` — added the AEL-EAF plot workflow.
+- `notebooks/steel/plot_bf_bof_post_combustion_ccs_npv.ipynb` — added the
+  BF-BOF post-combustion CCS retrofit plot workflow.
+- `notebooks/steel/plot_ng_dri_eaf_ccs_npv.ipynb` — added the NG-DRI-EAF CCS
+  retrofit plot workflow.
+- `CHANGELOG.md` — recorded the completed steel plot-notebook work.
+
+### What was implemented
+
+- Added one plot notebook for each of the six standalone steel technologies and
+  two incremental CCS retrofits.
+- Followed the established cement and electricity notebook structure: seeded
+  Monte Carlo execution, result preview, percentile summaries, NPV sign counts,
+  NPV/LNM/LCOX distribution plots, and mean annual financial components.
+- Used steel-specific LCOS and EUR/tCS labels throughout.
+- Added retrofit-input summaries and transport-and-storage costs only to the two
+  CCS notebooks.
+- Executed every notebook with the project defaults of 100,000 simulations and
+  random seed 42, embedding the resulting tables and three figures per notebook.
+
+### Verification
+
+- Commands run:
+  - Notebook schema validation with `nbformat.validate()`.
+  - Python syntax parsing for every code cell with `ast.parse()`.
+  - `.venv/bin/jupyter nbconvert --to notebook --execute --inplace` for all
+    eight steel plot notebooks with a 600-second cell timeout.
+  - Post-execution assertions covering cell IDs, execution counts, absence of
+    error outputs, and exactly three PNG plot outputs per notebook.
+  - Technology-key and steel-label checks across all eight notebooks.
+- Result:
+  - All eight notebooks executed and passed every validation check.
+
+### Reproducibility notes
+
+- Each notebook imports the steel simulation implementation from `src`, uses
+  `DEFAULT_SAMPLE_SIZE`, `DEFAULT_RANDOM_SEED`, and
+  `DEFAULT_RETROFIT_BAU_MODE`, and selects exactly one technology.
+- All displayed results and embedded figures can be reproduced by rerunning the
+  notebooks from the repository root or their own directory.
+- The pre-existing modification to
+  `notebooks/cement/deterministic_bau_npv.ipynb` was not changed.
+
+### Next suggested step
+
+Add the next steel notebook family using the same one-technology-per-notebook
+structure.
+
+## 2026-09-03 12:19 CEST — Add steel summary notebook
+
+### Files changed
+
+- `notebooks/steel/steel_summary.ipynb` — added the consolidated steel
+  financial-results and ranking workflow.
+- `CHANGELOG.md` — recorded the completed steel summary-notebook work.
+
+### What was implemented
+
+- Followed the established electricity and cement summary-notebook structure
+  for all eight steel technologies.
+- Added configurable NPV, LNM, and LCOX comparisons, with LNM selected by
+  default and steel-specific LCOS and EUR/tCS labels.
+- Added Monte Carlo and deterministic summary tables and comparison figures.
+- Added Monte Carlo NPV ranking statistics and an average-rank figure.
+- Kept all tables and figures inline without writing result files to disk.
+
+### Verification
+
+- Commands run:
+  - Notebook schema validation with `nbformat.validate()`.
+  - Python syntax parsing for all code cells with `ast.parse()`.
+  - `.venv/bin/jupyter nbconvert --to notebook --execute --inplace` with a
+    600-second cell timeout.
+  - Post-execution assertions covering cell IDs, execution counts, absence of
+    error outputs, six display outputs, three PNG figures, and all eight steel
+    technologies in each results table.
+  - `git diff --check`.
+- Result:
+  - The notebook executed successfully and passed every validation check.
+
+### Reproducibility notes
+
+- The notebook uses `DEFAULT_SAMPLE_SIZE` (100,000),
+  `DEFAULT_RANDOM_SEED` (42), and `DEFAULT_RETROFIT_BAU_MODE` from the steel
+  Monte Carlo implementation.
+- Rerunning the notebook reproduces the displayed seeded results; metric and
+  technology selections remain configurable in the settings cell.
+- The pre-existing modification to
+  `notebooks/cement/deterministic_bau_npv.ipynb` was not changed.
+
+### Next suggested step
+
+Add the remaining steel notebook families using the established cement and
+electricity structure.
+
+## 2026-09-03 13:14 CEST — Update purchased-electricity prices
+
+### User request
+
+Update the non-retail electricity-price assumptions to 61.4 / 116.6 / 171.6
+EUR/MWh without changing the electricity-sector retail price.
+
+### Files changed
+
+- `src/general_parameters.py` — changed the shared purchased-electricity price
+  distribution minimum, mean, and maximum.
+- `CHANGELOG.md` — recorded the parameter update and verification.
+
+### What was implemented
+
+- Updated `ELECTRICITY_PRICE_DISTRIBUTION` to a minimum of 61.4 EUR/MWh, mean
+  of 116.6 EUR/MWh, and maximum of 171.6 EUR/MWh.
+- Left `RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH` unchanged at 94.07 EUR/MWh.
+
+### Verification
+
+- Commands run:
+  - Direct assertions for the distribution bounds, requested mean, sampled
+    bounds, and seeded sample mean.
+  - Deterministic and 2,000-sample Monte Carlo smoke checks for all nine cement
+    and eight steel technologies.
+  - `.venv/bin/python -m compileall -q src`.
+  - `git diff --check -- src/general_parameters.py CHANGELOG.md`.
+- Result:
+  - All available checks passed.
+  - Pytest was not run because it is not installed in the project virtual
+    environment and no test source files are present.
+
+### Reproducibility notes
+
+- Cement and steel simulations now draw purchased-electricity prices from the
+  updated shared distribution and use 116.6 EUR/MWh deterministically.
+- Existing executed notebook outputs were not regenerated; rerun the relevant
+  notebooks to refresh their displayed results.
+
+### Next suggested step
+
+Rerun the desired cement and steel notebooks when refreshed embedded outputs
+are needed.

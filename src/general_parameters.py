@@ -70,10 +70,10 @@ CHARCOAL_PRICE_EUR_PER_MWH_TH = FixedParameter(
     description="Charcoal fuel price.",
 )
 
-GREEN_HYDROGEN_PRICE_EUR_PER_MWH_TH = FixedParameter(
-    value=229.65,
-    unit="EUR/MWh_th",
-    description="Green-hydrogen fuel price.",
+GREEN_HYDROGEN_PRICE_EUR_PER_KG = FixedParameter(
+    value=7.5,
+    unit="EUR/kg",
+    description="Green-hydrogen price.",
 )
 
 BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
@@ -114,9 +114,9 @@ COAL_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
 )
 
 ELECTRICITY_PRICE_DISTRIBUTION = create_scaled_beta_distribution(
-    minimum=74.8,
-    mean=183.7,
-    maximum=255.2,
+    minimum=61.4,
+    mean=116.6,
+    maximum=171.6,
     unit="EUR/MWh",
     description="Scaled beta distribution for electricity price.",
 )
@@ -143,7 +143,7 @@ GENERAL_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
         PCI_COKING_COAL_MIX_PRICE_EUR_PER_MWH_TH
     ),
     "charcoal_price_eur_per_mwh_th": CHARCOAL_PRICE_EUR_PER_MWH_TH,
-    "green_hydrogen_price_eur_per_mwh_th": GREEN_HYDROGEN_PRICE_EUR_PER_MWH_TH,
+    "green_hydrogen_price_eur_per_kg": GREEN_HYDROGEN_PRICE_EUR_PER_KG,
     "no_fuel_price_eur_per_mwh_th": NO_FUEL_PRICE_EUR_PER_MWH_TH,
 }
 
