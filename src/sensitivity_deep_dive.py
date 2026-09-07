@@ -39,6 +39,14 @@ TECHNOLOGY_LABELS = {
     "hard_coal_ccs": "Hard coal with CCS",
     "pv": "PV",
     "beccs": "BECCS",
+    "bf_bof_bau": "BF-BOF BAU",
+    "scrap_eaf": "Scrap-EAF",
+    "ng_dri_eaf_bau": "NG-DRI-EAF BAU",
+    "h2_dri_eaf": "H2-DRI-EAF",
+    "moe": "MOE",
+    "ael_eaf": "AEL-EAF",
+    "bf_bof_post_combustion_ccs": "BF-BOF + post-combustion CCS",
+    "ng_dri_eaf_ccs": "NG-DRI-EAF + CCS",
 }
 
 # Inputs retained for the first thesis step. Product selling price and annual
@@ -75,6 +83,23 @@ SENSITIVITY_SCOPE: Mapping[str, tuple[str, ...]] = {
         "emissions",
         "carbon_price",
     ),
+    "steel": (
+        "capex",
+        "lifetime_years",
+        "discount_rate",
+        "fixed_opex",
+        "variable_opex",
+        "fuel_consumption",
+        "fuel_price",
+        "secondary_fuel_consumption",
+        "secondary_fuel_price",
+        "electricity_consumption",
+        "electricity_price",
+        "transport_and_storage_share",
+        "transport_and_storage_cost",
+        "emissions",
+        "carbon_price",
+    ),
 }
 
 HEATMAP_PARAMETER_GROUPS: Mapping[str, Mapping[str, str]] = {
@@ -91,6 +116,18 @@ HEATMAP_PARAMETER_GROUPS: Mapping[str, Mapping[str, str]] = {
     "electricity": {
         "Fuel use": "Fuel",
         "Fuel price": "Fuel",
+        "T&S share": "T&S",
+        "T&S cost": "T&S",
+        "Direct emissions": "Emissions",
+        "Carbon price": "Emissions",
+    },
+    "steel": {
+        "Fuel / reductant use": "Fuel / reductant",
+        "Fuel / reductant price": "Fuel / reductant",
+        "Secondary fuel / reductant use": "Fuel / reductant",
+        "Secondary fuel / reductant price": "Fuel / reductant",
+        "Electricity use": "Electricity",
+        "Electricity price": "Electricity",
         "T&S share": "T&S",
         "T&S cost": "T&S",
         "Direct emissions": "Emissions",
@@ -282,7 +319,7 @@ def generate_deep_dive(
     standardized = pd.concat(
         [
             standardized_sensitivity(sector, variation_fraction, metric=metric)
-            for sector in ("cement", "electricity")
+            for sector in ("cement", "electricity", "steel")
         ],
         ignore_index=True,
     )
@@ -310,7 +347,7 @@ def generate_deep_dive(
             ),
             metric=metric,
         )
-        for sector in ("cement", "electricity")
+        for sector in ("cement", "electricity", "steel")
     )
     return (csv_path, *figure_paths)
 

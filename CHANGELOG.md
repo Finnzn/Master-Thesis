@@ -6544,3 +6544,81 @@ EUR/MWh without changing the electricity-sector retail price.
 
 Rerun the desired cement and steel notebooks when refreshed embedded outputs
 are needed.
+
+## 2026-09-07 10:53 CEST — Add steel deterministic notebooks and heatmap
+
+### User request
+
+Add deterministic notebooks for every steel technology following the cement
+and electricity structure, and add steel to the sensitivity heatmap notebook.
+
+### Files changed
+
+- `notebooks/steel/deterministic_bf_bof_bau_npv.ipynb` — added the BF-BOF BAU
+  deterministic workflow.
+- `notebooks/steel/deterministic_scrap_eaf_npv.ipynb` — added the Scrap-EAF
+  deterministic workflow.
+- `notebooks/steel/deterministic_ng_dri_eaf_bau_npv.ipynb` — added the
+  NG-DRI-EAF BAU deterministic workflow.
+- `notebooks/steel/deterministic_h2_dri_eaf_npv.ipynb` — added the H2-DRI-EAF
+  deterministic workflow.
+- `notebooks/steel/deterministic_moe_npv.ipynb` — added the MOE deterministic
+  workflow.
+- `notebooks/steel/deterministic_ael_eaf_npv.ipynb` — added the AEL-EAF
+  deterministic workflow.
+- `notebooks/steel/deterministic_bf_bof_post_combustion_ccs_npv.ipynb` — added
+  the BF-BOF post-combustion CCS deterministic retrofit workflow.
+- `notebooks/steel/deterministic_ng_dri_eaf_ccs_npv.ipynb` — added the
+  NG-DRI-EAF CCS deterministic retrofit workflow.
+- `notebooks/sensitivity_heatmap.ipynb` — added steel calculations and an
+  inline steel heatmap alongside cement and electricity.
+- `src/sensitivity_analysis.py` — extended reusable deterministic sensitivity
+  calculations to steel technologies.
+- `src/sensitivity_deep_dive.py` — added steel scope, labels, heatmap grouping,
+  and output generation.
+- `CHANGELOG.md` — recorded the implementation and verification.
+
+### What was implemented
+
+- Added one executed deterministic notebook for each of the six absolute steel
+  technologies and two CCS retrofits. Each displays a financial summary,
+  representative inputs, and processed outputs; retrofit notebooks also show
+  BAU-relative changes.
+- Added steel NPV, LNM, and LCOS sensitivity support for all eight technologies.
+- Represented H2-DRI-EAF hydrogen as the primary reductant and charcoal as a
+  secondary reductant so both cost terms are preserved exactly.
+- Recalculated BAU-relative T&S costs when relevant steel CCS sensitivity inputs
+  change, consistent with the steel deterministic model.
+- Grouped fuel/reductant, electricity, emissions, and T&S constituent impacts
+  in the heatmap using the existing one-at-a-time maximum-impact convention.
+
+### Verification
+
+- Commands run:
+  - `nbformat.validate()` and `ast.parse()` for all new and modified notebooks.
+  - Parallel `jupyter nbconvert --execute --inplace` execution for all eight
+    deterministic notebooks, followed by execution of the heatmap notebook.
+  - Assertions for execution counts, table counts, technology keys, retrofit
+    fields, three heatmap PNG outputs, and absence of notebook errors.
+  - Base-case parity checks showing steel sensitivity reproduces the direct
+    deterministic NPV, LNM, and LCOS for all eight technologies.
+  - Cement and electricity base-case regression checks across all three metrics.
+  - Steel heatmap visual inspection, `.venv/bin/python -m compileall -q src`,
+    and `git diff --check`.
+- Result:
+  - All implemented checks passed.
+  - Ruff and Black are not installed. Unittest discovery found no test cases.
+
+### Reproducibility notes
+
+- The deterministic notebooks import all calculations from `src/`; no model
+  formulas or assumptions are duplicated in notebook cells.
+- The heatmap retains its existing ±20% one-factor-at-a-time LNM default and
+  `SAVE_OUTPUTS = False`, so execution writes no CSV or standalone PNG files.
+- Executed heatmap outputs now reflect the current shared parameter values for
+  cement, electricity, and steel.
+
+### Next suggested step
+
+Review the deterministic steel tables and sensitivity ordering before adding
+the next steel analysis notebook family.

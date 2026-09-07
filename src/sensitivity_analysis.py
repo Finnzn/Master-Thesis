@@ -39,6 +39,12 @@ from npv_finance import (
     calculate_levelized_cost,
     calculate_levelized_net_margin,
 )
+from steel.steel_npv_deterministic import calculate_deterministic_steel_result
+from steel.steel_parameters import (
+    STEEL_RETROFIT_BASE_TECHNOLOGIES,
+    STEEL_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
+    STEEL_TECHNOLOGY_DISTRIBUTIONS,
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +56,7 @@ class CaptureCostBaseline:
     variable_opex: float
     fuel_consumption: float
     electricity_consumption: float = 0.0
+    secondary_fuel_consumption: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -75,6 +82,8 @@ class ScenarioInputs:
     full_load_hours: float | None = None
     value_factor: float = 1.0
     uses_value_factor: bool = False
+    secondary_fuel_consumption: float = 0.0
+    secondary_fuel_price: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -89,11 +98,13 @@ class SensitivityParameter:
 SECTOR_DISPLAY_NAMES = {
     "cement": "Cement",
     "electricity": "Electricity",
+    "steel": "Steel",
 }
 
 SECTOR_UNITS = {
     "cement": "t",
     "electricity": "MWh",
+    "steel": "tCS",
 }
 
 FINANCIAL_METRIC_OPTIONS = ("NPV", "LNM", "LCOX")
@@ -137,6 +148,31 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
         SensitivityParameter("Direct emissions", "emissions", minimum=float("-inf")),
         SensitivityParameter("Carbon price", "carbon_price"),
     ),
+    "steel": (
+        SensitivityParameter("Investment cost", "capex"),
+        SensitivityParameter("Steel price", "sales_price"),
+        SensitivityParameter("Annual production", "annual_output"),
+        SensitivityParameter("Lifetime", "lifetime_years", minimum=1.0),
+        SensitivityParameter("Discount rate", "discount_rate"),
+        SensitivityParameter("Fixed OPEX", "fixed_opex"),
+        SensitivityParameter("Variable OPEX", "variable_opex"),
+        SensitivityParameter("Fuel / reductant use", "fuel_consumption"),
+        SensitivityParameter("Fuel / reductant price", "fuel_price"),
+        SensitivityParameter(
+            "Secondary fuel / reductant use",
+            "secondary_fuel_consumption",
+        ),
+        SensitivityParameter(
+            "Secondary fuel / reductant price",
+            "secondary_fuel_price",
+        ),
+        SensitivityParameter("Electricity use", "electricity_consumption"),
+        SensitivityParameter("Electricity price", "electricity_price"),
+        SensitivityParameter("T&S share", "transport_and_storage_share"),
+        SensitivityParameter("T&S cost", "transport_and_storage_cost"),
+        SensitivityParameter("Direct emissions", "emissions"),
+        SensitivityParameter("Carbon price", "carbon_price"),
+    ),
 }
 
 
@@ -151,6 +187,10 @@ def available_technologies(sector: str) -> tuple[str, ...]:
         # The fixed-parameter registry retains the canonical display order across
         # both absolute technologies and BAU-relative CCS retrofits.
         return tuple(ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS)
+    if sector == "steel":
+        return tuple(STEEL_TECHNOLOGY_DISTRIBUTIONS) + tuple(
+            STEEL_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
+        )
     raise ValueError(f"Unknown sector: {sector!r}.")
 
 
@@ -254,6 +294,70 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             ),
         )
 
+    if sector == "steel":
+        result = _single_value_result(
+            calculate_deterministic_steel_result(technology)
+        )
+        if technology == "h2_dri_eaf":
+            fuel_consumption = result["hydrogen_consumption_kg_per_tcs"]
+            fuel_price = result["green_hydrogen_price_eur_per_kg"]
+            secondary_fuel_consumption = result[
+                "charcoal_consumption_mwh_th_per_tcs"
+            ]
+            secondary_fuel_price = result["charcoal_price_eur_per_mwh_th"]
+        else:
+            fuel_consumption = result["fuel_consumption_mwh_th_per_tcs"]
+            fuel_price = result["fuel_price_eur_per_mwh_th"]
+            secondary_fuel_consumption = 0.0
+            secondary_fuel_price = 0.0
+
+        capture_cost_baseline = None
+        transport_and_storage_share = 0.0
+        if technology in STEEL_RETROFIT_BASE_TECHNOLOGIES:
+            bau_technology = STEEL_RETROFIT_BASE_TECHNOLOGIES[technology]
+            bau_result = _single_value_result(
+                calculate_deterministic_steel_result(bau_technology)
+            )
+            capture_cost_baseline = CaptureCostBaseline(
+                capex=bau_result["capex_eur_per_tcs"],
+                fixed_opex=bau_result["fixed_opex_eur_per_tcs"],
+                variable_opex=bau_result["variable_opex_eur_per_tcs"],
+                fuel_consumption=bau_result[
+                    "fuel_consumption_mwh_th_per_tcs"
+                ],
+                electricity_consumption=bau_result[
+                    "electricity_consumption_mwh_per_tcs"
+                ],
+            )
+            transport_and_storage_share = (
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            )
+
+        return ScenarioInputs(
+            annual_output=result["annual_output_tcs"],
+            lifetime_years=result["lifetime_years"],
+            discount_rate=INTEREST_RATE.value,
+            sales_price=result["steel_price_eur_per_tcs"],
+            capex=result["capex_eur_per_tcs"],
+            fixed_opex=result["fixed_opex_eur_per_tcs"],
+            variable_opex=result["variable_opex_eur_per_tcs"],
+            fuel_consumption=fuel_consumption,
+            fuel_price=fuel_price,
+            electricity_consumption=result[
+                "electricity_consumption_mwh_per_tcs"
+            ],
+            electricity_price=result["electricity_price_eur_per_mwh"],
+            transport_and_storage_cost=result[
+                "transport_and_storage_cost_eur_per_tcs"
+            ],
+            transport_and_storage_share=transport_and_storage_share,
+            capture_cost_baseline=capture_cost_baseline,
+            emissions=result["emissions_tco2_per_tcs"],
+            carbon_price=result["carbon_price_eur_per_t"],
+            secondary_fuel_consumption=secondary_fuel_consumption,
+            secondary_fuel_price=secondary_fuel_price,
+        )
+
     raise ValueError(f"Unknown sector: {sector!r}.")
 
 
@@ -263,8 +367,8 @@ def calculate_transport_and_storage_cost_per_output(
 ) -> float:
     """Return the applied T&S cost after resolving capture-cost dependencies.
 
-    BECCS uses its independent fixed scenario input directly. For the three
-    BAU-relative CCS retrofits, T&S is a share of levelized incremental capture
+    BECCS uses its independent fixed scenario input directly. For BAU-relative
+    CCS retrofits, T&S is a share of levelized incremental capture
     cost and must therefore be recalculated whenever an input in that capture
     cost changes.
     """
@@ -307,6 +411,23 @@ def calculate_transport_and_storage_cost_per_output(
             + inputs.annual_output * baseline.variable_opex
             + inputs.annual_output * baseline.fuel_consumption * inputs.fuel_price
         )
+    elif sector == "steel":
+        ccs_initial_capex_eur = inputs.annual_output * inputs.capex
+        bau_initial_capex_eur = inputs.annual_output * baseline.capex
+        ccs_annual_cost_excluding_carbon_eur = inputs.annual_output * (
+            inputs.fixed_opex
+            + inputs.variable_opex
+            + inputs.fuel_consumption * inputs.fuel_price
+            + inputs.secondary_fuel_consumption * inputs.secondary_fuel_price
+            + inputs.electricity_consumption * inputs.electricity_price
+        )
+        bau_annual_cost_excluding_carbon_eur = inputs.annual_output * (
+            baseline.fixed_opex
+            + baseline.variable_opex
+            + baseline.fuel_consumption * inputs.fuel_price
+            + baseline.secondary_fuel_consumption * inputs.secondary_fuel_price
+            + baseline.electricity_consumption * inputs.electricity_price
+        )
     else:
         raise ValueError(f"Unknown sector: {sector!r}.")
 
@@ -344,6 +465,8 @@ def sensitivity_parameter_is_applicable(
             inputs.capture_cost_baseline is None
             and inputs.transport_and_storage_cost > 0.0
         )
+    if attribute in {"secondary_fuel_consumption", "secondary_fuel_price"}:
+        return inputs.secondary_fuel_consumption > 0.0
     return True
 
 
@@ -386,6 +509,23 @@ def _sector_financial_components(
             inputs.annual_output * inputs.fuel_consumption * inputs.fuel_price
         )
         annual_electricity_cost_eur = 0.0
+        annual_emissions_cost_eur = (
+            inputs.annual_output * inputs.emissions * inputs.carbon_price
+        )
+    elif sector == "steel":
+        initial_capex_eur = inputs.annual_output * inputs.capex
+        annual_revenue_eur = inputs.annual_output * inputs.sales_price
+        annual_fixed_opex_eur = inputs.annual_output * inputs.fixed_opex
+        annual_variable_opex_eur = inputs.annual_output * inputs.variable_opex
+        annual_fuel_cost_eur = inputs.annual_output * (
+            inputs.fuel_consumption * inputs.fuel_price
+            + inputs.secondary_fuel_consumption * inputs.secondary_fuel_price
+        )
+        annual_electricity_cost_eur = (
+            inputs.annual_output
+            * inputs.electricity_consumption
+            * inputs.electricity_price
+        )
         annual_emissions_cost_eur = (
             inputs.annual_output * inputs.emissions * inputs.carbon_price
         )
@@ -468,7 +608,11 @@ def metric_axis_label(sector: str, metric: str) -> str:
     if metric == "LNM":
         return f"Impact on levelized net margin (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
-        levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
+        levelized_cost_name = {
+            "cement": "LCOC",
+            "electricity": "LCOE",
+            "steel": "LCOS",
+        }[sector]
         return f"Impact on {levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
 
     valid_metrics = ", ".join(FINANCIAL_METRIC_OPTIONS)
