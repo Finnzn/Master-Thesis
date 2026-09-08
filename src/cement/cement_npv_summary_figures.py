@@ -41,9 +41,9 @@ from npv_summary import (
 )
 from npv_summary_plots import (
     dated_figure_path,
-    fixed_financial_metric_bar_axis_config,
     plot_average_rank_bars,
     plot_financial_metric_technology_bars,
+    shared_financial_metric_bar_axis_config,
 )
 
 
@@ -765,11 +765,11 @@ def save_cement_npv_figures(
     )
     mean_values = _distribution_stat(simulated_summary, "mean")
     deterministic_values = calculate_deterministic_cement_npv(financial_metric=financial_metric)
-    x_axis_limits, x_axis_ticks = fixed_financial_metric_bar_axis_config(
-        sector="cement",
-        financial_metric=financial_metric,
+    x_axis_limits, x_axis_ticks = shared_financial_metric_bar_axis_config(
         distribution_summary=simulated_summary,
         deterministic_values=deterministic_values,
+        zero_floor=bool(config["zero_baseline"]),
+        tick_step=config.get("axis_tick_step"),
     )
 
     mean_path = plot_financial_metric_technology_bars(

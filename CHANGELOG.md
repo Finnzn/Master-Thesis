@@ -6622,3 +6622,104 @@ and electricity structure, and add steel to the sensitivity heatmap notebook.
 
 Review the deterministic steel tables and sensitivity ordering before adding
 the next steel analysis notebook family.
+
+## 2026-09-08 10:01 CEST — Align steel summary bar-chart scales
+
+### User request
+
+Summarize each steel technology in one bullet and give the two financial bar
+charts in the steel summary identical minimum and maximum values with 500-unit
+tick intervals.
+
+### Files changed
+
+- `src/npv_summary_plots.py` — added the shared 500-million-EUR steel NPV axis
+  convention.
+- `notebooks/steel/steel_summary.ipynb` — applied one shared axis configuration
+  to the Monte Carlo and deterministic bar charts and refreshed all outputs.
+- `CHANGELOG.md` — recorded the plotting change and verification.
+
+### What was implemented
+
+- Calculated the steel chart range jointly from Monte Carlo 5th/95th
+  percentiles and deterministic values.
+- Rounded the common minimum and maximum outward to 500 million EUR and used
+  ticks every 500 million EUR for NPV plots.
+- Passed the same limits and ticks to both charts while retaining the existing
+  automatic scaling conventions for LNM and LCOS selections.
+
+### Verification
+
+- Commands run:
+  - Notebook schema validation with `nbformat.validate()` and code-cell syntax
+    parsing with `ast.parse()`.
+  - `.venv/bin/jupyter nbconvert --to notebook --execute --inplace` with a
+    600-second cell timeout.
+  - Runtime Matplotlib assertions comparing both plots' limits and tick arrays.
+  - `.venv/bin/python -m compileall -q src` and `git diff --check`.
+- Result:
+  - The notebook executed without errors and contains three PNG figures.
+  - Both requested plots use limits of -3,500 to 2,000 million EUR and 500
+    million EUR tick intervals under the current NPV results.
+
+### Reproducibility notes
+
+- The refreshed outputs use the current 750 EUR/tCS steel price, 100,000 Monte
+  Carlo simulations, random seed 42, and sampled BAU inputs for CCS retrofits.
+- The shared 500-step rule also applies when steel NPV comparison figures are
+  generated through the reusable source workflow.
+
+### Next suggested step
+
+Use the aligned charts for direct visual comparison of deterministic and Monte
+Carlo steel NPVs.
+
+## 2026-09-08 10:22 CEST — Generalize summary chart scales
+
+### User request
+
+Apply the shared deterministic/Monte Carlo bar-chart scale convention generally,
+independent of sector and whether the selected metric is NPV, LNM, or LCOX.
+
+### Files changed
+
+- `src/npv_summary_plots.py` — replaced sector-specific axis branches with one
+  reusable combined-range helper and automatic readable tick selection.
+- `src/cement/cement_npv_summary_figures.py`,
+  `src/electricity/electricity_npv_summary_figures.py`, and
+  `src/steel/steel_npv_summary_figures.py` — applied the helper to both saved
+  comparison figures for every metric.
+- `notebooks/cement/cement_summary.ipynb`,
+  `notebooks/electricity/electricity_summary.ipynb`, and
+  `notebooks/steel/steel_summary.ipynb` — applied identical limits and ticks to
+  each inline Monte Carlo/deterministic pair and refreshed the outputs.
+
+### What was implemented
+
+- The common range now covers all Monte Carlo 5th–95th percentile intervals and
+  every deterministic technology result.
+- NPV and LNM axes include zero and receive automatically selected rounded tick
+  intervals. LCOX axes are anchored at zero.
+- Steel NPV retains its requested 500-million-EUR interval through declarative
+  metric configuration rather than a steel-specific plotting branch.
+- Notebook headings now describe the configurable financial metric instead of
+  referring only to NPV.
+
+### Verification
+
+- Executed all three summary notebooks in place with a 600-second cell timeout.
+- Validated notebook schemas and code-cell syntax; each notebook contains five
+  executed code cells, three PNG outputs, and no error outputs.
+- Runtime-checked all nine sector/metric combinations using 1,000 simulations,
+  confirming identical limits and tick arrays for both bar charts, zero-based
+  LCOX axes, and 500-unit steel NPV ticks.
+- Exercised the three reusable saved-figure workflows for NPV, LNM, and LCOX
+  with 250 simulations and confirmed the same axis contract.
+- `.venv/bin/python -m compileall -q src` and `git diff --check` passed.
+
+### Reproducibility notes
+
+- Persisted notebook outputs retain each notebook's existing default metric and
+  full sample size; validation of alternative metrics was performed in memory.
+- Tick spacing remains configurable per metric through `axis_tick_step`; when it
+  is absent, the shared helper chooses a 1/2/2.5/5/10-style interval.

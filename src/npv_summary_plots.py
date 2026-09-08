@@ -58,24 +58,22 @@ def shared_axis_limits(
 def shared_axis_ticks(
     axis_limits: tuple[float, float],
     target_intervals: int = 5,
+    tick_step: float | None = None,
 ) -> tuple[float, ...]:
     """Return readable tick positions for shared axis limits."""
 
     lower, upper = axis_limits
     if lower >= upper:
         raise ValueError("axis_limits must be an increasing (min, max) tuple.")
-    span = upper - lower
-    rough_step = span / target_intervals
-    magnitude = 10 ** math.floor(math.log10(rough_step))
-    normalized = rough_step / magnitude
-    if normalized <= 1:
-        step = magnitude
-    elif normalized <= 2:
-        step = 2 * magnitude
-    elif normalized <= 5:
-        step = 5 * magnitude
-    else:
-        step = 10 * magnitude
+    if target_intervals <= 0:
+        raise ValueError("target_intervals must be positive.")
+    if tick_step is not None and tick_step <= 0:
+        raise ValueError("tick_step must be positive when provided.")
+
+    step = tick_step or _nice_axis_step(
+        span=upper - lower,
+        target_intervals=target_intervals,
+    )
 
     first_tick = math.ceil(lower / step) * step
     ticks: list[float] = []
@@ -89,56 +87,104 @@ def shared_axis_ticks(
     return tuple(ticks)
 
 
-def fixed_financial_metric_bar_axis_config(
-    sector: str,
-    financial_metric: str,
+def shared_financial_metric_bar_axis_config(
     distribution_summary: Mapping[str, Mapping[str, float]],
     deterministic_values: Mapping[str, float],
+    *,
+    zero_floor: bool = False,
+    tick_step: float | None = None,
+    target_intervals: int = 8,
+    relative_margin: float = 0.05,
+    minimum_margin: float = 1.0,
 ) -> tuple[tuple[float, float], tuple[float, ...]]:
-    """Return presentation axis limits and ticks for financial-metric chart pairs."""
+    """Return one axis configuration for Monte Carlo and deterministic bars.
 
-    sector_key = sector.lower()
-    p05_minimum = min(
-        min(values["p05"] for values in distribution_summary.values()),
-        min(deterministic_values.values()),
+    The combined range covers Monte Carlo 5th-95th percentiles and deterministic
+    values. Both plots can therefore use exactly the same limits and ticks for
+    any sector or financial metric. Cost charts can be anchored at zero with
+    ``zero_floor``; callers may request an explicit tick interval or use the
+    automatic readable interval.
+    """
+
+    if not distribution_summary:
+        raise ValueError("distribution_summary must contain at least one item.")
+    if not deterministic_values:
+        raise ValueError("deterministic_values must contain at least one item.")
+    if relative_margin < 0:
+        raise ValueError("relative_margin must be non-negative.")
+    if minimum_margin < 0:
+        raise ValueError("minimum_margin must be non-negative.")
+
+    lower_values = [
+        float(values["p05"]) for values in distribution_summary.values()
+    ] + [float(value) for value in deterministic_values.values()]
+    upper_values = [
+        float(values["p95"]) for values in distribution_summary.values()
+    ] + [float(value) for value in deterministic_values.values()]
+    all_values = lower_values + upper_values
+    if not all(math.isfinite(value) for value in all_values):
+        raise ValueError("axis inputs must contain only finite values.")
+
+    data_lower = min(lower_values)
+    data_upper = max(upper_values)
+    lower = min(0.0, data_lower)
+    upper = max(0.0, data_upper)
+    if lower == upper:
+        upper = max(1.0, abs(upper))
+
+    if tick_step is None:
+        max_abs_value = max(abs(lower), abs(upper))
+        margin = max(minimum_margin, relative_margin * max_abs_value)
+        if lower < 0:
+            lower -= margin
+        if upper > 0:
+            upper += margin
+        step = _nice_axis_step(
+            span=upper - lower,
+            target_intervals=target_intervals,
+        )
+    else:
+        if tick_step <= 0:
+            raise ValueError("tick_step must be positive when provided.")
+        step = float(tick_step)
+
+    lower_limit = math.floor(lower / step) * step
+    upper_limit = math.ceil(upper / step) * step
+    if zero_floor and data_lower >= 0:
+        lower_limit = 0.0
+    if math.isclose(lower_limit, upper_limit):
+        upper_limit += step
+
+    axis_limits = (float(lower_limit), float(upper_limit))
+    return axis_limits, shared_axis_ticks(
+        axis_limits,
+        target_intervals=target_intervals,
+        tick_step=step,
     )
 
-    if sector_key == "cement" and financial_metric == "LNM":
-        lower = -300 if p05_minimum < -200 else -200
-        return (float(lower), 50.0), tuple(float(value) for value in range(lower, 51, 50))
-    if sector_key == "electricity" and financial_metric == "LNM":
-        return (-150.0, 50.0), (-150.0, -100.0, -50.0, 0.0, 50.0)
-    if sector_key == "cement" and financial_metric == "NPV":
-        lower = math.floor(p05_minimum / 200) * 200
-        first_major_tick = math.ceil(lower / 1000) * 1000
-        return (float(lower), 2000.0), tuple(
-            float(value) for value in range(int(first_major_tick), 2001, 1000)
-        )
-    if sector_key == "electricity" and financial_metric == "NPV":
-        lower = math.floor(p05_minimum / 1000) * 1000
-        return (float(lower), 1000.0), tuple(
-            float(value) for value in range(int(lower), 1001, 1000)
-        )
-    if financial_metric == "LCOX":
-        lower = min(
-            min(values["p05"] for values in distribution_summary.values()),
-            min(deterministic_values.values()),
-        )
-        upper = max(
-            max(values["p95"] for values in distribution_summary.values()),
-            max(deterministic_values.values()),
-        )
-        lower_limit = min(0.0, math.floor(lower / 50.0) * 50.0)
-        upper_limit = max(1.0, math.ceil(upper / 50.0) * 50.0)
-        axis_limits = (lower_limit, upper_limit)
-        return axis_limits, shared_axis_ticks(axis_limits)
 
-    x_axis_limits = shared_axis_limits(
-        {label: values["p05"] for label, values in distribution_summary.items()},
-        {label: values["p95"] for label, values in distribution_summary.items()},
-        deterministic_values,
-    )
-    return x_axis_limits, shared_axis_ticks(x_axis_limits)
+def _nice_axis_step(span: float, target_intervals: int) -> float:
+    """Return a 1/2/2.5/5/10-style tick interval for an axis span."""
+
+    if span <= 0:
+        raise ValueError("span must be positive.")
+    if target_intervals <= 0:
+        raise ValueError("target_intervals must be positive.")
+
+    rough_step = span / target_intervals
+    magnitude = 10 ** math.floor(math.log10(rough_step))
+    normalized = rough_step / magnitude
+    if normalized <= 1:
+        multiplier = 1.0
+    elif normalized <= 2:
+        multiplier = 2.0
+    elif normalized <= 2.5:
+        multiplier = 2.5
+    elif normalized <= 5:
+        multiplier = 5.0
+    else:
+        multiplier = 10.0
+    return multiplier * magnitude
 
 
 def dated_figure_path(
