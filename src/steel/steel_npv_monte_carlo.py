@@ -118,7 +118,7 @@ def _representative_parameter_array(
     parameter: ParameterSpec,
     size: int,
 ) -> np.ndarray:
-    """Broadcast one deterministic representative value to a sample array."""
+    """Broadcast one deterministic expected input value to a sample array."""
 
     return np.full(size, representative_value(parameter))
 
@@ -144,7 +144,7 @@ def _deterministic_bau_values(
     technology: str,
     size: int,
 ) -> dict[str, np.ndarray]:
-    """Return representative parent-technology inputs as sample arrays."""
+    """Return expected parent-technology inputs as sample arrays."""
 
     if technology not in STEEL_TECHNOLOGY_DISTRIBUTIONS:
         raise ValueError(f"Unknown steel BAU technology: {technology!r}.")

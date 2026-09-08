@@ -128,13 +128,21 @@ sector-specific calculations.
   Carlo inputs and NPV distribution. Each notebook reports the count and share
   of non-negative versus negative NPV simulations.
 - Use `notebooks/<sector>/deterministic_*_npv.ipynb` to inspect one
-  representative deterministic calculation.
+  expected-input deterministic calculation.
 - Use `notebooks/scenario_analysis.ipynb` for the deterministic FLH, lifetime,
   renewable value-factor, CO2-price, and discount-rate scenarios.
 - Use the command-line summary modules when figures and CSV outputs must be
   regenerated reproducibly.
 - Use `sensitivity_dashboard.py` for interactive deterministic
   one-factor-at-a-time sensitivity analysis.
+
+Deterministic results are expected-input scenarios, not modal scenarios. Each
+uncertain input is set to its analytical mean: the stored mean for scaled beta,
+`(minimum + mode + maximum) / 3` for triangular, and the midpoint for uniform
+distributions. Fixed parameters retain their stored values. Applying expected
+inputs does not mathematically guarantee the exact Monte Carlo output mean when
+downstream calculations are nonlinear, but it provides the directly comparable
+one-point case.
 
 ## BECCS Electricity Assumptions
 
@@ -170,15 +178,15 @@ Monte Carlo workflows expose `retrofit_bau_mode` with two choices:
 - `sampled` is the default. BAU technical inputs are sampled once per simulation
   ID and reused for the matching BAU result and retrofit, so each comparison uses
   one shared uncertain baseline.
-- `deterministic` holds the retrofit's BAU technical inputs at their representative
+- `deterministic` holds the retrofit's BAU technical inputs at their expected
   values while continuing to sample incremental retrofit and other stochastic
   inputs. This isolates retrofit uncertainty for diagnostic runs.
 
 Incremental costs are added to BAU costs. Fuel use, electricity use where
 applicable, and emissions follow `BAU value * (1 - reduction fraction)`. Positive
 fractions therefore reduce the BAU value, while negative reduction fractions
-represent increases. Deterministic calculations always use representative BAU
-and retrofit values; the selectable mode controls Monte Carlo calculations.
+represent increases. Deterministic calculations always use expected BAU and
+retrofit input values; the selectable mode controls Monte Carlo calculations.
 
 CCS transport and storage (T&S) adds 18.7% of the levelized incremental capture
 cost, defined as `(BAU + CCS) - BAU` across CAPEX, OPEX, and fuel/electricity
@@ -192,14 +200,14 @@ also updates T&S wherever those inputs enter the incremental capture cost.
 ## Renewable Electricity Value Factors
 
 PV, onshore wind, and offshore wind use triangular value-factor distributions
-in `src/electricity/electricity_parameters.py`. The supplied base is the mode
-and deterministic representative value:
+in `src/electricity/electricity_parameters.py`. The supplied base remains the
+distribution mode, while deterministic calculations use the triangular mean:
 
-| Technology | Minimum | Base / mode | Maximum |
-| --- | ---: | ---: | ---: |
-| Onshore wind | 0.80 | 0.90 | 1.00 |
-| Offshore wind | 0.85 | 0.95 | 1.00 |
-| Solar PV | 0.80 | 0.90 | 1.00 |
+| Technology | Minimum | Mode | Maximum | Deterministic mean |
+| --- | ---: | ---: | ---: | ---: |
+| Onshore wind | 0.80 | 0.90 | 1.00 | 0.90 |
+| Offshore wind | 0.85 | 0.95 | 1.00 | 0.933 |
+| Solar PV | 0.80 | 0.90 | 1.00 | 0.90 |
 
 The value factor scales the model's existing electricity sales-price proxy to a
 captured price. The parameter names remain `VF_PV`, `VF_Wind_onshore`, and
@@ -296,7 +304,7 @@ PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LC
 ```
 
 Electricity Monte Carlo summaries use sampled BAU values for the coal and CCGT
-CCS retrofits by default. To hold those BAU inputs at representative values, add
+CCS retrofits by default. To hold those BAU inputs at expected values, add
 the electricity summary flag:
 
 ```bash

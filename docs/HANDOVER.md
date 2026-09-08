@@ -52,7 +52,7 @@ PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
 
 The electricity command defaults to sampled BAU inputs for the hard-coal and
 CCGT CCS retrofits. Append `--retrofit-bau-mode deterministic` when a diagnostic
-run should hold those BAU technical inputs at representative values.
+run should hold those BAU technical inputs at expected values.
 
 Quick cement check:
 
@@ -83,7 +83,7 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 ## Output Contract
 
 - `figures/`: thesis-ready dated PNG files.
-- `data/raw/`: sampled or representative inputs exported by a run.
+- `data/raw/`: sampled or deterministic expected inputs exported by a run.
 - `data/processed/`: derived costs, cash flow, NPV, LNM, LCOX, and summary CSVs.
 - `results/`: reserved for other numerical outputs.
 
@@ -113,7 +113,8 @@ outside the working repository.
 - Summary workflows switch explicitly between total NPV (`NPV`), levelized net
   margin (`LNM`), and levelized cost (`LCOX`).
 - PV and onshore wind sample triangular value factors of 0.80/0.90/1.00, while
-  offshore wind samples 0.85/0.95/1.00. The modes are the deterministic bases.
+  offshore wind samples 0.85/0.95/1.00. Deterministic runs use the analytical
+  triangular means: 0.90, 0.933, and 0.90, respectively.
   Captured electricity price is the model sales-price proxy multiplied by the
   technology value factor; only electricity revenue, NPV, and LNM change. VF is
   included for these three technologies in the electricity sensitivity heatmap.
@@ -137,7 +138,7 @@ outside the working repository.
 - `retrofit_bau_mode="sampled"` is the Monte Carlo default. It samples BAU
   technical inputs once per simulation ID and reuses them for the matching BAU
   result and retrofit. `"deterministic"` instead fixes the retrofit's BAU
-  technical inputs at representative values while other stochastic inputs remain
+  technical inputs at expected values while other stochastic inputs remain
   sampled.
 - Retrofit cost changes are added to BAU costs. Physical reductions resolve as
   `BAU value * (1 - reduction fraction)`, so positive fractions are reductions
@@ -157,9 +158,11 @@ outside the working repository.
   also excluded.
 - Check `DEFAULT_RETROFIT_BAU_MODE` and the summary command's
   `--retrofit-bau-mode` option before interpreting Monte Carlo results. The
-  deterministic models always use representative BAU and retrofit values.
-- Deterministic distribution representatives are defined centrally by
-  `representative_value()` in `src/npv_summary.py`.
+  deterministic models always use expected BAU and retrofit input values.
+- Deterministic runs use each uncertain input distribution's analytical mean:
+  stored mean for scaled beta, `(minimum + mode + maximum) / 3` for triangular,
+  midpoint for uniform, and the stored value for fixed parameters. This policy
+  is defined centrally by `representative_value()` in `src/npv_summary.py`.
 
 Do not change one of these conventions silently. Update documentation and
 regenerate affected results if a convention changes.

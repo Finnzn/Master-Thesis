@@ -2,9 +2,9 @@
 
 The deterministic calculation is the one-point counterpart to the Monte Carlo
 model. It uses the same electricity assumptions and cash-flow formula, but each
-uncertain parameter is replaced by one representative value. Hard coal CCS and
-CCGT CCS are retrofit technologies: their representative changes are resolved
-against the representative values of their parent BAU technology before the
+uncertain parameter is replaced by its expected value. Hard coal CCS and CCGT
+CCS are retrofit technologies: their expected changes are resolved against the
+expected values of their parent BAU technology before the
 cash-flow calculation.
 """
 
@@ -71,7 +71,7 @@ def electricity_fuel_price_parameter(
     """
 
     # Fuel-price assumptions match the Monte Carlo model. The deterministic run
-    # later reduces the returned parameter to its representative value.
+    # later reduces the returned parameter to its expected value.
     fuel_price_by_technology = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "hard_coal_ccs": COAL_PRICE_DISTRIBUTION,
@@ -93,7 +93,7 @@ def electricity_fuel_price_parameter(
 def _representative_values(
     parameters: Mapping[str, ParameterSpec],
 ) -> dict[str, float]:
-    """Convert one parameter mapping into deterministic representative values."""
+    """Convert one parameter mapping into deterministic expected values."""
 
     return {
         parameter_name: representative_value(parameter)
@@ -158,7 +158,7 @@ def calculate_deterministic_electricity_result(
     values = _deterministic_electricity_technology_values(technology)
     fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
 
-    # Deterministic calculations use one representative value for each uncertain
+    # Deterministic calculations use the expected value for each uncertain
     # input, then follow the same sizing and cash-flow sequence as the Monte Carlo
     # calculation.
     annual_output_mwh = ANNUAL_ELECTRICITY_OUTPUT_MWH.value
@@ -383,7 +383,7 @@ def calculate_deterministic_electricity_result(
 
 
 def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
-    """Calculate deterministic electricity NPV from representative values.
+    """Calculate deterministic electricity NPV from expected input values.
 
     This small wrapper is useful when only the final NPV is needed and not the
     intermediate deterministic inputs and cost components.

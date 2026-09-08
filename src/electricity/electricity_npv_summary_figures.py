@@ -5,7 +5,7 @@ runs deterministic and Monte Carlo electricity NPV calculations, writes raw and
 processed CSV files, and saves comparison figures.
 
 The output split is intentional:
-- raw CSVs contain sampled or representative model inputs;
+- raw CSVs contain sampled or deterministic expected model inputs;
 - processed CSVs contain derived quantities such as capacity, costs, cash flow,
   and NPV;
 - figures summarize those outputs for interpretation.
@@ -334,8 +334,8 @@ def calculate_deterministic_electricity_npv_million_eur(
 ) -> dict[str, float]:
     """Calculate deterministic NPV by electricity technology in million EUR.
 
-    This mirrors the Monte Carlo mean helper but uses representative parameter
-    values instead of random draws.
+    This mirrors the Monte Carlo mean helper but uses expected parameter values
+    instead of random draws.
     """
 
     return deterministic_npv_million_eur(
@@ -714,7 +714,7 @@ def save_electricity_deterministic_npv_outputs(
     """Save deterministic NPV figure plus raw-input and processed-output CSVs.
 
     Deterministic exports use the same raw/processed column split as Monte Carlo
-    exports, but each technology has only one representative row.
+    exports, but each technology has only one expected-input row.
     """
 
     output_date = run_date or date.today()

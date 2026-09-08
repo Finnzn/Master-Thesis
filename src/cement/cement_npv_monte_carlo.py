@@ -12,7 +12,7 @@ For retrofit technologies, `retrofit_bau_mode` controls that baseline:
 - `"sampled"` samples BAU once per run ID and reuses those sampled BAU values for
   every retrofit technology in the same simulation. This is the default for full
   uncertainty propagation and cross-technology ranking.
-- `"deterministic"` uses representative BAU values and samples only the retrofit
+- `"deterministic"` uses expected BAU input values and samples only the retrofit
   distributions. This is useful for diagnostics and technology-specific notebooks.
 """
 
@@ -124,7 +124,7 @@ def _representative_parameter_array(
     parameter: ParameterSpec,
     size: int,
 ) -> np.ndarray:
-    """Broadcast one deterministic representative value to a sample array."""
+    """Broadcast one deterministic expected input value to a sample array."""
 
     return np.full(size, representative_value(parameter))
 

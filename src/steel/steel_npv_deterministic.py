@@ -1,7 +1,7 @@
 """Deterministic NPV calculations for steel technologies.
 
 The deterministic steel calculation is the one-point counterpart to the Monte
-Carlo model. Each uncertain parameter is replaced by its representative value,
+Carlo model. Each uncertain parameter is replaced by its expected value,
 incremental CCS technologies are resolved against their parent BAU technology,
 and the resulting annual cash flow is discounted over the shared steel-sector
 lifetime.
@@ -96,7 +96,7 @@ def steel_fuel_price_parameters(technology: str) -> Mapping[str, ParameterSpec]:
 def _representative_values(
     parameters: Mapping[str, ParameterSpec],
 ) -> dict[str, float]:
-    """Convert one parameter mapping into deterministic representative values."""
+    """Convert one parameter mapping into deterministic expected values."""
 
     return {
         parameter_name: representative_value(parameter)
@@ -156,7 +156,7 @@ def _deterministic_steel_technology_values(
 
 
 def _deterministic_market_prices() -> dict[str, float]:
-    """Return representative shared energy prices for deterministic steel runs."""
+    """Return expected shared energy prices for deterministic steel runs."""
 
     return {
         "pci_coking_coal_mix_price_eur_per_mwh_th": (
@@ -484,7 +484,7 @@ def calculate_deterministic_steel_result(
 
 
 def calculate_deterministic_steel_npv_eur(technology: str) -> float:
-    """Calculate deterministic steel NPV from representative values."""
+    """Calculate deterministic steel NPV from expected input values."""
 
     return float(calculate_deterministic_steel_result(technology)["npv_eur"][0])
 

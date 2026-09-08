@@ -7,7 +7,7 @@ and converts the resulting annual net cash flow into NPV.
 
 Hard coal CCS and CCGT CCS are modelled as retrofits of their unabated parent
 technologies. `retrofit_bau_mode` controls whether their BAU inputs are sampled
-for each run ID or held at deterministic representative values while the
+for each run ID or held at deterministic expected values while the
 incremental retrofit inputs remain sampled.
 
 The output intentionally includes both sampled inputs and derived financial
@@ -138,7 +138,7 @@ def _representative_parameter_array(
     parameter: ParameterSpec,
     size: int,
 ) -> np.ndarray:
-    """Broadcast one deterministic representative value to a sample array."""
+    """Broadcast one deterministic expected input value to a sample array."""
 
     return np.full(size, representative_value(parameter))
 
@@ -165,7 +165,7 @@ def _deterministic_bau_values(
     technology: str,
     size: int,
 ) -> dict[str, np.ndarray]:
-    """Return representative parent-technology values as BAU arrays."""
+    """Return expected parent-technology inputs as BAU arrays."""
 
     if technology not in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
         raise ValueError(f"Unknown electricity BAU technology: {technology!r}.")

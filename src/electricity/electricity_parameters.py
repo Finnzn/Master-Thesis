@@ -28,7 +28,7 @@ RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
 # Renewable value factors scale the common electricity price to the average
 # price captured by each variable renewable technology. Their supplied
 # minimum/base/maximum assumptions are modelled as triangular distributions;
-# deterministic calculations use the base value as the representative mode.
+# deterministic calculations use the triangular expected value.
 VF_PV = TriangularDistribution(
     minimum=0.80,
     mode=0.90,

@@ -6723,3 +6723,54 @@ independent of sector and whether the selected metric is NPV, LNM, or LCOX.
   full sample size; validation of alternative metrics was performed in memory.
 - Tick spacing remains configurable per metric through `axis_tick_step`; when it
   is absent, the shared helper chooses a 1/2/2.5/5/10-style interval.
+
+## 2026-09-08 10:41 CEST — Use expected inputs in deterministic models
+
+### User request
+
+Replace modal triangular inputs in every deterministic sector calculation with
+the actual triangular distribution mean, and describe deterministic results as
+expected-input scenarios rather than most-likely-value scenarios.
+
+### Files changed
+
+- `src/npv_summary.py` and `src/distributions.py` — defined the deterministic
+  triangular representative as `(minimum + mode + maximum) / 3` and documented
+  the shared expected-input policy.
+- Deterministic and Monte Carlo modules for cement, electricity, and steel —
+  updated terminology for deterministic values and fixed retrofit BAU inputs.
+- `README.md`, `docs/HANDOVER.md`, and relevant notebook markdown — documented
+  the methodology and renamed deterministic input sections to `Expected inputs`.
+- All deterministic notebooks, three summary notebooks, the cement MACC,
+  scenario analysis, and sensitivity heatmap — refreshed dependent outputs.
+
+### What was implemented
+
+- Fixed parameters retain their stored values, scaled-beta parameters use their
+  stored means, uniform parameters use their midpoints, and triangular
+  parameters now use their analytical means.
+- The same policy applies to deterministic BAU inputs selected through Monte
+  Carlo retrofit diagnostic mode.
+- Documentation notes that applying expected inputs does not guarantee the exact
+  expected model output when downstream calculations are nonlinear.
+
+### Verification
+
+- Unit-style assertions covered fixed, scaled-beta, uniform, and triangular
+  representative values.
+- Executed and schema-validated all 33 affected notebooks; every code cell has
+  an execution count and no notebook contains an error output.
+- Compared deterministic LNM against 100,000-draw Monte Carlo means using seed
+  42. Maximum absolute gaps were 0.026 EUR/t cement, 0.156 EUR/MWh electricity,
+  and 0.343 EUR/tCS steel.
+- Scrap-EAF was 101.00 EUR/tCS deterministically versus a 101.03 EUR/tCS Monte
+  Carlo mean; H2-DRI-EAF was -187.92 versus -187.88 EUR/tCS.
+- `.venv/bin/python -m compileall -q src` and `git diff --check` passed.
+
+### Reproducibility notes
+
+- Monte Carlo sampling distributions are unchanged; only the deterministic
+  one-point representative and deterministic retrofit-baseline option changed.
+- Small deterministic-versus-Monte-Carlo mean differences may remain because
+  the expected output of a nonlinear calculation need not equal the output at
+  expected inputs.

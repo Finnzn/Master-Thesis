@@ -51,22 +51,20 @@ def summarize_metric_signs(values: object) -> dict[str, int | float]:
 
 
 def representative_value(parameter: ParameterSpec) -> float:
-    """Return the deterministic representative value for a parameter.
+    """Return the expected input value used in deterministic calculations.
 
     Deterministic runs are used as a one-point comparison against the Monte Carlo
-    results. For each uncertainty type, this function defines which single value
-    stands in for the whole distribution.
+    results. Each uncertain input is therefore reduced to its analytical mean.
     """
 
-    # Fixed parameters already have a single value. For distributions, use the
-    # value that best represents the source assumption: mean for scaled beta,
-    # mode for triangular, and midpoint for uniform ranges.
+    # Fixed parameters already have a single value. The triangular mean is
+    # (minimum + mode + maximum) / 3; the uniform mean is its midpoint.
     if isinstance(parameter, FixedParameter):
         return parameter.value
     if isinstance(parameter, ScaledBetaDistribution):
         return parameter.mean
     if isinstance(parameter, TriangularDistribution):
-        return parameter.mode
+        return (parameter.minimum + parameter.mode + parameter.maximum) / 3
     if isinstance(parameter, UniformDistribution):
         return (parameter.lower_bound + parameter.upper_bound) / 2
 

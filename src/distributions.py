@@ -31,8 +31,8 @@ class TriangularDistribution:
     """Parameters for a triangular probability distribution.
 
     This is used for inputs where the source gives a lower estimate, most likely
-    value, and upper estimate. The `mode` is also used as the deterministic
-    representative value in one-point calculations.
+    value, and upper estimate. Deterministic calculations use the analytical
+    mean ``(minimum + mode + maximum) / 3`` as the expected input value.
     """
 
     minimum: float

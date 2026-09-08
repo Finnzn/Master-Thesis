@@ -1,7 +1,7 @@
 """Deterministic NPV calculations for cement technologies.
 
 The deterministic cement calculation mirrors the electricity deterministic
-workflow: each uncertain input is reduced to one representative value, annual
+workflow: each uncertain input is reduced to its expected value, annual
 cash flow is calculated for a normalized output volume, and the shared NPV
 formula discounts that cash flow over the asset lifetime.
 
@@ -75,7 +75,7 @@ def cement_fuel_price_parameter(
 def _representative_values(
     parameters: Mapping[str, ParameterSpec],
 ) -> dict[str, float]:
-    """Convert one parameter mapping into deterministic representative values."""
+    """Convert one parameter mapping into deterministic expected values."""
 
     return {
         parameter_name: representative_value(parameter)
@@ -84,7 +84,7 @@ def _representative_values(
 
 
 def _deterministic_bau_values() -> dict[str, float]:
-    """Return deterministic absolute BAU cement values."""
+    """Return expected-input absolute BAU cement values."""
 
     return _representative_values(CEMENT_TECHNOLOGY_DISTRIBUTIONS["bau"])
 
@@ -375,7 +375,7 @@ def calculate_deterministic_cement_result(
 
 
 def calculate_deterministic_cement_npv_eur(technology: str) -> float:
-    """Calculate deterministic cement NPV from representative values."""
+    """Calculate deterministic cement NPV from expected input values."""
 
     return float(calculate_deterministic_cement_result(technology)["npv_eur"][0])
 

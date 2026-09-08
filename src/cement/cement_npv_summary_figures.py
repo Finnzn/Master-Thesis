@@ -5,7 +5,7 @@ it runs deterministic and Monte Carlo cement NPV calculations, writes raw and
 processed CSV files, and saves comparison and ranking figures.
 
 The output split is intentional:
-- raw CSVs contain sampled or representative model inputs;
+- raw CSVs contain sampled or deterministic expected model inputs;
 - processed CSVs contain derived costs, cash flow, and NPV;
 - figures summarize those outputs for interpretation.
 """
