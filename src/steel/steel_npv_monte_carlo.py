@@ -263,7 +263,7 @@ def _energy_costs_per_tcs(
     natural_gas_cost = np.zeros(size)
     hydrogen_cost = np.zeros(size)
 
-    if technology in {"bf_bof_bau", "bf_bof_post_combustion_ccs"}:
+    if technology in {"bf_bof_bau", "bf_bof_ccs"}:
         pci_cost = (
             values["fuel_consumption_mwh_th_per_tcs"]
             * market_values["pci_coking_coal_mix_price_eur_per_mwh_th"]
@@ -310,7 +310,7 @@ def _technology_fuel_price_eur_per_mwh_th(
 
     price_key_by_technology = {
         "bf_bof_bau": "pci_coking_coal_mix_price_eur_per_mwh_th",
-        "bf_bof_post_combustion_ccs": (
+        "bf_bof_ccs": (
             "pci_coking_coal_mix_price_eur_per_mwh_th"
         ),
         "scrap_eaf": "charcoal_price_eur_per_mwh_th",
@@ -706,15 +706,15 @@ def simulate_ael_eaf_npv(
     return simulate_steel_technology_npv("ael_eaf", size=size, rng=rng)
 
 
-def simulate_bf_bof_post_combustion_ccs_npv(
+def simulate_bf_bof_ccs_npv(
     size: int,
     rng: np.random.Generator | None = None,
     retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> Mapping[str, np.ndarray]:
-    """Run a Monte Carlo NPV simulation for BF-BOF post-combustion CCS."""
+    """Run a Monte Carlo NPV simulation for BF + BOF + CCS."""
 
     return simulate_steel_technology_npv(
-        "bf_bof_post_combustion_ccs",
+        "bf_bof_ccs",
         size=size,
         rng=rng,
         retrofit_bau_mode=retrofit_bau_mode,

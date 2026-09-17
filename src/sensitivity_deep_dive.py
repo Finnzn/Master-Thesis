@@ -45,7 +45,7 @@ TECHNOLOGY_LABELS = {
     "h2_dri_eaf": "H2-DRI-EAF",
     "moe": "MOE",
     "ael_eaf": "AEL-EAF",
-    "bf_bof_post_combustion_ccs": "BF-BOF + post-combustion CCS",
+    "bf_bof_ccs": "BF + BOF + CCS",
     "ng_dri_eaf_ccs": "NG-DRI-EAF + CCS",
 }
 

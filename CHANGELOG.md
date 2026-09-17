@@ -6774,3 +6774,534 @@ expected-input scenarios rather than most-likely-value scenarios.
 - Small deterministic-versus-Monte-Carlo mean differences may remain because
   the expected output of a nonlinear calculation need not equal the output at
   expected inputs.
+
+## 2026-09-17 14:09 CEST — Start ammonia-sector assumptions
+
+### User request
+
+Start the ammonia sector with a 25-year lifetime and a retail price of 890 EUR/t;
+technology-specific variables will follow.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added the two fixed sector assumptions
+  and a registry matching the existing cement and steel parameter modules.
+- `CHANGELOG.md` — recorded the new assumptions.
+
+### What was implemented
+
+- Set `LIFETIME_AMMONIA_YEARS` to 25 years and
+  `RETAIL_PRICE_AMMONIA_EUR_PER_T` to 890 EUR/t.
+- Registered both values in `AMMONIA_FIXED_PARAMETERS`. No technology inputs
+  or calculations have been defined yet.
+
+### Verification
+
+- Imported the new module and asserted both values, units, and registry size.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- These are user-supplied fixed assumptions. No results, figures, or existing
+  sector calculations changed.
+
+### Next suggested step
+
+Add the ammonia technology-specific input parameters.
+
+## 2026-09-17 14:19 CEST — Add NG-SMR + HB ammonia inputs
+
+### User request
+
+Add the first ammonia technology, greenfield European NG-SMR + HB without CCS,
+using the supplied CAPEX, OPEX, natural-gas, purchased-electricity, and direct-
+emissions values.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added six NG-SMR + HB input parameters
+  and registered the technology.
+- `CHANGELOG.md` — recorded the new assumptions and representation choices.
+
+### What was implemented
+
+- Stored CAPEX as a uniform 750–1,630 EUR/(tNH3/y) range because no base value
+  was supplied; this is investment cost per annual tonne of capacity.
+- Stored fixed OPEX as triangular 29.1/29.4/29.7 EUR/tNH3; variable OPEX as
+  fixed 8.95 EUR/tNH3; natural-gas consumption as triangular 7.89/8.64/8.92
+  MWh/tNH3; and purchased electricity as fixed zero MWh/tNH3.
+- Converted direct emissions from 1,620/1,770/1,800 kgCO2/tNH3 to triangular
+  1.620/1.770/1.800 tCO2/tNH3, matching the model's EUR/tCO2 carbon price.
+- Registered the technology under `ng_smr_hb`. The supplied base values are
+  stored as triangular modes; the project's deterministic expected-input
+  policy will use distribution means when calculations are added.
+
+### Verification
+
+- Imported the ammonia module and asserted the existing sector values, all six
+  technology inputs, their distribution types, values, and key units.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only parameter definitions changed. No ammonia simulations, results, or
+  figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology's parameters.
+
+## 2026-09-17 14:28 CEST — Add NG-SMR + HB CCS increments
+
+### User request
+
+Add the greenfield Europe-oriented CCS add-on to NG-SMR + HB as an incremental
+ammonia technology, following the retrofit convention used in other sectors.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added six CCS increment parameters,
+  a parent-technology mapping, and a separate retrofit registry.
+- `CHANGELOG.md` — recorded the assumptions and treatment of absolute energy
+  increments.
+
+### What was implemented
+
+- Registered `ng_smr_hb_ccs -> ng_smr_hb` in
+  `AMMONIA_RETROFIT_BASE_TECHNOLOGIES`.
+- Stored incremental CAPEX as triangular 70/75/80 EUR/(tNH3/y), fixed OPEX
+  increase as 21 EUR/tNH3, and variable OPEX change as zero EUR/tNH3.
+- Stored the working-base natural-gas change as zero MWh/tNH3 and purchased-
+  electricity increase as 0.194 MWh/tNH3. These are additive absolute changes;
+  a relative electricity fraction cannot represent a change from the parent's
+  zero purchased-electricity input.
+- Stored direct-CO2 reduction as triangular 0.85/0.90/0.90 fractions relative
+  to parent direct emissions. The 90% supplied base is the distribution mode;
+  deterministic expected-input calculations will use its mean when added.
+
+### Verification
+
+- Imported the ammonia registry and asserted the parent mapping, all six
+  increment types, values, and units. Checked additive electricity resolves
+  to 0.194 MWh/tNH3 and the base-mode emissions reduction resolves to
+  0.177 tCO2/tNH3 from the parent base mode.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology's parameters or the ammonia NPV calculation.
+
+## 2026-09-17 14:32 CEST — Add coal gasification + HB ammonia inputs
+
+### User request
+
+Add the greenfield coal gasification + HB technology without CCS using the
+supplied CAPEX, OPEX, coal, purchased-electricity, and direct-emissions inputs.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added the coal gasification + HB
+  parameter definitions and registered the absolute technology.
+- `CHANGELOG.md` — recorded the inputs and coal accounting choice.
+
+### What was implemented
+
+- Stored CAPEX as triangular 2,440/3,050/3,970 EUR/(tNH3/y), fixed OPEX as
+  triangular 91/113/147 EUR/tNH3, and variable OPEX as triangular
+  13.0/16.2/21.1 EUR/tNH3. Supplied base values are distribution modes.
+- Stored total coal consumption as fixed 9.36 MWh/tNH3 and its supplied
+  breakdown as fixed 5.17 feedstock plus 4.19 process fuel. The technology
+  registry uses only the total coal input to prevent double counting.
+- Stored purchased electricity as fixed 1.03 MWh/tNH3. Converted fixed direct
+  emissions from 3,200 kgCO2/tNH3 to 3.200 tCO2/tNH3 for the carbon-price unit.
+- Registered the absolute technology as `coal_gasification_hb`.
+
+### Verification
+
+- Imported the ammonia registry and asserted all six technology inputs,
+  distribution types, values, and units; checked the coal components sum to
+  the registered total.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology or incremental add-on inputs.
+
+## 2026-09-17 14:39 CEST — Add coal gasification + HB CCS increments
+
+### User request
+
+Add the greenfield Europe-oriented CCS add-on to coal gasification + HB using
+the supplied point increments for CAPEX, OPEX, coal, electricity, and CO2
+reduction.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added the coal gasification + HB CCS
+  fixed increments and registered the parent relationship.
+- `CHANGELOG.md` — recorded the new assumptions and verification.
+
+### What was implemented
+
+- Registered `coal_gasification_hb_ccs -> coal_gasification_hb` in the ammonia
+  retrofit parent mapping and added six inputs to the retrofit registry.
+- Stored incremental CAPEX as fixed +215 EUR/(tNH3/y), fixed OPEX as +34
+  EUR/tNH3, and variable OPEX change as zero EUR/tNH3.
+- Stored the IEA BAT point coal change as zero MWh/tNH3 and purchased-
+  electricity increase as +0.333 MWh/tNH3. These add to the parent inputs.
+- Stored direct-CO2 reduction as a fixed 0.90 fraction applied to parent
+  direct emissions.
+
+### Verification
+
+- Imported the ammonia registries and asserted the parent mapping, all six
+  fixed increments, values, and units. Checked that the resolved point inputs
+  are 9.36 MWh/tNH3 coal, 1.363 MWh/tNH3 purchased electricity, and
+  0.320 tCO2/tNH3 direct emissions.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology or begin the ammonia calculation workflow.
+
+## 2026-09-17 14:43 CEST — Add AEL/PEM electrolysis + HB inputs
+
+### User request
+
+Add the greenfield European AEL/PEM electrolysis + HB ammonia technology with
+the supplied CAPEX, OPEX, fuel/reductant, electricity, and direct-emissions
+values.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added six technology input parameters
+  and registered AEL/PEM electrolysis + HB as an absolute technology.
+- `CHANGELOG.md` — recorded the supplied values and representation.
+
+### What was implemented
+
+- Stored CAPEX as triangular 1,330/1,900/2,850 EUR/(tNH3/y), fixed OPEX as
+  triangular 26.1/37.31/56.0 EUR/tNH3, and variable OPEX as triangular
+  2.43/3.47/5.21 EUR/tNH3.
+- Stored fuel/reductant consumption as fixed zero MWh/tNH3, purchased
+  electricity as triangular 8.6/9.6/10.0 MWh/tNH3, and direct emissions as
+  fixed zero tCO2/tNH3. Supplied base values are distribution modes.
+- Registered the combined technology as `ael_pem_electrolysis_hb`.
+
+### Verification
+
+- Imported the ammonia technology registry and asserted the six input types,
+  values, units, and technology order.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology or begin the ammonia calculation workflow.
+
+## 2026-09-17 14:45 CEST — Add biomass gasification + HB inputs
+
+### User request
+
+Add the greenfield Europe-oriented biomass gasification + HB ammonia
+technology using the supplied CAPEX, OPEX, biomass, purchased-electricity,
+and direct-emissions values.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added the biomass gasification + HB
+  parameter definitions and registered the absolute technology.
+- `CHANGELOG.md` — recorded the values and treatment of the biomass split.
+
+### What was implemented
+
+- Stored CAPEX as triangular 2,780/3,970/5,950 EUR/(tNH3/y), fixed OPEX as
+  triangular 23.4/33.4/50.1 EUR/tNH3, and variable OPEX as triangular
+  11.3/16.1/24.2 EUR/tNH3. Supplied base values are distribution modes.
+- Stored total biomass consumption as fixed 9.75 MWh/tNH3 with the supplied
+  5.17 feedstock and 4.58 process-fuel components recorded separately. Only
+  the total is registered for future energy-cost calculations.
+- Stored purchased electricity as fixed 0.39 MWh/tNH3 and direct emissions
+  as fixed zero tCO2/tNH3. The supplied zero had an asterisk, but its footnote
+  was not provided; no additional emissions interpretation was assumed.
+- Registered the technology as `biomass_gasification_hb`.
+
+### Verification
+
+- Imported the ammonia registry and asserted all six technology input types,
+  values, units, and technology order; checked the biomass components sum to
+  the registered total.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology or incremental add-on inputs.
+
+## 2026-09-17 14:49 CEST — Add methane pyrolysis + HB inputs
+
+### User request
+
+Add the greenfield Europe-oriented, electrically heated molten-metal methane
+pyrolysis + HB ammonia technology using the supplied CAPEX, OPEX, natural-gas,
+purchased-electricity, and direct-emissions values.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added the methane pyrolysis + HB
+  parameter definitions and registered the absolute technology.
+- `CHANGELOG.md` — recorded the new values and natural-gas accounting.
+
+### What was implemented
+
+- Stored CAPEX as triangular 720/1,030/1,550 EUR/(tNH3/y), fixed OPEX as
+  triangular 32.4/46.3/69.5 EUR/tNH3, and variable OPEX as triangular
+  2.94/4.20/6.30 EUR/tNH3. Supplied base values are distribution modes.
+- Stored natural gas as fixed 9.80 MWh/tNH3 feedstock plus zero process fuel.
+  The technology registry uses the 9.80 MWh/tNH3 total once for energy costs.
+- Stored purchased electricity as triangular 2.09/2.18/2.27 MWh/tNH3 and
+  direct emissions as fixed zero tCO2/tNH3.
+- Registered the technology as `methane_pyrolysis_hb`.
+
+### Verification
+
+- Imported the ammonia registry and asserted all six technology input types,
+  values, and units; checked that the natural-gas components sum to the total.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology or incremental add-on inputs.
+
+## 2026-09-17 14:51 CEST — Add SOEC + HB ammonia inputs
+
+### User request
+
+Add the greenfield Europe-oriented SOEC + HB ammonia technology with the
+supplied CAPEX, OPEX, fuel/reductant, purchased-electricity, and
+direct-emissions values.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added six SOEC + HB parameters and
+  registered the technology.
+- `CHANGELOG.md` — recorded the supplied assumptions.
+
+### What was implemented
+
+- Stored CAPEX as triangular 1,750/2,500/3,750 EUR/(tNH3/y) and fixed OPEX
+  as triangular 120/170/255 EUR/tNH3.
+- Stored variable OPEX as triangular 18.4/18.4/23.4 EUR/tNH3 and purchased
+  electricity as triangular 7.3/8.25/8.25 MWh/tNH3. Supplied base values are
+  distribution modes, including modes at the specified range boundaries.
+- Stored fuel/reductant consumption as fixed zero MWh/tNH3 and direct
+  emissions as fixed zero tCO2/tNH3.
+- Registered the absolute technology as `soec_hb`.
+
+### Verification
+
+- Imported the ammonia registry and asserted all six technology input types,
+  values, and units.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Add the next ammonia technology or incremental add-on inputs.
+
+## 2026-09-17 14:55 CEST — Add aqueous direct NRR ammonia inputs
+
+### User request
+
+Add the ambient, greenfield Europe-oriented aqueous direct NRR technology
+using the supplied CAPEX, OPEX, fuel/reductant, purchased-electricity, and
+direct-emissions values.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added six aqueous direct NRR
+  parameters and registered the technology.
+- `CHANGELOG.md` — recorded the final supplied ammonia technology inputs.
+
+### What was implemented
+
+- Stored CAPEX as triangular 4,860/4,860/5,470 EUR/(tNH3/y), fixed OPEX as
+  triangular 226/226/249 EUR/tNH3, and variable OPEX as triangular
+  10.8/20.2/29.6 EUR/tNH3.
+- Stored fuel/reductant consumption as fixed zero MWh/tNH3, purchased
+  electricity as triangular 16.1/18.9/18.9 MWh/tNH3, and direct emissions as
+  fixed zero tCO2/tNH3. Supplied base values are distribution modes, including
+  modes at range boundaries.
+- Registered the absolute technology as `aqueous_direct_nrr`.
+
+### Verification
+
+- Imported the ammonia registry and asserted all six new input types, values,
+  and units. Checked that the complete registry contains seven absolute
+  technologies and two CCS add-ons, each with six inputs and valid parents.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- Only ammonia parameter definitions changed. No ammonia simulations, results,
+  or figures exist yet, and existing sector calculations were not changed.
+
+### Next suggested step
+
+Build the ammonia deterministic and Monte Carlo calculations using the
+completed parameter catalogue.
+
+## 2026-09-17 15:05 CEST — Add steel MACC with BF-BOF reference
+
+### User request
+
+Build a steel marginal abatement cost curve, based on the cement MACC, with
+BF-BOF BAU as the reference technology; provide reusable source code and a
+notebook.
+
+### Files changed
+
+- `src/steel/steel_macc.py` — added deterministic and simulated steel MACC
+  tables, plotting, optional dated CSV/PNG exports, and a command-line entry.
+- `notebooks/steel/steel_macc.ipynb` — added and executed an interactive steel
+  MACC notebook with optional saving disabled by default.
+- `README.md` — documented the steel reference, cost boundary, and alternative
+  route interpretation.
+- `CHANGELOG.md` — recorded the new workflow and checks.
+
+### What was implemented
+
+- Compared all seven non-reference steel technologies with BF-BOF BAU at the
+  model's common annual output of 1 MtCS/year.
+- Calculated annual direct CO2 abatement as reference emissions minus option
+  emissions. The annual cost difference annualizes initial CAPEX with the
+  model's lifetime and discount rate, includes annual operating and CCS
+  transport/storage costs, and removes carbon-price payments. Product revenue
+  is excluded from both sides.
+- Reported deterministic expected-input costs and simulated aggregate
+  mean-cost/mean-abatement ratios, with draw-level p05/median/p95 costs.
+- Used aligned Monte Carlo simulations and the existing sampled or
+  deterministic retrofit BAU mode. The notebook exposes those settings and
+  displays the table and curve inline.
+- Labelled cumulative bar widths as illustrative because the steel production
+  routes are alternatives at the same output and their potentials are not
+  additive.
+
+### Verification
+
+- Compiled `src/steel/steel_macc.py` and ran deterministic and 1,000-draw
+  simulated MACCs; both returned seven abatement options.
+- Checked the cost boundary with a synthetic carbon/T&S case, independently
+  recomputed the BF-BOF CCS deterministic ratio, confirmed shared sampled
+  BF-BOF inputs and market prices, and checked simulated seed reproducibility.
+- Exported deterministic and simulated subsets to a temporary directory and
+  validated the CSV and PNG files. No project output files were saved.
+- Executed the notebook with `jupyter nbconvert`, checked all code cells for
+  errors, and visually reviewed its rendered MACC figure.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- The notebook defaults to deterministic mode with `SAVE_OUTPUTS = False`.
+  Set `USE_SIMULATED = True` to run Monte Carlo and `SAVE_OUTPUTS = True` to
+  create dated CSV/PNG outputs in `data/processed/` and `figures/`.
+- Equivalent outputs can be generated with `python src/steel/steel_macc.py`
+  and `--simulated`, `--sample-size`, `--random-seed`, or
+  `--retrofit-bau-mode` as needed. Existing steel assumptions and NPV outputs
+  were not changed.
+
+### Next suggested step
+
+Resume ammonia integration using its completed parameter catalogue.
+
+## 2026-09-17 15:14 CEST — Rename steel BF + BOF + CCS technology
+
+### User request
+
+Use **BF + BOF + CCS** throughout the active project for the blast-furnace
+CCS option, removing the former combustion-specific name.
+
+### Files changed
+
+- `src/steel/steel_parameters.py`, `steel_npv_deterministic.py`,
+  `steel_npv_monte_carlo.py`, and `steel_npv_summary_figures.py` — renamed the
+  technology identifier, constants, wrapper, and display label.
+- `src/sensitivity_deep_dive.py` — aligned the steel sensitivity labels and
+  technology lookup.
+- Steel deterministic, summary, plot, and MACC notebooks — updated the active
+  code, markdown, and saved outputs; renamed the two dedicated CCS notebooks
+  to use `bf_bof_ccs` in their filenames.
+- `CHANGELOG.md` — recorded the rename while preserving earlier entries.
+
+### Verification
+
+- Re-executed all 11 affected steel notebooks without cell errors.
+- Checked the deterministic, Monte Carlo, sensitivity, and MACC paths using
+  the new `bf_bof_ccs` identifier and **BF + BOF + CCS** label.
+- Wrote deterministic NPV CSVs and a figure to a temporary directory; both
+  CSVs contain the new identifier.
+- Compiled the affected source and confirmed the old name is absent from
+  active source, notebooks, and documentation. `git diff --check` passed.
+
+The numerical technology assumptions and calculation formulas did not change.
+Existing generated files, if retained locally, require regeneration to carry
+the new identifier.
+
+## 2026-09-17 15:22 CEST — Align steel MACC x-axis wording with cement
+
+### User request
+
+Use the cement MACC's direct abatement potential description on the steel
+MACC and confirm the emissions difference for equal steel output.
+
+### Files changed
+
+- `src/steel/steel_macc.py` — labelled the x-axis **Direct abatement potential
+  (MtCO2/year)**; retained the note that alternative route widths are not
+  additive.
+- `notebooks/steel/steel_macc.ipynb` — regenerated the displayed plot with
+  the updated label.
+- `CHANGELOG.md` — recorded the presentation change.
+
+### Verification
+
+- Executed the steel MACC notebook without cell errors.
+- Checked the plot label and the BF + BOF + CCS bar width against the direct
+  annual emissions difference: BF-BOF BAU minus BF + BOF + CCS at equal output.
+  The deterministic difference is 1,201,200 tCO2/year.
+
+The abatement calculation, cost calculation, and technology assumptions did
+not change. The cumulative bar positions remain illustrative because the
+steel production routes are alternatives for the same output.

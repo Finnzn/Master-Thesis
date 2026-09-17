@@ -366,6 +366,12 @@ The cement MACC annualizes CAPEX and uses all annual technology costs, including
 CCS transport and storage, while excluding carbon payments and product revenue.
 Its bar heights therefore measure resource cost per tonne of direct CO2 avoided.
 
+The steel MACC in `notebooks/steel/steel_macc.ipynb` uses BF-BOF BAU as the
+reference and the same cost boundary. It supports deterministic and aligned
+Monte Carlo results through `src/steel/steel_macc.py`. Steel routes are
+alternatives at the same 1 MtCS/year output, so their plotted abatement widths
+are illustrative and cannot be added as independent sector potential.
+
 ## Generated Data and Version Control
 
 `data/raw/`, `data/processed/`, and `results/` are intentionally ignored by Git.

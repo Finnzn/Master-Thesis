@@ -58,7 +58,7 @@ ParameterSpec = (
 
 STEEL_FUEL_TYPES: Mapping[str, str] = {
     "bf_bof_bau": "pci_coking_coal_mix",
-    "bf_bof_post_combustion_ccs": "pci_coking_coal_mix",
+    "bf_bof_ccs": "pci_coking_coal_mix",
     "scrap_eaf": "charcoal",
     "ng_dri_eaf_bau": "natural_gas",
     "ng_dri_eaf_ccs": "natural_gas",
@@ -75,7 +75,7 @@ def steel_fuel_price_parameters(technology: str) -> Mapping[str, ParameterSpec]:
         "bf_bof_bau": {
             "pci_coking_coal_mix": PCI_COKING_COAL_MIX_PRICE_EUR_PER_MWH_TH,
         },
-        "bf_bof_post_combustion_ccs": {
+        "bf_bof_ccs": {
             "pci_coking_coal_mix": PCI_COKING_COAL_MIX_PRICE_EUR_PER_MWH_TH,
         },
         "scrap_eaf": {"charcoal": CHARCOAL_PRICE_EUR_PER_MWH_TH},
@@ -184,7 +184,7 @@ def _energy_costs_per_tcs(
     natural_gas_cost = 0.0
     hydrogen_cost = 0.0
 
-    if technology in {"bf_bof_bau", "bf_bof_post_combustion_ccs"}:
+    if technology in {"bf_bof_bau", "bf_bof_ccs"}:
         pci_cost = (
             values["fuel_consumption_mwh_th_per_tcs"]
             * market_prices["pci_coking_coal_mix_price_eur_per_mwh_th"]
@@ -230,7 +230,7 @@ def _technology_fuel_price_eur_per_mwh_th(
 
     price_key_by_technology = {
         "bf_bof_bau": "pci_coking_coal_mix_price_eur_per_mwh_th",
-        "bf_bof_post_combustion_ccs": (
+        "bf_bof_ccs": (
             "pci_coking_coal_mix_price_eur_per_mwh_th"
         ),
         "scrap_eaf": "charcoal_price_eur_per_mwh_th",

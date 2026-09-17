@@ -336,56 +336,56 @@ AEL_EAF_EMISSIONS = FixedParameter(
 )
 
 
-# BF-BOF post-combustion CCS is an incremental retrofit relative to BF-BOF BAU.
+# BF + BOF + CCS is an incremental retrofit relative to BF-BOF BAU.
 # Cost changes are added to the BAU values. Positive reduction fractions lower
 # a BAU physical intensity, while negative values represent the supplied fuel
 # and electricity consumption increases.
-BF_BOF_POST_COMBUSTION_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+BF_BOF_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=177.0,
     upper_bound=231.0,
     unit="EUR/tCS",
-    description="Uniform distribution for BF-BOF post-combustion CCS CAPEX increase.",
+    description="Uniform distribution for BF + BOF + CCS CAPEX increase.",
 )
 
-BF_BOF_POST_COMBUSTION_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
+BF_BOF_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=6.1,
     upper_bound=8.1,
     unit="EUR/tCS",
-    description="Uniform distribution for BF-BOF post-combustion CCS fixed OPEX increase.",
+    description="Uniform distribution for BF + BOF + CCS fixed OPEX increase.",
 )
 
-BF_BOF_POST_COMBUSTION_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = (
+BF_BOF_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = (
     UniformDistribution(
         lower_bound=4.1,
         upper_bound=4.9,
         unit="EUR/tCS",
-        description="Uniform distribution for BF-BOF post-combustion CCS variable OPEX increase.",
+        description="Uniform distribution for BF + BOF + CCS variable OPEX increase.",
     )
 )
 
-BF_BOF_POST_COMBUSTION_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
+BF_BOF_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=-0.22,
     upper_bound=0.0,
     unit="fraction",
-    description="Uniform distribution for BF-BOF post-combustion CCS fuel-consumption reduction relative to BAU; negative values represent increases.",
+    description="Uniform distribution for BF + BOF + CCS fuel-consumption reduction relative to BAU; negative values represent increases.",
 )
 
-BF_BOF_POST_COMBUSTION_CCS_ELECTRICITY_REDUCTION_DISTRIBUTION = (
+BF_BOF_CCS_ELECTRICITY_REDUCTION_DISTRIBUTION = (
     UniformDistribution(
         lower_bound=-5.70,
         upper_bound=0.0,
         unit="fraction",
-        description="Uniform distribution for BF-BOF post-combustion CCS electricity-consumption reduction relative to BAU; negative values represent increases.",
+        description="Uniform distribution for BF + BOF + CCS electricity-consumption reduction relative to BAU; negative values represent increases.",
     )
 )
 
-BF_BOF_POST_COMBUSTION_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = (
+BF_BOF_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = (
     TriangularDistribution(
         minimum=0.52,
         mode=0.73,
         maximum=0.73,
         unit="fraction",
-        description="Triangular distribution for BF-BOF post-combustion CCS direct-emissions reduction relative to BAU.",
+        description="Triangular distribution for BF + BOF + CCS direct-emissions reduction relative to BAU.",
     )
 )
 
@@ -521,7 +521,7 @@ STEEL_TECHNOLOGY_DISTRIBUTIONS: Mapping[
 }
 
 STEEL_RETROFIT_BASE_TECHNOLOGIES: Mapping[str, str] = {
-    "bf_bof_post_combustion_ccs": "bf_bof_bau",
+    "bf_bof_ccs": "bf_bof_bau",
     "ng_dri_eaf_ccs": "ng_dri_eaf_bau",
 }
 
@@ -529,24 +529,24 @@ STEEL_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
     str,
     Mapping[str, FixedParameter | TriangularDistribution | UniformDistribution],
 ] = {
-    "bf_bof_post_combustion_ccs": {
+    "bf_bof_ccs": {
         "capex_change_eur_per_tcs": (
-            BF_BOF_POST_COMBUSTION_CCS_CAPEX_CHANGE_DISTRIBUTION
+            BF_BOF_CCS_CAPEX_CHANGE_DISTRIBUTION
         ),
         "fixed_opex_change_eur_per_tcs": (
-            BF_BOF_POST_COMBUSTION_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION
+            BF_BOF_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION
         ),
         "variable_opex_change_eur_per_tcs": (
-            BF_BOF_POST_COMBUSTION_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION
+            BF_BOF_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION
         ),
         "fuel_consumption_reduction_fraction": (
-            BF_BOF_POST_COMBUSTION_CCS_FUEL_REDUCTION_DISTRIBUTION
+            BF_BOF_CCS_FUEL_REDUCTION_DISTRIBUTION
         ),
         "electricity_consumption_reduction_fraction": (
-            BF_BOF_POST_COMBUSTION_CCS_ELECTRICITY_REDUCTION_DISTRIBUTION
+            BF_BOF_CCS_ELECTRICITY_REDUCTION_DISTRIBUTION
         ),
         "emissions_reduction_fraction": (
-            BF_BOF_POST_COMBUSTION_CCS_EMISSIONS_REDUCTION_DISTRIBUTION
+            BF_BOF_CCS_EMISSIONS_REDUCTION_DISTRIBUTION
         ),
     },
     "ng_dri_eaf_ccs": {
