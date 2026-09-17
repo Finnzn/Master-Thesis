@@ -7,6 +7,12 @@ from typing import Mapping
 from distributions import FixedParameter, TriangularDistribution, UniformDistribution
 
 
+ANNUAL_AMMONIA_OUTPUT_TNH3 = FixedParameter(
+    value=1_000_000.0,
+    unit="tNH3/year",
+    description="Common annual ammonia output for all compared technologies.",
+)
+
 # Economic lifetime used when ammonia-sector annual cash flows are discounted.
 LIFETIME_AMMONIA_YEARS = FixedParameter(
     value=25.0,
@@ -475,6 +481,7 @@ COAL_GASIFICATION_HB_CCS_EMISSIONS_REDUCTION = FixedParameter(
 
 
 AMMONIA_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
+    "annual_ammonia_output_tnh3": ANNUAL_AMMONIA_OUTPUT_TNH3,
     "lifetime_ammonia_years": LIFETIME_AMMONIA_YEARS,
     "retail_price_ammonia_eur_per_t": RETAIL_PRICE_AMMONIA_EUR_PER_T,
 }

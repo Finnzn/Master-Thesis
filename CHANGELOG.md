@@ -7305,3 +7305,59 @@ MACC and confirm the emissions difference for equal steel output.
 The abatement calculation, cost calculation, and technology assumptions did
 not change. The cumulative bar positions remain illustrative because the
 steel production routes are alternatives for the same output.
+
+## 2026-09-17 15:39 CEST — Build ammonia financial source modules
+
+### User request
+
+Add 1,000,000 tonnes of annual ammonia output and create sector source code
+like the existing financial models, leaving the ammonia MACC for later.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — added the common output parameter of
+  1,000,000 tNH3/year.
+- `src/ammonia/_ammonia_model.py` — added shared ammonia input sampling,
+  absolute and incremental CCS resolution, energy costs, cash flows, NPV,
+  levelized cost of ammonia, levelized net margin, and CCS transport/storage.
+- `src/ammonia/ammonia_npv_deterministic.py` — added expected-input results for
+  all seven greenfield routes and two CCS add-ons.
+- `src/ammonia/ammonia_npv_monte_carlo.py` — added reproducible aligned
+  simulations with shared market prices and sampled or deterministic CCS
+  parents.
+- `src/ammonia/ammonia_npv_summary_figures.py` — added metric summaries,
+  rankings, optional dated raw/processed CSVs, figures, and a CLI for NPV,
+  levelized net margin, and LCOA.
+- `README.md` — documented the ammonia workflow and scientific boundaries.
+- `CHANGELOG.md` — recorded this integration.
+
+### Assumptions and boundaries
+
+- All routes produce 1 MtNH3/year over the supplied 25-year lifetime at the
+  supplied 890 EUR/tNH3 price. CAPEX intensity multiplies annual capacity;
+  fixed and variable OPEX supplied in EUR/tNH3 multiply annual production.
+- Natural gas, coal, biomass, and electricity use existing shared price
+  distributions. The existing electricity-sector biomass price is a working
+  proxy because no ammonia-specific biomass price was supplied.
+- Coal and biomass feedstock and process fuel are costed once through their
+  supplied totals. Carbon cost covers supplied direct emissions only. The
+  supplied zero for biomass direct emissions has an unresolved source
+  asterisk. No upstream emissions or methane-pyrolysis carbon credit is added.
+- CCS increments add costs and energy to the parent; direct emissions use the
+  supplied reduction fraction. The shared CCS transport/storage fraction is
+  applied to the parent-relative levelized capture cost, as in other sectors.
+
+### Verification
+
+- Compiled all ammonia source modules and ran all nine deterministic and nine
+  500-draw simulated routes. Checked output, revenue, CAPEX, total cost, NPV,
+  LCOA, and energy-cost identities.
+- Confirmed both CCS routes share their sampled parent inputs, reduce direct
+  emissions by the sampled fraction, and give reproducible seeded results.
+- Generated deterministic, simulated, and ranking CSV/PNG outputs in a
+  temporary directory; verified the CLI help and did not save project outputs.
+
+### Next suggested step
+
+Build the ammonia notebooks from these reusable source modules, then add the
+ammonia MACC when its comparison basis is agreed.

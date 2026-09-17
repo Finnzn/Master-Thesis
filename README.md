@@ -372,6 +372,30 @@ Monte Carlo results through `src/steel/steel_macc.py`. Steel routes are
 alternatives at the same 1 MtCS/year output, so their plotted abatement widths
 are illustrative and cannot be added as independent sector potential.
 
+## Ammonia financial model
+
+The ammonia source modules in `src/ammonia/` compare seven greenfield routes
+and two CCS add-ons at **1,000,000 tNH3/year**. They use the supplied 25-year
+lifetime and 890 EUR/tNH3 price, shared fuel and electricity prices from
+`src/general_parameters.py`, and the common discount, carbon-price, and CCS
+transport/storage formulas. `LCOX` reports levelized cost of ammonia (LCOA).
+Run the deterministic and Monte Carlo figures, raw inputs, processed outputs,
+and rankings with:
+
+```bash
+PYTHONPATH=src python -m ammonia.ammonia_npv_summary_figures \
+  --metric LCOX --sample-size 1000
+```
+
+Use `--retrofit-bau-mode deterministic` to hold each CCS parent at its
+expected inputs. The default `sampled` mode shares parent draws with its CCS
+add-on. Coal and biomass feedstock plus process fuel are each costed once via
+their supplied total MWh/tNH3. The supplied biomass direct-emissions value is
+zero with an unresolved source asterisk. Until an ammonia-specific biomass
+price is provided, the model reuses the shared biomass-energy price from the
+electricity sector. It does not add upstream emissions or a solid-carbon
+coproduct credit for methane pyrolysis.
+
 ## Generated Data and Version Control
 
 `data/raw/`, `data/processed/`, and `results/` are intentionally ignored by Git.
