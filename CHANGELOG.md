@@ -7361,3 +7361,30 @@ like the existing financial models, leaving the ammonia MACC for later.
 
 Build the ammonia notebooks from these reusable source modules, then add the
 ammonia MACC when its comparison basis is agreed.
+
+## 2026-09-17 15:44 CEST — Consolidate ammonia source layout
+
+### User request
+
+Align the ammonia source-file layout with the other sectors by removing the
+extra internal model module.
+
+### Files changed
+
+- `src/ammonia/ammonia_npv_deterministic.py` — moved the shared input
+  resolution and cash-flow formulas into the deterministic NPV module.
+- `src/ammonia/ammonia_npv_monte_carlo.py` — imported those shared functions
+  from the deterministic module.
+- Removed `src/ammonia/_ammonia_model.py`.
+- `CHANGELOG.md` — recorded the layout change without altering prior entries.
+
+### Verification
+
+- Compiled the ammonia source modules and confirmed no active source or
+  notebook references the removed module.
+- Re-ran all nine deterministic and nine 100-draw simulated routes; checked
+  annual output, reproducibility, and shared CCS parent CAPEX arrays.
+- Generated deterministic and simulated figures and CSVs in a temporary
+  directory; all files were nonempty.
+
+No parameter values, cash-flow formulas, or exported output schemas changed.

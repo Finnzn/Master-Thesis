@@ -6,7 +6,7 @@ from typing import Mapping
 
 import numpy as np
 
-from ammonia._ammonia_model import (
+from ammonia.ammonia_npv_deterministic import (
     AMMONIA_TECHNOLOGIES,
     absolute_values,
     calculate_result,
