@@ -7388,3 +7388,101 @@ extra internal model module.
   directory; all files were nonempty.
 
 No parameter values, cash-flow formulas, or exported output schemas changed.
+
+## 2026-09-18 13:26 CEST — Add ammonia deterministic and plot notebooks
+
+### User request
+
+Create the first ammonia notebooks following the other sectors' deterministic
+and technology-level Monte Carlo plot pattern.
+
+### Files changed
+
+- `notebooks/ammonia/deterministic_*_npv.ipynb` — added nine notebooks, one
+  for each greenfield or CCS ammonia technology. Each shows the expected-input
+  result, raw inputs, processed outputs, and a parent/increment section for
+  CCS routes.
+- `notebooks/ammonia/plot_*_npv.ipynb` — added nine notebooks with NPV,
+  levelized net margin, and LCOA distributions, NPV sign counts, annual cost
+  components, and CCS input summaries where applicable.
+- `CHANGELOG.md` — recorded the notebook work.
+
+### Verification
+
+- Executed all 18 notebooks against the ammonia source modules with the
+  model's 100,000-draw default for plot notebooks. All code cells completed
+  without errors.
+- Validated notebook JSON and checked that each plot notebook saved three
+  rendered distributions. Visually reviewed the NG-SMR + HB NPV plot.
+- The notebooks display outputs inline and do not write generated CSVs or
+  figures to the project output directories.
+
+### Reproducibility notes
+
+- The plot notebooks expose `SAMPLE_SIZE`, `RANDOM_SEED`, and
+  `RETROFIT_BAU_MODE` near the top. CCS plots use the source model's sampled
+  parent mode by default; deterministic notebooks use expected inputs.
+- All notebooks use the common 1,000,000 tNH3/year output. Ammonia summary
+  and MACC notebooks are subsequent steps.
+
+## 2026-09-18 13:34 CEST — Clarify biomass price reuse for ammonia
+
+### User request
+
+State in the biomass ammonia descriptions that the price also comes from the
+existing biomass price used by BECCS electricity.
+
+### Files changed
+
+- `src/general_parameters.py` — identified ammonia biomass gasification as a
+  working-proxy use of the shared biomass price distribution.
+- `notebooks/ammonia/deterministic_biomass_gasification_hb_npv.ipynb` and
+  `plot_biomass_gasification_hb_npv.ipynb` — added the price source and
+  triangular minimum/mode/maximum to their introductions. The deterministic
+  introduction also states the 30.86 EUR/MWh_th expected price.
+- `CHANGELOG.md` — recorded this documentation clarification.
+
+### Verification
+
+- Confirmed the shared distribution remains 17.36/28.93/46.28 EUR/MWh_th
+  (minimum/mode/maximum), with mean 30.86 EUR/MWh_th.
+- Validated both notebook files and their saved code outputs. Only descriptive
+  text changed; no parameters, formulas, or numerical outputs changed.
+
+## 2026-09-18 13:46 CEST — Add ammonia summary and sensitivity heatmap
+
+### User request
+
+Create the ammonia sector summary table and include ammonia in the shared
+financial sensitivity heatmap notebook.
+
+### Files changed
+
+- `notebooks/ammonia/ammonia_summary.ipynb` — added inline deterministic and
+  Monte Carlo comparisons, NPV/LNM/LCOA metric selection, paired bar charts,
+  and a nine-technology ranking table and chart.
+- `src/sensitivity_analysis.py` — added ammonia deterministic base inputs,
+  price and fuel routing, CCS parent baselines, one-factor sensitivity inputs,
+  and LCOA labelling. Reused the common production and capture-cost formulas.
+- `src/sensitivity_deep_dive.py` — added ammonia labels, scope, groups, and a
+  fourth sector in the heatmap generation workflow.
+- `notebooks/sensitivity_heatmap.ipynb` — selected ammonia by default and
+  regenerated all four inline sector heatmaps.
+- `README.md` — documented the notebooks.
+- `CHANGELOG.md` — recorded the integration.
+
+### Verification
+
+- Every ammonia sensitivity base NPV, LNM, and LCOA value matches the
+  deterministic ammonia source result for all nine technologies.
+- Built ammonia heatmaps for all three supported metrics and checked that
+  electricity-price variation changes each ammonia CCS transport/storage
+  surcharge by its incremental electricity use times the 18.7% share.
+- Executed both notebooks without cell errors. The ammonia summary contains
+  three rendered charts and the heatmap notebook contains four, including the
+  new ammonia heatmap. Visually inspected both ammonia figures.
+- No project CSV or PNG output directories were written; notebook outputs
+  remain inline by default.
+
+The existing 1,000,000 tNH3/year output, technology assumptions, and ammonia
+financial formulas were not changed.

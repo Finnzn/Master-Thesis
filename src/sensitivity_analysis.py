@@ -16,6 +16,15 @@ from typing import Iterable, Mapping
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from ammonia.ammonia_npv_deterministic import (
+    FUEL_TYPE_BY_TECHNOLOGY,
+    calculate_deterministic_ammonia_result,
+)
+from ammonia.ammonia_parameters import (
+    AMMONIA_RETROFIT_BASE_TECHNOLOGIES,
+    AMMONIA_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
+    AMMONIA_TECHNOLOGY_DISTRIBUTIONS,
+)
 from cement.cement_npv_deterministic import calculate_deterministic_cement_result
 from cement.cement_parameters import (
     CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
@@ -96,12 +105,14 @@ class SensitivityParameter:
 
 
 SECTOR_DISPLAY_NAMES = {
+    "ammonia": "Ammonia",
     "cement": "Cement",
     "electricity": "Electricity",
     "steel": "Steel",
 }
 
 SECTOR_UNITS = {
+    "ammonia": "tNH3",
     "cement": "t",
     "electricity": "MWh",
     "steel": "tCS",
@@ -111,6 +122,23 @@ FINANCIAL_METRIC_OPTIONS = ("NPV", "LNM", "LCOX")
 
 
 SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
+    "ammonia": (
+        SensitivityParameter("Investment cost", "capex"),
+        SensitivityParameter("Ammonia price", "sales_price"),
+        SensitivityParameter("Annual production", "annual_output"),
+        SensitivityParameter("Lifetime", "lifetime_years", minimum=1.0),
+        SensitivityParameter("Discount rate", "discount_rate"),
+        SensitivityParameter("Fixed OPEX", "fixed_opex"),
+        SensitivityParameter("Variable OPEX", "variable_opex"),
+        SensitivityParameter("Fuel use", "fuel_consumption"),
+        SensitivityParameter("Fuel price", "fuel_price"),
+        SensitivityParameter("Electricity use", "electricity_consumption"),
+        SensitivityParameter("Electricity price", "electricity_price"),
+        SensitivityParameter("T&S share", "transport_and_storage_share"),
+        SensitivityParameter("T&S cost", "transport_and_storage_cost"),
+        SensitivityParameter("Direct emissions", "emissions"),
+        SensitivityParameter("Carbon price", "carbon_price"),
+    ),
     "cement": (
         SensitivityParameter("Investment cost", "capex"),
         SensitivityParameter("Cement price", "sales_price"),
@@ -179,6 +207,10 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
 def available_technologies(sector: str) -> tuple[str, ...]:
     """Return technologies available for one sector."""
 
+    if sector == "ammonia":
+        return tuple(AMMONIA_TECHNOLOGY_DISTRIBUTIONS) + tuple(
+            AMMONIA_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
+        )
     if sector == "cement":
         return tuple(CEMENT_TECHNOLOGY_DISTRIBUTIONS) + tuple(
             CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
@@ -204,6 +236,73 @@ def display_label(name: str) -> str:
 
 def base_inputs(sector: str, technology: str) -> ScenarioInputs:
     """Load dashboard base inputs from the deterministic model result."""
+
+    if sector == "ammonia":
+        result = _single_value_result(
+            calculate_deterministic_ammonia_result(technology)
+        )
+        fuel_type = FUEL_TYPE_BY_TECHNOLOGY[technology]
+        fuel_fields = {
+            "natural_gas": (
+                "natural_gas_consumption_mwh_per_tnh3",
+                "gas_price_eur_per_mwh_th",
+            ),
+            "coal": ("coal_consumption_mwh_per_tnh3", "coal_price_eur_per_mwh_th"),
+            "biomass": (
+                "biomass_consumption_mwh_per_tnh3",
+                "biomass_price_eur_per_mwh_th",
+            ),
+        }
+        if fuel_type == "none":
+            fuel_consumption = 0.0
+            fuel_price = 0.0
+        else:
+            consumption_key, price_key = fuel_fields[fuel_type]
+            fuel_consumption = result[consumption_key]
+            fuel_price = result[price_key]
+
+        capture_cost_baseline = None
+        transport_and_storage_share = 0.0
+        if technology in AMMONIA_RETROFIT_BASE_TECHNOLOGIES:
+            parent_technology = AMMONIA_RETROFIT_BASE_TECHNOLOGIES[technology]
+            parent_result = _single_value_result(
+                calculate_deterministic_ammonia_result(parent_technology)
+            )
+            capture_cost_baseline = CaptureCostBaseline(
+                capex=parent_result["capex_eur_per_tnh3"],
+                fixed_opex=parent_result["fixed_opex_eur_per_tnh3"],
+                variable_opex=parent_result["variable_opex_eur_per_tnh3"],
+                fuel_consumption=(
+                    parent_result[consumption_key] if fuel_type != "none" else 0.0
+                ),
+                electricity_consumption=parent_result[
+                    "electricity_consumption_mwh_per_tnh3"
+                ],
+            )
+            transport_and_storage_share = (
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            )
+
+        return ScenarioInputs(
+            annual_output=result["annual_output_tnh3"],
+            lifetime_years=result["lifetime_years"],
+            discount_rate=INTEREST_RATE.value,
+            sales_price=result["ammonia_price_eur_per_tnh3"],
+            capex=result["capex_eur_per_tnh3"],
+            fixed_opex=result["fixed_opex_eur_per_tnh3"],
+            variable_opex=result["variable_opex_eur_per_tnh3"],
+            fuel_consumption=fuel_consumption,
+            fuel_price=fuel_price,
+            electricity_consumption=result["electricity_consumption_mwh_per_tnh3"],
+            electricity_price=result["electricity_price_eur_per_mwh"],
+            transport_and_storage_cost=result[
+                "transport_and_storage_cost_eur_per_tnh3"
+            ],
+            transport_and_storage_share=transport_and_storage_share,
+            capture_cost_baseline=capture_cost_baseline,
+            emissions=result["emissions_tco2_per_tnh3"],
+            carbon_price=result["carbon_price_eur_per_t"],
+        )
 
     if sector == "cement":
         result = _single_value_result(calculate_deterministic_cement_result(technology))
@@ -379,7 +478,7 @@ def calculate_transport_and_storage_cost_per_output(
     if inputs.full_load_hours is None and sector == "electricity":
         raise ValueError("Electricity scenarios require full_load_hours.")
 
-    if sector == "cement":
+    if sector in {"ammonia", "cement"}:
         ccs_initial_capex_eur = inputs.annual_output * inputs.capex
         bau_initial_capex_eur = inputs.annual_output * baseline.capex
         ccs_annual_cost_excluding_carbon_eur = inputs.annual_output * (
@@ -476,7 +575,7 @@ def _sector_financial_components(
 ) -> tuple[float, float, float]:
     """Return initial CAPEX, annual revenue, and annual cost for a scenario."""
 
-    if sector == "cement":
+    if sector in {"ammonia", "cement"}:
         initial_capex_eur = inputs.annual_output * inputs.capex
         annual_revenue_eur = inputs.annual_output * inputs.sales_price
         annual_fixed_opex_eur = inputs.annual_output * inputs.fixed_opex
@@ -609,6 +708,7 @@ def metric_axis_label(sector: str, metric: str) -> str:
         return f"Impact on levelized net margin (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
         levelized_cost_name = {
+            "ammonia": "LCOA",
             "cement": "LCOC",
             "electricity": "LCOE",
             "steel": "LCOS",

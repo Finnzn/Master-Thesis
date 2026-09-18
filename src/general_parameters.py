@@ -82,8 +82,9 @@ BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
     maximum=46.28,
     unit="EUR/MWh_th",
     description=(
-        "Triangular biomass fuel-price distribution used for the BECCS "
-        "electricity-generation technology."
+        "Triangular biomass fuel-price distribution used for BECCS "
+        "electricity generation and for ammonia biomass "
+        "gasification."
     ),
 )
 

@@ -387,6 +387,11 @@ PYTHONPATH=src python -m ammonia.ammonia_npv_summary_figures \
   --metric LCOX --sample-size 1000
 ```
 
+`notebooks/ammonia/ammonia_summary.ipynb` displays the comparison tables,
+paired metric charts, and Monte Carlo rankings inline. The default
+`notebooks/sensitivity_heatmap.ipynb` run includes ammonia alongside cement,
+electricity, and steel.
+
 Use `--retrofit-bau-mode deterministic` to hold each CCS parent at its
 expected inputs. The default `sampled` mode shares parent draws with its CCS
 add-on. Coal and biomass feedstock plus process fuel are each costed once via
