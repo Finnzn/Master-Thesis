@@ -117,6 +117,8 @@ sector-specific calculations.
   calculations, Monte Carlo simulations, and output-generation scripts.
 - `src/cement/` contains cement-sector assumptions, deterministic NPV
   calculations, Monte Carlo simulations, and output-generation scripts.
+- `src/hydrogen/` contains hydrogen-sector assumptions, deterministic NPV
+  calculations, Monte Carlo simulations, and output-generation scripts.
 
 ## Which Notebook or Script Should I Use?
 
@@ -400,6 +402,34 @@ zero with an unresolved source asterisk. Until an ammonia-specific biomass
 price is provided, the model reuses the shared biomass-energy price from the
 electricity sector. It does not add upstream emissions or a solid-carbon
 coproduct credit for methane pyrolysis.
+
+## Hydrogen financial model
+
+The source modules in `src/hydrogen/` compare six stand-alone hydrogen routes
+and two NG-SMR retrofits at **100,000 tH2/year**, with a 25-year lifetime and
+7,500 EUR/tH2 retail price. They calculate deterministic NPV, levelized net
+margin, and levelized cost of hydrogen (LCOH), plus aligned Monte Carlo
+simulations, rankings, figures, and raw/processed CSVs. For example:
+
+```bash
+PYTHONPATH=src python -m hydrogen.hydrogen_npv_summary_figures \
+  --metric LCOX --sample-size 1000
+```
+
+`LCOX` selects LCOH in this sector. The default retrofit baseline mode shares
+sampled NG-SMR inputs with biomethane SMR and NG-SMR + CCS; use
+`--retrofit-bau-mode deterministic` to hold the parent at expected inputs.
+Biomethane SMR replaces the parent's natural gas with biomethane. NG-SMR + CCS
+uses its incremental costs and energy consumption, 90% capture, and the shared
+CCS transport/storage cost rule. Fuel and electricity costs are calculated
+separately from the supplied OPEX values; upstream emissions and carbon
+by-product credits are outside the model boundary.
+
+The hydrogen model reuses the shared biomass-energy price distribution for
+biomass gasification. At the user's direction, biomethane SMR provisionally
+uses the existing fixed biogas price of 87.5 EUR/MWh_th as its biomethane
+purchase price. Replace this proxy when a biomethane-specific price is
+available. No hydrogen MACC calculation is included.
 
 ## Generated Data and Version Control
 

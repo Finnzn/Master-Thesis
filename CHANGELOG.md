@@ -7486,3 +7486,450 @@ financial sensitivity heatmap notebook.
 
 The existing 1,000,000 tNH3/year output, technology assumptions, and ammonia
 financial formulas were not changed.
+
+## 2026-09-18 14:34 CEST — Initialize hydrogen-sector fixed assumptions
+
+### User request
+
+Start the hydrogen sector with a 25-year lifetime and a retail price of
+7,500 EUR/t, ahead of technology-specific inputs.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added the two fixed hydrogen-sector
+  parameters and a mapping for later model use.
+- `CHANGELOG.md` — recorded the new assumptions.
+
+### What was implemented
+
+- Set the economic lifetime to 25 years and the hydrogen retail price to
+  7,500 EUR/t as fixed sector-level inputs supplied by the user.
+- Kept the hydrogen retail price distinct from the existing green-hydrogen
+  purchase-price parameter used by the steel model.
+
+### Verification
+
+- Imported the new module and asserted both mapped values and units with
+  `.venv/bin/python`.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- No simulation results or figures were generated. Hydrogen technology inputs
+  and calculation scripts have not yet been defined.
+
+### Next suggested step
+
+Add the first hydrogen technology's input parameters.
+
+## 2026-09-18 14:40 CEST — Set annual hydrogen output
+
+### User request
+
+Add an output of 100,000 t of hydrogen.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added the shared hydrogen production
+  volume to the sector's fixed parameters.
+- `CHANGELOG.md` — recorded the output assumption.
+
+### What was implemented
+
+- Set annual hydrogen output to 100,000 tH2/year, following the annual-output
+  convention of the other sector parameter modules.
+- Added the parameter to `HYDROGEN_FIXED_PARAMETERS` for later model use.
+
+### Verification
+
+- Imported the module and asserted the output value and unit, along with the
+  previously set lifetime and retail price.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- This is a new sector assumption. No hydrogen calculation or generated result
+  exists yet to recompute.
+
+### Next suggested step
+
+Add the first hydrogen technology's input parameters.
+
+## 2026-09-18 14:41 CEST — Add greenfield NG-SMR hydrogen inputs
+
+### User request
+
+Add the first hydrogen technology, greenfield European NG-SMR without CCS,
+using the supplied CAPEX, OPEX, natural-gas, electricity, and emissions values.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added NG-SMR assumptions and the
+  hydrogen technology registry.
+- `CHANGELOG.md` — recorded the technology inputs and interpretation.
+
+### What was implemented
+
+- Stored CAPEX (1,840/2,165/2,920 EUR/(tH2/y)), fixed OPEX (81/96/129
+  EUR/tH2), and variable OPEX (5.6/6.6/8.9 EUR/tH2) as triangular
+  minimum/mode/maximum distributions. The supplied base values serve as modes.
+- Stored natural gas at 43.89 MWh/tH2, with 37.67 feedstock and 6.22 process
+  fuel recorded separately. Only the total is included in the registry.
+- Stored approximately zero net purchased electricity at 200 bar and
+  approximately 9,000 kgCO2/tH2 direct emissions as fixed inputs. Emissions
+  are represented as 9 tCO2/tH2 for compatibility with the carbon-price unit.
+- The supplied variable-OPEX asterisk has no accompanying footnote, so its
+  meaning is left unspecified.
+
+### Verification
+
+- Imported the module and checked each range, base, gas component sum,
+  electricity value, and emissions value and unit.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- These inputs are now available to future hydrogen calculations. No hydrogen
+  simulation, results, or figures were generated.
+
+### Next suggested step
+
+Add the next hydrogen technology's input parameters.
+
+## 2026-09-18 14:44 CEST — Add 2030 greenfield AEL hydrogen inputs
+
+### User request
+
+Add the 2030 greenfield European AEL hydrogen technology with the supplied
+CAPEX, OPEX, fuel, electricity, and direct-emissions assumptions.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added the AEL parameters and registry
+  entry.
+- `CHANGELOG.md` — recorded the supplied values and interpretation.
+
+### What was implemented
+
+- Stored CAPEX (5,590/7,991/11,990 EUR/(tH2/y)), fixed OPEX (161/230/345
+  EUR/tH2), and variable OPEX (25/36/54 EUR/tH2) as triangular
+  minimum/mode/maximum distributions, using supplied base values as modes.
+- Stored zero fuel/reductant use, 51.54 MWh/tH2 purchased electricity at
+  200 bar, and zero direct emissions as fixed parameters.
+- The supplied variable-OPEX asterisk has no accompanying footnote, so its
+  meaning remains unspecified.
+
+### Verification
+
+- Imported the module and asserted all AEL values and units, and the presence
+  of both NG-SMR and AEL in the hydrogen technology registry.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- No hydrogen simulation, results, or figures were generated. The new AEL
+  inputs are available for future model calculations.
+
+### Next suggested step
+
+Add the next hydrogen technology's input parameters.
+
+## 2026-09-18 14:45 CEST — Add 2030 greenfield PEM hydrogen inputs
+
+### User request
+
+Add the 2030 greenfield European PEM hydrogen technology with the supplied
+CAPEX, OPEX, fuel, electricity, and direct-emissions assumptions.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added PEM parameters and its
+  technology-registry entry.
+- `CHANGELOG.md` — recorded the inputs and interpretation.
+
+### What was implemented
+
+- Stored CAPEX (7,190/10,274/15,410 EUR/(tH2/y)), fixed OPEX (255/364/546
+  EUR/tH2), and variable OPEX (25/36/54 EUR/tH2) as triangular
+  minimum/mode/maximum distributions, using supplied base values as modes.
+- Stored zero fuel/reductant use, 50.88 MWh/tH2 purchased electricity at
+  200 bar, and zero direct emissions as fixed parameters.
+- The supplied variable-OPEX asterisk has no accompanying footnote, so its
+  meaning remains unspecified.
+
+### Verification
+
+- Imported the module and asserted all PEM values and units, and the presence
+  of NG-SMR, AEL, and PEM in the hydrogen technology registry.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- No hydrogen simulation, results, or figures were generated. The PEM inputs
+  are available for future model calculations.
+
+### Next suggested step
+
+Add the next hydrogen technology's input parameters.
+
+## 2026-09-18 15:32 CEST — Add 2030 greenfield SOEC hydrogen inputs
+
+### User request
+
+Add the 2030 greenfield European SOEC hydrogen technology with electric heat
+and the supplied CAPEX, OPEX, fuel, electricity, and direct-emissions values.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added SOEC parameters and its
+  technology-registry entry.
+- `CHANGELOG.md` — recorded the inputs and interpretation.
+
+### What was implemented
+
+- Stored CAPEX (3,840/5,490/8,240 EUR/(tH2/y)), fixed OPEX (181/258/387
+  EUR/tH2), and variable OPEX (80/80/85 EUR/tH2) as triangular
+  minimum/mode/maximum distributions, using supplied base values as modes.
+- Stored zero fuel/reductant use, 42.2 MWh/tH2 purchased electricity for the
+  electric-heat case, and zero direct emissions as fixed parameters.
+- The supplied variable-OPEX asterisk has no accompanying footnote, so its
+  meaning remains unspecified.
+
+### Verification
+
+- Imported the module and asserted all SOEC values and units, and the presence
+  of NG-SMR, AEL, PEM, and SOEC in the hydrogen technology registry.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- No hydrogen simulation, results, or figures were generated. The SOEC inputs
+  are available for future model calculations.
+
+### Next suggested step
+
+Add the next hydrogen technology's input parameters.
+
+## 2026-09-18 15:34 CEST — Add methane pyrolysis (TCD) hydrogen inputs
+
+### User request
+
+Add greenfield European methane pyrolysis (TCD) with the supplied CAPEX, OPEX,
+natural-gas feedstock, electricity, and direct-emissions assumptions.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added TCD parameters and its
+  technology-registry entry.
+- `CHANGELOG.md` — recorded the technology inputs and interpretation.
+
+### What was implemented
+
+- Stored CAPEX (3,690/5,270/7,910 EUR/(tH2/y)), fixed OPEX (62/89/134
+  EUR/tH2), variable OPEX (4.9/7/10.5 EUR/tH2), and purchased electricity
+  (10.0/10.0/14.2 MWh/tH2) as triangular minimum/mode/maximum distributions.
+  The supplied base values serve as modes.
+- Stored 61.1 MWh/tH2 natural gas as feedstock and zero direct emissions as
+  fixed parameters. The feedstock amount enters the technology registry once.
+- The supplied variable-OPEX asterisk has no accompanying footnote, so its
+  meaning remains unspecified.
+
+### Verification
+
+- Imported the module and asserted all TCD values and the presence of the five
+  hydrogen technologies in the registry.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- No hydrogen simulation, results, or figures were generated. The TCD inputs
+  are available for future model calculations.
+
+### Next suggested step
+
+Add the next hydrogen technology's input parameters.
+
+## 2026-09-18 15:36 CEST — Add biomass gasification hydrogen inputs
+
+### User request
+
+Add greenfield conceptual biomass gasification without CCS with the supplied
+CAPEX, OPEX, biomass, electricity, and direct-emissions values.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added biomass gasification
+  assumptions and its hydrogen technology-registry entry.
+- `CHANGELOG.md` — recorded the inputs and interpretation.
+
+### What was implemented
+
+- Stored CAPEX (950/950/1,950 EUR/(tH2/y)), fixed OPEX (58/58/95 EUR/tH2),
+  variable OPEX (768/768/828 EUR/tH2), biomass consumption
+  (33.3/33.3/50.0 MWh/tH2), and purchased electricity
+  (0.47/0.47/2.26 MWh/tH2) as triangular minimum/mode/maximum distributions.
+  Supplied base values serve as modes, including where they equal a minimum.
+- Stored zero direct emissions as a fixed parameter. The supplied
+  variable-OPEX asterisk has no accompanying footnote.
+
+### Verification
+
+- Imported the module and asserted every biomass gasification range, unit,
+  direct-emissions value, and a six-technology hydrogen registry.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- No hydrogen simulation, results, or figures were generated. These inputs
+  are available for future model calculations.
+
+### Next suggested step
+
+Add the next hydrogen technology's input parameters.
+
+## 2026-09-18 15:44 CEST — Add biomethane SMR hydrogen retrofit inputs
+
+### User request
+
+Add biomethane SMR without CCS as an incremental retrofit to NG-SMR, with zero
+CAPEX and OPEX increases, biomethane replacing natural gas, unchanged net
+purchased electricity, and zero direct emissions.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added retrofit parameters and parent
+  and retrofit registries for biomethane SMR.
+- `CHANGELOG.md` — recorded the incremental assumptions and fuel substitution.
+
+### What was implemented
+
+- Set CAPEX, fixed OPEX, and variable OPEX increments to zero.
+- Recorded 43.89 MWh/tH2 biomethane consumption, split into 37.67 feedstock
+  and 6.22 process fuel. The retrofit removes the parent's 43.89 MWh/tH2
+  natural-gas input, then adds the biomethane total once.
+- Set the electricity-consumption change to zero, retaining approximately
+  zero net purchased electricity at 200 bar. Set absolute direct emissions to
+  the supplied zero rather than treating zero as an emissions increment.
+- The supplied variable-OPEX asterisk has no accompanying footnote.
+
+### Verification
+
+- Imported the module and checked the parent link, zero cost changes, complete
+  natural-gas replacement, biomethane component sum, electricity, and emissions.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- These are assumptions for a future hydrogen retrofit calculation. No
+  hydrogen simulation, results, or figures were generated.
+
+### Next suggested step
+
+Add the next hydrogen retrofit's input parameters.
+
+## 2026-09-18 15:46 CEST — Add NG-SMR + CCS hydrogen retrofit inputs
+
+### User request
+
+Add the European NG-SMR + CCS retrofit with incremental CAPEX and OPEX,
+48.22 MWh/tH2 natural gas, approximately 1.05 MWh/tH2 net purchased
+electricity at 200 bar, and 90% CO2 capture.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — added NG-SMR + CCS parameters and
+  linked the retrofit to its NG-SMR parent.
+- `CHANGELOG.md` — recorded the supplied retrofit assumptions.
+
+### What was implemented
+
+- Stored incremental CAPEX (1,610/1,706/1,900 EUR/(tH2/y)) and fixed OPEX
+  (27/51/72 EUR/tH2) as triangular minimum/mode/maximum distributions, using
+  the supplied base values as modes. Variable OPEX increase is zero.
+- Recorded 48.22 MWh/tH2 total natural gas, split into 37.67 feedstock and
+  10.55 process fuel. The retrofit registry contains only the derived
+  +4.33 MWh/tH2 increment over NG-SMR's 43.89 MWh/tH2 to avoid double counting.
+- Recorded +1.05 MWh/tH2 net purchased electricity at 200 bar and a fixed 0.90
+  capture fraction applied to the parent's direct emissions. This interprets
+  the supplied 90% capture as a 90% reduction of modeled direct emissions.
+- The supplied variable-OPEX asterisk has no accompanying footnote.
+
+### Verification
+
+- Imported the module and asserted the parent link, ranges, component sum,
+  gas and electricity increments, and capture fraction.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- These inputs are available for a future hydrogen retrofit calculation. No
+  hydrogen simulation, results, or figures were generated.
+
+### Next suggested step
+
+Add the next hydrogen retrofit's input parameters.
+
+## 2026-09-18 15:54 CEST — Build hydrogen financial source workflow
+
+### User request
+
+Audit the hydrogen inputs and create the sector source code, excluding MACC,
+following the deterministic, Monte Carlo, and summary workflows of the other
+sectors.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — simplified variable-OPEX descriptions
+  at the user's direction.
+- `src/hydrogen/hydrogen_npv_deterministic.py` — added expected-input hydrogen
+  cash flows, NPV, levelized net margin, LCOH, fuel switching, and CCS costs.
+- `src/hydrogen/hydrogen_npv_monte_carlo.py` — added aligned, reproducible
+  simulations for all eight hydrogen technologies and both retrofit modes.
+- `src/hydrogen/hydrogen_npv_summary_figures.py` — added metric comparisons,
+  rankings, dated figures, and raw/processed CSV export.
+- `tests/test_hydrogen_npv.py` — added financial identity, fuel-switch, CCS,
+  and reproducibility checks.
+- `README.md` — documented the hydrogen workflow, command, and price proxy.
+- `CHANGELOG.md` — recorded this implementation and assumptions.
+
+### What was implemented
+
+- Applied the existing 100,000 tH2/year output, 25-year lifetime, 7,500 EUR/tH2
+  price, and shared discount, carbon, fuel-price, and CCS storage conventions.
+  Deterministic inputs use distribution means; Monte Carlo samples are aligned
+  across technologies and NG-SMR parent/retrofit pairs.
+- Costed natural gas, biomass, biomethane, and purchased electricity once each.
+  NG-SMR + CCS alone incurs the shared 18.7% transport/storage surcharge on
+  its levelized capture-cost increment. Biomethane SMR switches away from
+  fossil natural gas without a CCS surcharge.
+- At the user's direction, used the existing fixed biogas price of
+  87.5 EUR/MWh_th as a provisional biomethane purchase-price proxy. Biomass
+  gasification uses the shared biomass-energy price distribution. Following
+  existing sector models, separately priced fuel and electricity are treated
+  as outside the listed fixed and variable OPEX values.
+- Used supplied direct emissions only; no upstream energy emissions or solid
+  carbon by-product credit was added. Removed source-formatting notes from
+  the hydrogen parameter descriptions.
+
+### Verification
+
+- Ran `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -p
+  'test_hydrogen_npv.py' -v`; all three tests passed.
+- Ran `PYTHONPATH=src .venv/bin/python -m compileall -q src/hydrogen
+  tests/test_hydrogen_npv.py` and `git diff --check`; both passed.
+- Ran all eight deterministic and 100-draw Monte Carlo technologies, including
+  NPV, LNM, and LCOH ranking paths. The full LCOH CLI workflow generated nine
+  files under `/tmp/h2_src_qa/`; both CSVs contained 800 rows and all eight
+  technologies. The mean LCOH figure was visually inspected.
+
+### Reproducibility notes
+
+- No repository data or figure outputs were written. Regenerate hydrogen
+  outputs with `PYTHONPATH=src python -m
+  hydrogen.hydrogen_npv_summary_figures --metric LCOX --sample-size 1000`.
+- The biomethane price is a provisional proxy and should be replaced when a
+  biomethane-specific input is available.
+
+### Next suggested step
+
+Create the hydrogen summary and individual technology notebooks if needed.
