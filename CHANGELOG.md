@@ -7933,3 +7933,90 @@ sectors.
 ### Next suggested step
 
 Create the hydrogen summary and individual technology notebooks if needed.
+
+## 2026-09-18 16:00 CEST — Add hydrogen deterministic and plot notebooks
+
+### User request
+
+Create the individual hydrogen deterministic and Monte Carlo plot notebooks,
+following the other sector notebook workflows.
+
+### Files changed
+
+- `notebooks/hydrogen/deterministic_*_npv.ipynb` — eight executed notebooks,
+  one per hydrogen technology, with expected-input summaries and financial
+  output tables. Both retrofits also show parent and incremental inputs.
+- `notebooks/hydrogen/plot_*_npv.ipynb` — eight executed notebooks, one per
+  technology, with Monte Carlo NPV, LNM, and LCOH distributions, NPV sign
+  counts, annual cost components, and retrofit input tables where relevant.
+- `README.md` — documented the new hydrogen notebook paths and contents.
+- `CHANGELOG.md` — recorded this work.
+
+### What was implemented
+
+- Covered NG-SMR, AEL, PEM, SOEC, methane pyrolysis (TCD), biomass
+  gasification, biomethane SMR, and NG-SMR + CCS. Each notebook imports the
+  reusable hydrogen source model rather than reimplementing financial formulas.
+- Deterministic notebooks use analytical means for uncertain inputs. Plot
+  notebooks use the source model's default 100,000 draws and random seed 42;
+  sampled NG-SMR parent inputs are retained for retrofit results.
+- Kept generated tables and charts inline in notebooks. The biomethane
+  notebook notes the approved provisional biogas-price proxy.
+
+### Verification
+
+- Executed all 16 notebooks through the Python 3 notebook kernel; no cells
+  reported errors. Validated notebook structure and saved outputs.
+- Checked deterministic displayed NPV against the source result for all eight
+  technologies. Each plot notebook contains three saved charts.
+- Visually inspected the NG-SMR + CCS NPV chart and reran the biomethane
+  deterministic notebook from its own directory to check import paths.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- Re-execute notebooks with the project's Python 3 kernel to refresh their
+  inline outputs. No numerical CSV or standalone figure files were written.
+- The notebooks reflect the current hydrogen assumptions and the provisional
+  87.5 EUR/MWh_th biomethane price proxy.
+
+### Next suggested step
+
+Create the hydrogen sector summary notebook when ready.
+
+## 2026-09-18 16:05 CEST — Make biomethane hydrogen histograms readable
+
+### User request
+
+Investigate the biomethane SMR hydrogen plots, which appeared incorrect.
+
+### Files changed
+
+- `notebooks/hydrogen/plot_biomethane_smr_npv.ipynb` — adjusted the NPV and
+  levelized-net-margin chart break-even display and refreshed saved outputs.
+- `CHANGELOG.md` — documented the cause and visual fix.
+
+### What was implemented
+
+- The current fixed 87.5 EUR/MWh_th provisional biomethane price, zero retrofit
+  cost changes, and sampled NG-SMR CAPEX/OPEX produce a narrow positive NPV and
+  LNM range. A zero break-even line stretched each axis and compressed its
+  histogram. Each plot now includes zero only if the sampled values cross it.
+- Kept the NPV sign-count table and all hydrogen model inputs and formulas.
+
+### Verification
+
+- Executed the notebook without cell errors and validated its saved outputs.
+- Confirmed all 100,000 simulated NPV and LNM draws are positive and the mean
+  NPV remains 3,559.349 million EUR under seed 42.
+- Visually inspected the refreshed NPV and LNM histograms at their data range.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+### Reproducibility notes
+
+- Re-execute the notebook to refresh the inline charts. No standalone figures
+  or numerical data files were written; financial results are unchanged.
+
+### Next suggested step
+
+Continue with the hydrogen sector summary notebook when ready.

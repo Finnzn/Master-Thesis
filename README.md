@@ -419,6 +419,10 @@ PYTHONPATH=src python -m hydrogen.hydrogen_npv_summary_figures \
 `LCOX` selects LCOH in this sector. The default retrofit baseline mode shares
 sampled NG-SMR inputs with biomethane SMR and NG-SMR + CCS; use
 `--retrofit-bau-mode deterministic` to hold the parent at expected inputs.
+The eight `notebooks/hydrogen/deterministic_*_npv.ipynb` notebooks show
+expected inputs, financial outputs, and parent/incremental retrofit inputs.
+The matching `plot_*_npv.ipynb` notebooks show NPV, LNM, and LCOH Monte Carlo
+distributions plus annual cost components. Notebook figures remain inline.
 Biomethane SMR replaces the parent's natural gas with biomethane. NG-SMR + CCS
 uses its incremental costs and energy consumption, 90% capture, and the shared
 CCS transport/storage cost rule. Fuel and electricity costs are calculated
