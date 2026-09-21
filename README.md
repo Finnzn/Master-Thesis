@@ -132,7 +132,9 @@ sector-specific calculations.
 - Use `notebooks/<sector>/deterministic_*_npv.ipynb` to inspect one
   expected-input deterministic calculation.
 - Use `notebooks/scenario_analysis.ipynb` for the deterministic FLH, lifetime,
-  renewable value-factor, CO2-price, and discount-rate scenarios.
+  renewable value-factor, CO2-price, discount-rate, and hydrogen fuel-price,
+  electricity-price, and CAPEX scenarios, plus ammonia electricity-price,
+  fuel-price, and CAPEX scenarios.
 - Use the command-line summary modules when figures and CSV outputs must be
   regenerated reproducibly.
 - Use `sensitivity_dashboard.py` for interactive deterministic
@@ -423,6 +425,10 @@ The eight `notebooks/hydrogen/deterministic_*_npv.ipynb` notebooks show
 expected inputs, financial outputs, and parent/incremental retrofit inputs.
 The matching `plot_*_npv.ipynb` notebooks show NPV, LNM, and LCOH Monte Carlo
 distributions plus annual cost components. Notebook figures remain inline.
+`notebooks/hydrogen/hydrogen_summary.ipynb` compares all eight routes using
+aligned Monte Carlo and deterministic NPV, LNM, or LCOH results and displays
+the Monte Carlo ranking. The default `notebooks/sensitivity_heatmap.ipynb`
+run includes hydrogen alongside ammonia, cement, electricity, and steel.
 Biomethane SMR replaces the parent's natural gas with biomethane. NG-SMR + CCS
 uses its incremental costs and energy consumption, 90% capture, and the shared
 CCS transport/storage cost rule. Fuel and electricity costs are calculated

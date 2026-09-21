@@ -14,6 +14,7 @@ from hydrogen.hydrogen_npv_deterministic import (
 from hydrogen.hydrogen_npv_monte_carlo import simulate_hydrogen_results
 from hydrogen.hydrogen_parameters import ANNUAL_HYDROGEN_OUTPUT_TH2
 from npv_finance import calculate_level_cash_flow_present_value_factor
+from sensitivity_analysis import base_inputs, calculate_metric_value
 
 
 class HydrogenNpvTests(unittest.TestCase):
@@ -89,6 +90,27 @@ class HydrogenNpvTests(unittest.TestCase):
             first["biomethane_smr"]["bau_capex_eur_per_th2"],
             first["ng_smr"]["capex_eur_per_th2"],
         )
+
+    def test_sensitivity_base_cases_match_deterministic_results(self) -> None:
+        results = calculate_deterministic_hydrogen_results()
+        for technology, result in results.items():
+            with self.subTest(technology=technology):
+                inputs = base_inputs("hydrogen", technology)
+                self.assertAlmostEqual(
+                    calculate_metric_value("hydrogen", inputs, "NPV"),
+                    result["npv_eur"][0] / 1_000_000.0,
+                    places=8,
+                )
+                self.assertAlmostEqual(
+                    calculate_metric_value("hydrogen", inputs, "LNM"),
+                    result["levelized_net_margin_eur_per_th2"][0],
+                    places=8,
+                )
+                self.assertAlmostEqual(
+                    calculate_metric_value("hydrogen", inputs, "LCOX"),
+                    result["lcoh_eur_per_th2"][0],
+                    places=8,
+                )
 
 
 if __name__ == "__main__":

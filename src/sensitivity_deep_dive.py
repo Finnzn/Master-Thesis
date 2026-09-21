@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from ammonia.ammonia_npv_summary_figures import AMMONIA_TECHNOLOGY_LABELS
+from hydrogen.hydrogen_npv_summary_figures import HYDROGEN_TECHNOLOGY_LABELS
 from sensitivity_analysis import (
     FINANCIAL_METRIC_OPTIONS,
     available_technologies,
@@ -49,9 +50,10 @@ TECHNOLOGY_LABELS = {
     "bf_bof_ccs": "BF + BOF + CCS",
     "ng_dri_eaf_ccs": "NG-DRI-EAF + CCS",
     **AMMONIA_TECHNOLOGY_LABELS,
+    **HYDROGEN_TECHNOLOGY_LABELS,
 }
 
-HEATMAP_SECTORS = ("cement", "electricity", "steel", "ammonia")
+HEATMAP_SECTORS = ("cement", "electricity", "steel", "ammonia", "hydrogen")
 
 # Inputs retained for the first thesis step. Product selling price and annual
 # output do not help distinguish technology uncertainty. Lifetime and discount
@@ -102,6 +104,21 @@ SENSITIVITY_SCOPE: Mapping[str, tuple[str, ...]] = {
         "emissions",
         "carbon_price",
     ),
+    "hydrogen": (
+        "capex",
+        "lifetime_years",
+        "discount_rate",
+        "fixed_opex",
+        "variable_opex",
+        "fuel_consumption",
+        "fuel_price",
+        "electricity_consumption",
+        "electricity_price",
+        "transport_and_storage_share",
+        "transport_and_storage_cost",
+        "emissions",
+        "carbon_price",
+    ),
     "steel": (
         "capex",
         "lifetime_years",
@@ -145,6 +162,16 @@ HEATMAP_PARAMETER_GROUPS: Mapping[str, Mapping[str, str]] = {
     "electricity": {
         "Fuel use": "Fuel",
         "Fuel price": "Fuel",
+        "T&S share": "T&S",
+        "T&S cost": "T&S",
+        "Direct emissions": "Emissions",
+        "Carbon price": "Emissions",
+    },
+    "hydrogen": {
+        "Fuel use": "Fuel",
+        "Fuel price": "Fuel",
+        "Electricity use": "Electricity",
+        "Electricity price": "Electricity",
         "T&S share": "T&S",
         "T&S cost": "T&S",
         "Direct emissions": "Emissions",

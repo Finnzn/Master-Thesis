@@ -8020,3 +8020,159 @@ Investigate the biomethane SMR hydrogen plots, which appeared incorrect.
 ### Next suggested step
 
 Continue with the hydrogen sector summary notebook when ready.
+
+## 2026-09-21 13:07 CEST — Add hydrogen summary and heatmap notebooks
+
+### User request
+
+Add the hydrogen summary notebook and include hydrogen in the shared sensitivity
+heatmap notebook.
+
+### Files changed
+
+- `notebooks/hydrogen/hydrogen_summary.ipynb` — added and executed the inline
+  deterministic, Monte Carlo, and ranking comparison for all eight hydrogen
+  routes.
+- `notebooks/sensitivity_heatmap.ipynb` — added and executed the hydrogen
+  technology-input heatmap alongside the four existing sectors.
+- `src/sensitivity_analysis.py` — added hydrogen technology inputs and financial
+  calculations to the reusable deterministic sensitivity interface.
+- `src/sensitivity_deep_dive.py` — registered hydrogen labels, sensitivity scope,
+  parameter groups, and sector order for standardized heatmaps.
+- `tests/test_hydrogen_npv.py` — checked that sensitivity base cases reproduce
+  deterministic hydrogen NPV, LNM, and LCOH results.
+- `README.md` — documented the hydrogen summary notebook and heatmap coverage.
+- `CHANGELOG.md` — recorded this work.
+
+### What was implemented
+
+- Mirrored the established sector-summary workflow with the shared 100,000-draw
+  hydrogen simulation, deterministic comparison, and Monte Carlo rankings. The
+  default selectable metric is LNM; NPV and LCOX/LCOH remain selectable.
+- Added all six stand-alone routes and both NG-SMR retrofits to the shared
+  sensitivity model. Fuel selection resolves natural gas, biomethane, biomass,
+  or no fuel as applicable, while NG-SMR + CCS retains its parent-dependent T&S
+  calculation.
+- Added one normalized hydrogen heatmap for the selected metric. As in the
+  existing sectors, product price and annual output are excluded from this
+  cross-technology heatmap and each row is normalized to its largest absolute
+  input impact.
+
+### Verification
+
+- Executed both notebooks in place through the project Python kernel; neither
+  notebook contains error outputs.
+- Confirmed the summary notebook contains three inline figures and the heatmap
+  notebook contains five sector figures, including all eight hydrogen routes.
+- Ran `PYTHONPATH=src .venv/bin/python -m unittest tests.test_hydrogen_npv`;
+  all four tests passed.
+- Calculated hydrogen standardized sensitivity for NPV, LNM, and LCOX; each
+  produced finite results for all eight technologies.
+- Visually inspected the hydrogen summary and heatmap figures and ran
+  `git diff --check` without errors.
+
+### Reproducibility notes
+
+- Re-execute `notebooks/hydrogen/hydrogen_summary.ipynb` or
+  `notebooks/sensitivity_heatmap.ipynb` with the project Python kernel to refresh
+  inline outputs. Both notebooks leave `SAVE_OUTPUTS` disabled and do not write
+  standalone CSV or figure outputs.
+- The results use the current 7,500 EUR/tH2 selling-price assumption and the
+  provisional 87.5 EUR/MWh_th biomethane-price proxy.
+
+### Next suggested step
+
+Decide whether hydrogen-price scenarios should replace the fixed selling price
+before interpreting or exporting the hydrogen financial comparisons.
+
+## 2026-09-21 14:32 CEST — Add hydrogen input scenarios
+
+### User request
+
+Add scenario analysis for the three highest-impact hydrogen variables to the
+shared scenario notebook.
+
+### Files changed
+
+- `notebooks/scenario_analysis.ipynb` — added and executed hydrogen fuel-price,
+  electricity-price, and investment-cost scenario tables and charts.
+- `README.md` — added the hydrogen scenarios to the scenario-notebook summary.
+- `CHANGELOG.md` — recorded this work.
+
+### What was implemented
+
+- Added deterministic low, medium, and high hydrogen cases equal to 80%, 100%,
+  and 120% of each technology's base fuel price, electricity price, or CAPEX.
+- Varied one input at a time and retained the existing selectable NPV, LNM, and
+  LCOX/LCOH metrics. Fuel-price cases preserve each route's own fuel type and
+  base price; technical fuel and electricity consumption remain fixed.
+- Included all eight hydrogen routes. Technologies without fuel consumption or
+  purchased electricity remain unchanged in the corresponding price scenario.
+- Added an inline 72-row scenario table and a three-panel comparison figure.
+  The notebook continues to write no standalone data or figure files.
+
+### Verification
+
+- Executed `notebooks/scenario_analysis.ipynb` through the project Python
+  kernel; all eight code cells completed without error.
+- Confirmed the notebook contains four inline scenario figures and that the
+  hydrogen table covers eight technologies, three variables, and three cases.
+- Checked the medium case against the deterministic LNM base results and
+  inspected all low/high results for the expected cost direction.
+- Visually inspected the hydrogen scenario figure.
+- Ran the complete test suite and `git diff --check`; both passed.
+
+### Reproducibility notes
+
+- Re-execute `notebooks/scenario_analysis.ipynb` with the project Python kernel
+  to refresh the inline tables and figures.
+- The scenarios use the current deterministic assumptions, including the 7,500
+  EUR/tH2 selling price and provisional 87.5 EUR/MWh_th biomethane base price.
+  Edit `HYDROGEN_INPUT_MULTIPLIERS` in the settings cell to change the scenario
+  range.
+
+### Next suggested step
+
+Review whether the hydrogen selling price should also be added as a separate
+market scenario before using the financial results in the thesis.
+
+## 2026-09-21 14:50 CEST — Add ammonia high-impact scenarios
+
+### User request
+
+Add scenarios for the three largest ammonia heatmap drivers to the shared
+scenario notebook.
+
+### Files changed
+
+- `notebooks/scenario_analysis.ipynb` — added low, medium, and high ammonia
+  electricity-price, investment-cost, and fuel-price scenarios for all nine
+  ammonia technologies, including a summary table and a three-panel chart.
+- `README.md` — added the ammonia scenarios to the scenario-notebook guide.
+- `CHANGELOG.md` — recorded the scenario integration.
+
+### Scenario definition
+
+- Low, medium, and high equal 80%, 100%, and 120% of each technology's
+  deterministic base input. One input changes at a time.
+- Fuel-price scenarios use each route's applicable natural-gas, coal, or
+  biomass price. Fuel-free routes do not respond. The biomass route scales the
+  existing shared BECCS biomass-price proxy.
+- The electricity-price scenario uses the shared deterministic electricity
+  price. NG-SMR + HB does not respond because its purchased electricity input
+  is zero. CCS transport/storage cost is recalculated where the changed input
+  affects the parent-relative capture cost.
+
+### Verification
+
+- Executed the scenario notebook without errors; all nine code cells completed
+  and five inline scenario figures were rendered.
+- Checked 27 ammonia technology-variable scenario sets. Every medium result
+  reproduces its deterministic LNM base value, and low/medium/high cost inputs
+  move LNM in the expected direction or leave it unchanged when consumption is
+  zero.
+- Confirmed the three fuel-free ammonia routes are unchanged under fuel-price
+  scenarios and NG-SMR + HB is unchanged under electricity-price scenarios.
+- Visually inspected the ammonia scenario figure and ran `git diff --check`.
+
+No ammonia base assumptions or Monte Carlo distributions changed.

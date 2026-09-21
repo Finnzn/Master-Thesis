@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from ammonia.ammonia_npv_deterministic import (
-    FUEL_TYPE_BY_TECHNOLOGY,
+    FUEL_TYPE_BY_TECHNOLOGY as AMMONIA_FUEL_TYPE_BY_TECHNOLOGY,
     calculate_deterministic_ammonia_result,
 )
 from ammonia.ammonia_parameters import (
@@ -41,6 +41,15 @@ from electricity.electricity_parameters import (
 from general_parameters import (
     CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
     INTEREST_RATE,
+)
+from hydrogen.hydrogen_npv_deterministic import (
+    FUEL_TYPE_BY_TECHNOLOGY as HYDROGEN_FUEL_TYPE_BY_TECHNOLOGY,
+    calculate_deterministic_hydrogen_result,
+)
+from hydrogen.hydrogen_parameters import (
+    HYDROGEN_RETROFIT_BASE_TECHNOLOGIES,
+    HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
+    HYDROGEN_TECHNOLOGY_DISTRIBUTIONS,
 )
 from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
@@ -108,6 +117,7 @@ SECTOR_DISPLAY_NAMES = {
     "ammonia": "Ammonia",
     "cement": "Cement",
     "electricity": "Electricity",
+    "hydrogen": "Hydrogen",
     "steel": "Steel",
 }
 
@@ -115,6 +125,7 @@ SECTOR_UNITS = {
     "ammonia": "tNH3",
     "cement": "t",
     "electricity": "MWh",
+    "hydrogen": "tH2",
     "steel": "tCS",
 }
 
@@ -176,6 +187,23 @@ SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
         SensitivityParameter("Direct emissions", "emissions", minimum=float("-inf")),
         SensitivityParameter("Carbon price", "carbon_price"),
     ),
+    "hydrogen": (
+        SensitivityParameter("Investment cost", "capex"),
+        SensitivityParameter("Hydrogen price", "sales_price"),
+        SensitivityParameter("Annual production", "annual_output"),
+        SensitivityParameter("Lifetime", "lifetime_years", minimum=1.0),
+        SensitivityParameter("Discount rate", "discount_rate"),
+        SensitivityParameter("Fixed OPEX", "fixed_opex"),
+        SensitivityParameter("Variable OPEX", "variable_opex"),
+        SensitivityParameter("Fuel use", "fuel_consumption"),
+        SensitivityParameter("Fuel price", "fuel_price"),
+        SensitivityParameter("Electricity use", "electricity_consumption"),
+        SensitivityParameter("Electricity price", "electricity_price"),
+        SensitivityParameter("T&S share", "transport_and_storage_share"),
+        SensitivityParameter("T&S cost", "transport_and_storage_cost"),
+        SensitivityParameter("Direct emissions", "emissions"),
+        SensitivityParameter("Carbon price", "carbon_price"),
+    ),
     "steel": (
         SensitivityParameter("Investment cost", "capex"),
         SensitivityParameter("Steel price", "sales_price"),
@@ -219,6 +247,10 @@ def available_technologies(sector: str) -> tuple[str, ...]:
         # The fixed-parameter registry retains the canonical display order across
         # both absolute technologies and BAU-relative CCS retrofits.
         return tuple(ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS)
+    if sector == "hydrogen":
+        return tuple(HYDROGEN_TECHNOLOGY_DISTRIBUTIONS) + tuple(
+            HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
+        )
     if sector == "steel":
         return tuple(STEEL_TECHNOLOGY_DISTRIBUTIONS) + tuple(
             STEEL_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
@@ -241,7 +273,7 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
         result = _single_value_result(
             calculate_deterministic_ammonia_result(technology)
         )
-        fuel_type = FUEL_TYPE_BY_TECHNOLOGY[technology]
+        fuel_type = AMMONIA_FUEL_TYPE_BY_TECHNOLOGY[technology]
         fuel_fields = {
             "natural_gas": (
                 "natural_gas_consumption_mwh_per_tnh3",
@@ -342,6 +374,78 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             transport_and_storage_share=transport_and_storage_share,
             capture_cost_baseline=capture_cost_baseline,
             emissions=result["emissions_tco2_per_t"],
+            carbon_price=result["carbon_price_eur_per_t"],
+        )
+
+    if sector == "hydrogen":
+        result = _single_value_result(
+            calculate_deterministic_hydrogen_result(technology)
+        )
+        fuel_type = HYDROGEN_FUEL_TYPE_BY_TECHNOLOGY[technology]
+        fuel_fields = {
+            "natural_gas": (
+                "natural_gas_consumption_mwh_per_th2",
+                "gas_price_eur_per_mwh_th",
+            ),
+            "biomethane": (
+                "biomethane_consumption_mwh_per_th2",
+                "biomethane_price_eur_per_mwh_th",
+            ),
+            "biomass": (
+                "biomass_consumption_mwh_per_th2",
+                "biomass_price_eur_per_mwh_th",
+            ),
+        }
+        if fuel_type == "none":
+            fuel_consumption = 0.0
+            fuel_price = 0.0
+        else:
+            consumption_key, price_key = fuel_fields[fuel_type]
+            fuel_consumption = result[consumption_key]
+            fuel_price = result[price_key]
+
+        capture_cost_baseline = None
+        transport_and_storage_share = 0.0
+        if technology == "ng_smr_ccs":
+            parent_technology = HYDROGEN_RETROFIT_BASE_TECHNOLOGIES[technology]
+            parent_result = _single_value_result(
+                calculate_deterministic_hydrogen_result(parent_technology)
+            )
+            capture_cost_baseline = CaptureCostBaseline(
+                capex=parent_result["capex_eur_per_th2"],
+                fixed_opex=parent_result["fixed_opex_eur_per_th2"],
+                variable_opex=parent_result["variable_opex_eur_per_th2"],
+                fuel_consumption=parent_result[
+                    "natural_gas_consumption_mwh_per_th2"
+                ],
+                electricity_consumption=parent_result[
+                    "electricity_consumption_mwh_per_th2"
+                ],
+            )
+            transport_and_storage_share = (
+                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
+            )
+
+        return ScenarioInputs(
+            annual_output=result["annual_output_th2"],
+            lifetime_years=result["lifetime_years"],
+            discount_rate=INTEREST_RATE.value,
+            sales_price=result["hydrogen_price_eur_per_th2"],
+            capex=result["capex_eur_per_th2"],
+            fixed_opex=result["fixed_opex_eur_per_th2"],
+            variable_opex=result["variable_opex_eur_per_th2"],
+            fuel_consumption=fuel_consumption,
+            fuel_price=fuel_price,
+            electricity_consumption=result[
+                "electricity_consumption_mwh_per_th2"
+            ],
+            electricity_price=result["electricity_price_eur_per_mwh"],
+            transport_and_storage_cost=result[
+                "transport_and_storage_cost_eur_per_th2"
+            ],
+            transport_and_storage_share=transport_and_storage_share,
+            capture_cost_baseline=capture_cost_baseline,
+            emissions=result["emissions_tco2_per_th2"],
             carbon_price=result["carbon_price_eur_per_t"],
         )
 
@@ -478,7 +582,7 @@ def calculate_transport_and_storage_cost_per_output(
     if inputs.full_load_hours is None and sector == "electricity":
         raise ValueError("Electricity scenarios require full_load_hours.")
 
-    if sector in {"ammonia", "cement"}:
+    if sector in {"ammonia", "cement", "hydrogen"}:
         ccs_initial_capex_eur = inputs.annual_output * inputs.capex
         bau_initial_capex_eur = inputs.annual_output * baseline.capex
         ccs_annual_cost_excluding_carbon_eur = inputs.annual_output * (
@@ -575,7 +679,7 @@ def _sector_financial_components(
 ) -> tuple[float, float, float]:
     """Return initial CAPEX, annual revenue, and annual cost for a scenario."""
 
-    if sector in {"ammonia", "cement"}:
+    if sector in {"ammonia", "cement", "hydrogen"}:
         initial_capex_eur = inputs.annual_output * inputs.capex
         annual_revenue_eur = inputs.annual_output * inputs.sales_price
         annual_fixed_opex_eur = inputs.annual_output * inputs.fixed_opex
@@ -711,6 +815,7 @@ def metric_axis_label(sector: str, metric: str) -> str:
             "ammonia": "LCOA",
             "cement": "LCOC",
             "electricity": "LCOE",
+            "hydrogen": "LCOH",
             "steel": "LCOS",
         }[sector]
         return f"Impact on {levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
