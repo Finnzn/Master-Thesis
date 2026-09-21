@@ -35,8 +35,10 @@ shared in `src/npv_finance.py`. All five sectors call this shared finance layer.
 | Change shared NPV summaries or CSV shaping | `src/npv_summary.py` |
 | Change shared comparison or ranking figures | `src/npv_summary_plots.py` |
 | Change output naming or command-line workflows | the matching `*_npv_summary_figures.py` module |
+| Change a sector MACC | the matching `src/<sector>/<sector>_macc.py` module |
 | Explore one technology | `notebooks/<sector>/plot_*_npv.ipynb` |
 | Compare all technologies | the sector `*_summary.ipynb` notebook |
+| Explore a marginal abatement cost curve | the sector `*_macc.ipynb` notebook |
 | Run deterministic cross-sector scenarios | `notebooks/scenario_analysis.ipynb` |
 | Compare deterministic and probabilistic LCOX | the matching sector `*_summary.ipynb` or `*_npv_summary_figures --metric LCOX` |
 | Run deterministic sensitivity interactively | `sensitivity_dashboard.py` |
@@ -160,9 +162,12 @@ needed for analysis or archive them outside the working repository.
 - Heatmap `Fuel`, `Electricity`, and `Emissions` groups display the larger
   constituent one-factor-at-a-time effect, not a joint perturbation or an
   interaction index. Use a global method such as Sobol analysis for interactions.
-- The cement MACC includes T&S through annual total technology cost and then
-  removes carbon payments from its resource-cost boundary. Product revenue is
-  also excluded.
+- The cement, steel, ammonia, and hydrogen MACCs include T&S through annual
+  total technology cost and then remove carbon payments from their resource-cost
+  boundary. Product revenue is also excluded. Their respective references are
+  cement BAU, BF-BOF BAU, NG-SMR + Haber-Bosch, and NG-SMR. Routes without
+  positive direct abatement are omitted, and same-sector route widths represent
+  alternatives rather than additive abatement potential.
 - Check `DEFAULT_RETROFIT_BAU_MODE` and the summary command's
   `--retrofit-bau-mode` option before interpreting Monte Carlo results. The
   deterministic models always use expected BAU and retrofit input values.

@@ -8363,3 +8363,50 @@ separately discussed carbon-price scenario.
 
 No carbon-price scenario was implemented, and no techno-economic value or
 financial calculation changed.
+
+## 2026-09-21 16:13 CEST — Add hydrogen and ammonia MACC analyses
+
+### User request
+
+Add hydrogen and ammonia marginal abatement cost curve analyses following the
+existing sector MACC notebooks, using NG-SMR as the hydrogen reference and
+NG-SMR + Haber-Bosch as the ammonia reference.
+
+### Implementation
+
+- Added `src/hydrogen/hydrogen_macc.py` and
+  `notebooks/hydrogen/hydrogen_macc.ipynb`.
+- Added `src/ammonia/ammonia_macc.py` and
+  `notebooks/ammonia/ammonia_macc.ipynb`.
+- Used direct stack-emissions abatement at equal annual sector output.
+- Used annualized CAPEX plus annual technology cost, including CCS transport
+  and storage, while excluding product revenue and carbon-price payments.
+- Added deterministic and aligned Monte Carlo modes, p05/median/p95 draw-level
+  cost statistics, configurable retrofit BAU mode, CSV/PNG generation, and
+  command-line interfaces consistent with the cement and steel MACCs.
+- Omitted routes without positive abatement. Consequently, unabated coal
+  gasification is not included in the ammonia curve because it emits more than
+  the NG-SMR + Haber-Bosch reference.
+- Updated `README.md` and `docs/HANDOVER.md` with the four sector references,
+  cost boundary, route-width interpretation, notebook locations, and commands.
+
+### Generated artifacts
+
+- Generated deterministic and 100,000-draw simulated CSVs and PNGs for both
+  sectors using random seed 42 and sampled retrofit-parent inputs.
+- The hydrogen and ammonia curves each contain seven positive-abatement routes.
+- Executed both new notebooks in place with fresh tables and figures.
+
+### Verification
+
+- Independently recomputed every deterministic route's annual emissions,
+  annualized resource cost, incremental cost, abatement, and EUR/tCO2 result.
+- Confirmed seeded Monte Carlo reproducibility and ordered p05/median/p95
+  statistics with 1,000-draw checks.
+- Confirmed both notebooks have five executed code cells and no stored errors.
+- Compiled all Python source, ran isolated CLI output checks, checked notebook
+  JSON and stale copied labels, and ran `git diff --check`.
+- Visually inspected all four generated MACC figures; labels, widths, titles,
+  axes, and footnotes render without clipping.
+
+No carbon-price scenario or techno-economic assumption was added or changed.

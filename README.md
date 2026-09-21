@@ -373,15 +373,26 @@ sector's `*_summary.ipynb` notebook and through the corresponding
 not be placed on one ranking because they refer to different products and
 functional units.
 
-The cement MACC annualizes CAPEX and uses all annual technology costs, including
+The sector MACCs annualize CAPEX and use all annual technology costs, including
 CCS transport and storage, while excluding carbon payments and product revenue.
-Its bar heights therefore measure resource cost per tonne of direct CO2 avoided.
+Their bar heights therefore measure resource cost per tonne of direct CO2
+avoided. The reference technologies are cement BAU, steel BF-BOF BAU, ammonia
+NG-SMR + Haber-Bosch, and hydrogen NG-SMR. Each sector supports deterministic
+and aligned Monte Carlo results through its `src/<sector>/<sector>_macc.py`
+module and matching `notebooks/<sector>/<sector>_macc.ipynb` notebook.
 
-The steel MACC in `notebooks/steel/steel_macc.ipynb` uses BF-BOF BAU as the
-reference and the same cost boundary. It supports deterministic and aligned
-Monte Carlo results through `src/steel/steel_macc.py`. Steel routes are
-alternatives at the same 1 MtCS/year output, so their plotted abatement widths
-are illustrative and cannot be added as independent sector potential.
+All routes within a sector are alternatives at the same annual output, so their
+plotted abatement widths are illustrative and cannot be added as independent
+sector potential. Routes without positive direct abatement relative to the
+reference are omitted; this excludes unabated coal gasification from the
+ammonia MACC. Run the new MACCs with:
+
+```bash
+PYTHONPATH=src python -m ammonia.ammonia_macc
+PYTHONPATH=src python -m ammonia.ammonia_macc --simulated
+PYTHONPATH=src python -m hydrogen.hydrogen_macc
+PYTHONPATH=src python -m hydrogen.hydrogen_macc --simulated
+```
 
 ## Ammonia financial model
 
@@ -401,7 +412,8 @@ PYTHONPATH=src python -m ammonia.ammonia_npv_summary_figures \
 `notebooks/ammonia/ammonia_summary.ipynb` displays the comparison tables,
 paired metric charts, and Monte Carlo rankings inline. The default
 `notebooks/sensitivity_heatmap.ipynb` run includes ammonia alongside cement,
-electricity, and steel.
+electricity, and steel. `notebooks/ammonia/ammonia_macc.ipynb` compares direct
+emissions abatement and resource cost against NG-SMR + Haber-Bosch.
 
 Use `--retrofit-bau-mode deterministic` to hold each CCS parent at its
 expected inputs. The default `sampled` mode shares parent draws with its CCS
@@ -436,6 +448,8 @@ distributions plus annual cost components. Notebook figures remain inline.
 aligned Monte Carlo and deterministic NPV, LPM, or LCOH results and displays
 the Monte Carlo ranking. The default `notebooks/sensitivity_heatmap.ipynb`
 run includes hydrogen alongside ammonia, cement, electricity, and steel.
+`notebooks/hydrogen/hydrogen_macc.ipynb` compares direct emissions abatement
+and resource cost against NG-SMR.
 Biomethane SMR replaces the parent's natural gas with biomethane. NG-SMR + CCS
 uses its incremental costs and energy consumption, 90% capture, and the shared
 CCS transport/storage cost rule. Fuel and electricity costs are calculated
@@ -444,7 +458,7 @@ by-product credits are outside the model boundary.
 
 The hydrogen model uses the report-sourced shared biomass-energy price
 distribution for biomass gasification and the report-sourced fixed value of
-87.5 EUR/MWh_th for biomethane. No hydrogen MACC calculation is included.
+87.5 EUR/MWh_th for biomethane.
 
 ## Generated Data and Version Control
 
