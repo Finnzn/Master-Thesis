@@ -8176,3 +8176,138 @@ scenario notebook.
 - Visually inspected the ammonia scenario figure and ran `git diff --check`.
 
 No ammonia base assumptions or Monte Carlo distributions changed.
+
+## 2026-09-21 15:29 CEST — Repository-wide technical audit and regeneration
+
+### User request
+
+Audit the complete techno-economic repository across every sector, technology,
+dataset, model, notebook, output, chart, and figure; correct confirmed issues;
+improve reproducibility and maintainability; regenerate outputs; and document
+all findings without inventing missing source information.
+
+### Files changed
+
+- `REPOSITORY_AUDIT.md` — added the detailed architecture, formula/unit,
+  cross-sector, uncertainty, pricing, double-counting, stale-file, risk, and
+  recommendation report.
+- `src/model_validation.py`, `src/output_validation.py`, and `src/run_all.py` —
+  added cross-sector scientific validation, generated-artifact validation, and
+  one-command full regeneration with a machine-readable run manifest.
+- Sector summary modules — separated direct raw T&S inputs from resolved
+  derived T&S outputs; electricity now records its direct BECCS T&S input
+  explicitly.
+- Cement/steel MACC and shared sensitivity commands — separated processed-data
+  and figure output destinations while retaining the old processed-output alias.
+- Cement and steel parameter catalogues — corrected CAPEX unit metadata to the
+  annual-capacity denominator actually used by the formulas.
+- `README.md` and `docs/HANDOVER.md` — documented all five sectors, current
+  tests, validation, outputs, runner, manifest, and provenance limitations.
+- All 98 notebooks — refreshed stored outputs; the scenario notebook wording
+  now distinguishes triangular means from the deliberate mode scenario.
+- `figures/`, `data/raw/`, `data/processed/`, and `results/` — regenerated the
+  complete dated output set. Historical dated outputs were retained.
+- `tests/test_model_validation.py` — added hand-calculated finance,
+  repository-wide invariant, schema-separation, isolated-destination, argument,
+  and artifact tests.
+- `CHANGELOG.md` — appended this audit record.
+
+### Corrections and conclusions
+
+- Confirmed year-zero CAPEX, years 1..N operating cash flow, discounting,
+  normalized output, LCOX, LNM, carbon-cost, CCS residual-emissions, shared
+  sampled markets, and sampled-parent retrofit logic across all 44 technologies.
+- Corrected three output-routing defects, raw/processed T&S schema placement,
+  two sectors' CAPEX unit metadata, stale documentation, and one misleading
+  scenario-notebook description.
+- Found no material numerical finance error. No parameter value, distribution,
+  physical relationship, or financial equation was changed.
+- Exact before/after comparisons passed for every technology's deterministic
+  NPV/LNM/LCOX and seeded 10,000-draw mean NPV/LNM/LCOX.
+- The primary unresolved scientific issue is incomplete parameter provenance:
+  most values lack an encoded citation, page/table, geography, base year, and
+  currency year. No missing source was guessed.
+
+### Regenerated outputs
+
+- Ran all five sectors for NPV, LNM, and LCOX with 100,000 samples, seed 42,
+  sampled BAU retrofits, both ranking exports, both cement/steel MACC modes, and
+  NPV/LNM/LCOX sensitivity.
+- Generated and validated 97 CSV files containing 39,601,888 rows and 64 PNG
+  figures in 220.149 seconds.
+- Wrote `results/2026-09-21-run-manifest.json` with configuration, timestamps,
+  Git state, executed commands, validation totals, and all 161 generated paths.
+- Executed all 98 notebooks in place. All notebook JSON is valid, every
+  non-empty code cell has an execution count, and there are no stored errors.
+- Visually inspected representative plots for every sector plus both simulated
+  MACCs and a sensitivity heatmap; no clipping or labeling defect was found.
+
+### Verification
+
+- `PYTHONPATH=src .venv/bin/python -W error -m unittest discover -s tests`
+  passed all 11 tests.
+- `PYTHONPATH=src .venv/bin/python -W error -m model_validation --sample-size
+  1000 --random-seed 42` passed 308 parameter entries, 44 technologies, and 88
+  deterministic/Monte Carlo result sets.
+- `PYTHONPATH=src .venv/bin/python -m output_validation --run-date 2026-09-21`
+  passed all 97 CSVs and 64 PNGs.
+- All Python source and notebook code cells compiled, all 98 notebook JSON
+  documents parsed, and `git diff --check` passed.
+
+### Remaining concerns
+
+See `REPOSITORY_AUDIT.md` for the full list. Before thesis interpretation, the
+highest-priority next step is to add auditable source metadata and verify OPEX
+boundaries against the original literature tables.
+
+## 2026-09-21 — Remove superseded generated outputs
+
+### User request
+
+Delete the old figures and CSV files while retaining the newly regenerated
+2026-09-21 output set.
+
+### Changes
+
+- Removed 24 PNG figures and 40 CSV files dated 2026-07-24 from the workspace.
+- Retained all 64 PNG figures and 97 CSV files dated 2026-09-21.
+- Moved the old files to a uniquely named system Trash folder rather than
+  permanently erasing them, so the deletion remains recoverable.
+- Updated `REPOSITORY_AUDIT.md` to reflect the post-audit cleanup.
+
+### Verification
+
+- Confirmed that only 64 current PNGs and 97 current CSVs remain.
+- Re-ran the dated output validator successfully after removal.
+
+## 2026-09-21 — Remove optional audit and validation tooling
+
+### User request
+
+Remove the recently added audit, orchestration, validation, and validation-test
+files, together with the pre-existing hydrogen test file, because this tooling
+is not needed for the thesis workflow.
+
+### Files removed
+
+- `REPOSITORY_AUDIT.md`
+- `src/run_all.py`
+- `src/model_validation.py`
+- `src/output_validation.py`
+- `tests/test_model_validation.py`
+- `tests/test_hydrogen_npv.py`
+- Corresponding local Python bytecode cache files.
+
+### Documentation cleanup
+
+- Removed README and handover references to the deleted test, validation, and
+  all-in-one runner commands.
+- Kept the regenerated 2026-09-21 CSVs, figures, notebooks, and historical run
+  manifest unchanged.
+
+### Verification
+
+- Confirmed that none of the six requested files or their bytecode caches
+  remains in the workspace.
+- Compiled the remaining Python source and checked documentation references and
+  `git diff --check`.

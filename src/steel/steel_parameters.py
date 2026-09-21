@@ -44,7 +44,7 @@ BF_BOF_BAU_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=425.0,
     mode=592.0,
     maximum=770.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Triangular distribution for greenfield European BF-BOF BAU CAPEX, not annualized.",
 )
 
@@ -95,7 +95,7 @@ SCRAP_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=247.0,
     mode=247.0,
     maximum=474.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Triangular distribution for greenfield European Scrap-EAF CAPEX, not annualized.",
 )
 
@@ -146,7 +146,7 @@ NG_DRI_EAF_BAU_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=650.0,
     mode=660.0,
     maximum=660.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Triangular distribution for greenfield European NG-DRI-EAF BAU CAPEX, not annualized.",
 )
 
@@ -194,7 +194,7 @@ H2_DRI_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=390.0,
     mode=555.0,
     maximum=830.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Triangular distribution for greenfield European H2-DRI-EAF CAPEX, not annualized.",
 )
 
@@ -251,7 +251,7 @@ MOE_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=500.0,
     mode=1_000.0,
     maximum=2_000.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Triangular distribution for greenfield European MOE CAPEX, not annualized.",
 )
 
@@ -299,7 +299,7 @@ AEL_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=400.0,
     mode=434.0,
     maximum=800.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Triangular distribution for greenfield European AEL-EAF CAPEX, not annualized.",
 )
 
@@ -343,7 +343,7 @@ AEL_EAF_EMISSIONS = FixedParameter(
 BF_BOF_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=177.0,
     upper_bound=231.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="Uniform distribution for BF + BOF + CCS CAPEX increase.",
 )
 
@@ -395,7 +395,7 @@ BF_BOF_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = (
 # reduction convention using the fixed 1.06 MWh/tCS BAU electricity intensity.
 NG_DRI_EAF_CCS_CAPEX_CHANGE = FixedParameter(
     value=200.0,
-    unit="EUR/tCS",
+    unit="EUR/(tCS/year)",
     description="CAPEX increase for the NG-DRI-EAF CCS retrofit.",
 )
 

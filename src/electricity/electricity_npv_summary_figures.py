@@ -84,7 +84,7 @@ ELECTRICITY_RAW_INPUT_COLUMNS = (
     "value_factor",
     "carbon_price_eur_per_t",
     "transport_and_storage_share_of_capture_cost",
-    "transport_and_storage_cost_eur_per_mwh",
+    "transport_and_storage_cost_input_eur_per_mwh",
 )
 
 # Columns exported as processed outputs. These are derived from the raw inputs by
@@ -103,6 +103,7 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "annual_variable_opex_eur",
     "annual_fuel_cost_eur",
     "capture_cost_excluding_transport_and_storage_eur_per_mwh",
+    "transport_and_storage_cost_eur_per_mwh",
     "annual_transport_and_storage_cost_eur",
     "annual_emissions_cost_eur",
     "annual_total_cost_eur",

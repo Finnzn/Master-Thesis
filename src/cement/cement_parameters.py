@@ -39,7 +39,7 @@ ANNUAL_CEMENT_OUTPUT_T = FixedParameter(
 BAU_CEMENT_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=150.0,
     upper_bound=170.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Uniform distribution for BAU cement CAPEX, not annualized.",
 )
 
@@ -91,7 +91,7 @@ ELECTRIFICATION_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=140.0,
     mode=204.0,
     maximum=300.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Triangular distribution for electrification cement CAPEX, not annualized.",
 )
 
@@ -138,7 +138,7 @@ ELECTROLYSIS_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=255.0,
     mode=362.0,
     maximum=545.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Triangular distribution for electrolysis cement CAPEX, not annualized.",
 )
 
@@ -184,7 +184,7 @@ ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
 # negative reduction fractions would represent an increase.
 CLINKER_SUBSTITUTION_CEMENT_CAPEX = FixedParameter(
     value=0.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="CAPEX for clinker substitution retrofit, not annualized.",
 )
 
@@ -228,7 +228,7 @@ CLINKER_SUBSTITUTION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistributi
 ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
     upper_bound=2.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Uniform distribution for alternative fuels retrofit CAPEX increase.",
 )
 
@@ -276,7 +276,7 @@ ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
 EFFICIENCY_IMPROVEMENT_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
     upper_bound=28.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Uniform distribution for efficiency improvement retrofit CAPEX increase.",
 )
 
@@ -319,7 +319,7 @@ EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribu
 WASTE_HEAT_RECOVERY_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=2.0,
     upper_bound=18.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Uniform distribution for waste heat recovery retrofit CAPEX increase.",
 )
 
@@ -362,7 +362,7 @@ WASTE_HEAT_RECOVERY_CEMENT_EMISSIONS_REDUCTION = FixedParameter(
 CCS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=55.0,
     upper_bound=185.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Uniform distribution for CCS retrofit CAPEX increase.",
 )
 
@@ -407,7 +407,7 @@ CCS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
 PROCESS_HEAT_INTEGRATION_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=1.0,
     upper_bound=13.0,
-    unit="EUR/t",
+    unit="EUR/(t/year)",
     description="Uniform distribution for process heat integration retrofit CAPEX increase.",
 )
 

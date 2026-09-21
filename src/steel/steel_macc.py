@@ -292,6 +292,7 @@ def plot_steel_macc(
 def generate_steel_macc_outputs(
     project_root: Path,
     output_dir: Path | None = None,
+    figure_dir: Path | None = None,
     deterministic: bool = True,
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
@@ -318,7 +319,8 @@ def generate_steel_macc_outputs(
     csv_path = processed_dir / f"{run_date}-Steel_MACC_{mode}.csv"
     table.to_csv(csv_path, index=False)
 
-    figure_path = project_root / "figures" / f"{run_date}-Steel_MACC_{mode}.png"
+    resolved_figure_dir = figure_dir or project_root / "figures"
+    figure_path = resolved_figure_dir / f"{run_date}-Steel_MACC_{mode}.png"
     fig = plot_steel_macc(
         table,
         output_path=figure_path,
@@ -396,9 +398,23 @@ def main() -> None:
         default=Path(__file__).resolve().parents[2],
     )
     parser.add_argument(
-        "--output-dir",
+        "--processed-data-dir",
         type=Path,
         default=None,
+        help="Directory where the MACC CSV is saved.",
+    )
+    parser.add_argument(
+        "--figure-dir",
+        type=Path,
+        default=None,
+        help="Directory where the MACC figure is saved.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        dest="legacy_output_dir",
+        type=Path,
+        default=None,
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--simulated",
@@ -422,10 +438,13 @@ def main() -> None:
         help="BAU input mode for simulated retrofit technologies.",
     )
     args = parser.parse_args()
+    if args.processed_data_dir is not None and args.legacy_output_dir is not None:
+        parser.error("use either --processed-data-dir or --output-dir, not both")
 
     paths = generate_steel_macc_outputs(
         project_root=args.project_root,
-        output_dir=args.output_dir,
+        output_dir=args.processed_data_dir or args.legacy_output_dir,
+        figure_dir=args.figure_dir,
         deterministic=not args.simulated,
         sample_size=args.sample_size,
         random_seed=args.random_seed,

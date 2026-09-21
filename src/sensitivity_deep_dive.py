@@ -366,11 +366,15 @@ def build_sensitivity_heatmap_figure(
 
 def generate_deep_dive(
     project_root: Path,
-    output_dir: Path | None = None,
+    processed_data_dir: Path | None = None,
+    figure_dir: Path | None = None,
     variation_fraction: float = 0.20,
     metric: str = "LNM",
 ) -> tuple[Path, ...]:
     """Save one standardized CSV and one heatmap per sector."""
+
+    if not 0.0 < variation_fraction < 1.0:
+        raise ValueError("variation_fraction must be greater than 0 and smaller than 1.")
 
     standardized = pd.concat(
         [
@@ -380,7 +384,7 @@ def generate_deep_dive(
         ignore_index=True,
     )
 
-    processed_dir = output_dir or project_root / "data" / "processed"
+    processed_dir = processed_data_dir or project_root / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
     prefix = date.today().isoformat()
     metric_suffix = _metric_filename_suffix(metric)
@@ -390,13 +394,13 @@ def generate_deep_dive(
     )
     standardized.to_csv(csv_path, index=False)
 
-    figure_dir = project_root / "figures"
+    resolved_figure_dir = figure_dir or project_root / "figures"
     figure_paths = tuple(
         plot_sensitivity_heatmap(
             standardized,
             sector=sector,
             variation_fraction=variation_fraction,
-            output_path=figure_dir
+            output_path=resolved_figure_dir
             / (
                 f"{prefix}-Sensitivity_Heatmap_Standardized_"
                 f"{metric_suffix}_{variation_suffix}_{sector.title()}.png"
@@ -456,9 +460,23 @@ def main() -> None:
         default=Path(__file__).resolve().parents[1],
     )
     parser.add_argument(
-        "--output-dir",
+        "--processed-data-dir",
         type=Path,
         default=None,
+        help="Directory where the standardized sensitivity CSV is saved.",
+    )
+    parser.add_argument(
+        "--figure-dir",
+        type=Path,
+        default=None,
+        help="Directory where sector heatmaps are saved.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        dest="legacy_output_dir",
+        type=Path,
+        default=None,
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--variation",
@@ -473,9 +491,12 @@ def main() -> None:
         help="Financial metric used for the one-at-a-time sensitivity calculation.",
     )
     args = parser.parse_args()
+    if args.processed_data_dir is not None and args.legacy_output_dir is not None:
+        parser.error("use either --processed-data-dir or --output-dir, not both")
     paths = generate_deep_dive(
         project_root=args.project_root,
-        output_dir=args.output_dir,
+        processed_data_dir=args.processed_data_dir or args.legacy_output_dir,
+        figure_dir=args.figure_dir,
         variation_fraction=args.variation,
         metric=args.metric,
     )

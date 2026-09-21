@@ -387,6 +387,7 @@ def simulate_electricity_technology_npv(
         size, np.nan
     )
     transport_and_storage_cost_eur_per_mwh = np.zeros(size)
+    transport_and_storage_cost_input_eur_per_mwh = np.full(size, np.nan)
     transport_and_storage_share_of_capture_cost = np.full(size, np.nan)
     if baseline_values is not None:
         transport_and_storage_share_of_capture_cost = np.full(
@@ -430,6 +431,9 @@ def simulate_electricity_technology_npv(
             BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION,
             size=size,
             rng=generator,
+        )
+        transport_and_storage_cost_input_eur_per_mwh = (
+            transport_and_storage_cost_eur_per_mwh.copy()
         )
     annual_transport_and_storage_cost_eur = (
         annual_output_mwh * transport_and_storage_cost_eur_per_mwh
@@ -516,6 +520,9 @@ def simulate_electricity_technology_npv(
         ),
         "transport_and_storage_cost_eur_per_mwh": (
             transport_and_storage_cost_eur_per_mwh
+        ),
+        "transport_and_storage_cost_input_eur_per_mwh": (
+            transport_and_storage_cost_input_eur_per_mwh
         ),
         "transport_and_storage_share_of_capture_cost": (
             transport_and_storage_share_of_capture_cost

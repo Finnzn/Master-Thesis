@@ -16,8 +16,7 @@ The project has three layers:
    results.
 
 The core NPV, levelized-net-margin, discounted-cost, and LCOX formulas are
-shared in `src/npv_finance.py`. Electricity and cement should not implement
-separate finance formulas.
+shared in `src/npv_finance.py`. All five sectors call this shared finance layer.
 
 ## Where to Change What
 
@@ -26,8 +25,12 @@ separate finance formulas.
 | Change shared carbon price, fuel prices, or discount rate | `src/general_parameters.py` |
 | Change electricity technology assumptions | `src/electricity/electricity_parameters.py` |
 | Change cement technology assumptions | `src/cement/cement_parameters.py` |
+| Change steel technology assumptions | `src/steel/steel_parameters.py` |
+| Change ammonia technology assumptions | `src/ammonia/ammonia_parameters.py` |
+| Change hydrogen technology assumptions | `src/hydrogen/hydrogen_parameters.py` |
 | Change electricity Monte Carlo calculations | `src/electricity/electricity_npv_monte_carlo.py` |
 | Change cement Monte Carlo calculations | `src/cement/cement_npv_monte_carlo.py` |
+| Change another sector's Monte Carlo calculations | the matching `src/<sector>/*_npv_monte_carlo.py` module |
 | Change deterministic calculations | the matching `*_npv_deterministic.py` module |
 | Change shared NPV summaries or CSV shaping | `src/npv_summary.py` |
 | Change shared comparison or ranking figures | `src/npv_summary_plots.py` |
@@ -35,7 +38,7 @@ separate finance formulas.
 | Explore one technology | `notebooks/<sector>/plot_*_npv.ipynb` |
 | Compare all technologies | the sector `*_summary.ipynb` notebook |
 | Run deterministic cross-sector scenarios | `notebooks/scenario_analysis.ipynb` |
-| Compare deterministic and probabilistic LCOX | `notebooks/lcox_summary.ipynb` |
+| Compare deterministic and probabilistic LCOX | the matching sector `*_summary.ipynb` or `*_npv_summary_figures --metric LCOX` |
 | Run deterministic sensitivity interactively | `sensitivity_dashboard.py` |
 
 ## Standard Workflows
@@ -85,7 +88,13 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 - `figures/`: thesis-ready dated PNG files.
 - `data/raw/`: sampled or deterministic expected inputs exported by a run.
 - `data/processed/`: derived costs, cash flow, NPV, LNM, LCOX, and summary CSVs.
-- `results/`: reserved for other numerical outputs.
+- `results/`: run manifests and other numerical outputs.
+
+The top-level runner writes `results/YYYY-MM-DD-run-manifest.json` with the
+seed, sample size, modes, commands, timestamps, Git state, and generated-file
+inventory. Raw-input CSVs hold normalized model inputs; derived resolved T&S
+unit costs are in processed outputs. The one direct BECCS T&S draw is retained
+as `transport_and_storage_cost_input_eur_per_mwh` in electricity raw inputs.
 
 The data and results directories are ignored by Git. A generated CSV is
 reproducible only if its source code, assumptions, sample size, random seed, and
@@ -187,19 +196,17 @@ the kernel and run all cells.
 
 ## Current Handover Risks
 
-1. There is no automated test suite. Use compilation plus small-sample sector
-   runs as the minimum validation.
-2. Dependencies are only lightly constrained. A future dependency release may
+1. Dependencies are only lightly constrained. A future dependency release may
    change behavior; record a working environment before long-term archival.
-3. The repository uses `PYTHONPATH=src` rather than an installed Python package.
+2. The repository uses `PYTHONPATH=src` rather than an installed Python package.
    Commands must be run from the repository root unless the package path is set
    another way.
-4. Generated data can consume substantial disk space and is ignored by Git.
-5. The individual notebooks contain repeated setup and plotting code. Shared
+3. Generated data can consume substantial disk space and is ignored by Git.
+4. The individual notebooks contain repeated setup and plotting code. Shared
    scientific logic belongs in `src/`, not in copied notebook cells.
-6. Empty `tests/` and `results/` directories are local structure, not tracked
-   content. Fresh clones create output directories automatically when the
-   workflows run.
+5. Most literature-derived values have descriptive metadata but no
+   machine-readable citation field. The original source table must be retained
+   outside the generated data folders until provenance is migrated.
 
 ## Safe Change Checklist
 
@@ -207,8 +214,7 @@ the kernel and run all cells.
    plotting change.
 2. Change the smallest shared source module that owns that behavior.
 3. Run `python -m compileall -q src sensitivity_dashboard.py`.
-4. Run both sector workflows with a small sample size if shared code changed.
-5. Restart and run affected notebooks when their displayed results are part of
+4. Restart and run affected notebooks when their displayed results are part of
    the deliverable.
-6. Check `git status` and do not commit ignored generated data accidentally.
-7. Append the change and exact verification commands to `CHANGELOG.md`.
+5. Check `git status` and do not commit ignored generated data accidentally.
+6. Append the change and exact verification commands to `CHANGELOG.md`.

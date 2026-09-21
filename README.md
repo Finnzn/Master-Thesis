@@ -12,10 +12,11 @@ Carbon capture and storage (CCS) is considered an important technology for reach
 
 This thesis investigates under which conditions carbon capture is the most economically viable option for reducing emissions in different industrial sectors. The focus is on applications such as:
 
+- Electricity generation
 - Cement production
-- Steel and metal manufacturing
-- Chemical production
-- Other energy-intensive industrial processes
+- Steel production
+- Ammonia production
+- Hydrogen production
 
 The project compares carbon capture technologies with alternative non-capture decarbonization options under techno-economic uncertainty.
 
@@ -86,7 +87,6 @@ MasterThesis/
 ├── results/              # Simulation results, usually not tracked by Git
 ├── figures/              # Plots and figures for reports
 ├── docs/                 # Handover and workflow documentation
-├── tests/                # Reserved for automated tests
 ├── sensitivity_dashboard.py # Streamlit sensitivity analysis dashboard
 ├── README.md             # Project overview
 ├── requirements.txt      # Python dependencies
@@ -113,19 +113,16 @@ sector-specific calculations.
   and CSV files.
 - `src/npv_summary_plots.py` contains reusable plotting functions for NPV bar
   charts and ranking figures.
-- `src/electricity/` contains electricity-sector assumptions, deterministic NPV
-  calculations, Monte Carlo simulations, and output-generation scripts.
-- `src/cement/` contains cement-sector assumptions, deterministic NPV
-  calculations, Monte Carlo simulations, and output-generation scripts.
-- `src/hydrogen/` contains hydrogen-sector assumptions, deterministic NPV
-  calculations, Monte Carlo simulations, and output-generation scripts.
+- `src/<sector>/` contains the assumptions, deterministic calculation, Monte
+  Carlo calculation, and output workflow for electricity, cement, steel,
+  ammonia, or hydrogen.
 
 ## Which Notebook or Script Should I Use?
 
-- Use `notebooks/electricity/electricity_summary.ipynb` or
-  `notebooks/cement/cement_summary.ipynb` for an inline overview of all
-  technologies. Their Monte Carlo tables include mean, median, percentiles, and
-  counts of non-negative versus negative NPV simulations.
+- Use `notebooks/<sector>/<sector>_summary.ipynb` for an inline overview of all
+  technologies in electricity, cement, steel, ammonia, or hydrogen. Their
+  Monte Carlo tables include mean, median, percentiles, and counts of
+  non-negative versus negative NPV simulations.
 - Use `notebooks/<sector>/plot_*_npv.ipynb` to inspect one technology's Monte
   Carlo inputs and NPV distribution. Each notebook reports the count and share
   of non-negative versus negative NPV simulations.
@@ -326,6 +323,11 @@ PYTHONPATH=src python -m cement.cement_npv_summary_figures --metric LCOX
 Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
 and processed model outputs to `data/processed/`.
 
+Raw-input exports contain model inputs after unit normalization. The
+electricity export retains the independently sampled BECCS T&S input as
+`transport_and_storage_cost_input_eur_per_mwh`. Resolved per-unit T&S costs
+for CCS routes are derived values and are stored with the processed outputs.
+
 Use `--help` on either module to see options for sample size, random seed,
 financial metric, output type, and retrofit BAU baseline mode.
 
@@ -362,9 +364,11 @@ electricity captured price - LCOE = electricity LNM
 cement price - LCOC = cement LNM
 ```
 
-The general deterministic and probabilistic LCOX analysis is in
-`notebooks/lcox_summary.ipynb`. It keeps electricity and cement charts separate
-because LCOE and LCOC measure different products in different units.
+Deterministic and probabilistic LCOX comparisons are available in each
+sector's `*_summary.ipynb` notebook and through the corresponding
+`*_npv_summary_figures --metric LCOX` command. Cross-sector LCOX values should
+not be placed on one ranking because they refer to different products and
+functional units.
 
 The cement MACC annualizes CAPEX and uses all annual technology costs, including
 CCS transport and storage, while excluding carbon payments and product revenue.
@@ -444,25 +448,18 @@ available. No hydrogen MACC calculation is included.
 ## Generated Data and Version Control
 
 `data/raw/`, `data/processed/`, and `results/` are intentionally ignored by Git.
-They can become very large: the current local generated CSVs occupy roughly
-3 GB. They are reproducible outputs, not the only copy of source assumptions.
+They can become very large. They are reproducible outputs, not the only copy of
+source assumptions.
 Do not place hand-edited inputs or irreplaceable results only in these ignored
 folders.
 
 The dated PNG files in `figures/` are tracked selectively. Regenerating a
 workflow creates new date-stamped files rather than overwriting older figures.
 
-## Basic Validation
+## Basic Check
 
 Before handing over a change:
 
 ```bash
 python -m compileall -q src sensitivity_dashboard.py
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
-  --sample-size 100 --no-data --ranking-output none
-PYTHONPATH=src python -m cement.cement_npv_summary_figures \
-  --sample-size 100 --no-data --ranking-output none
 ```
-
-Compilation and the two small-sample workflow commands are the minimum smoke
-checks for the output pipeline.
