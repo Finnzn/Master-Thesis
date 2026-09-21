@@ -116,7 +116,7 @@ HYDROGEN_PROCESSED_OUTPUT_COLUMNS = (
     "discounted_lifetime_output_th2",
     "present_value_total_cost_eur",
     "lcoh_eur_per_th2",
-    "levelized_net_margin_eur_per_th2",
+    "levelized_profit_margin_eur_per_th2",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
@@ -139,15 +139,15 @@ HYDROGEN_FINANCIAL_METRIC_OPTIONS = {
         "zero_baseline": False,
         "axis_tick_step": 500.0,
     },
-    "LNM": {
-        "metric_column": "levelized_net_margin_eur_per_th2",
+    "LPM": {
+        "metric_column": "levelized_profit_margin_eur_per_th2",
         "metric_unit": "EUR/tH2",
         "scale": 1.0,
-        "summary_column": "levelized_net_margin_eur_per_th2",
-        "axis_label": "Levelized net margin (EUR/tH2)",
+        "summary_column": "levelized_profit_margin_eur_per_th2",
+        "axis_label": "Levelized profit margin (EUR/tH2)",
         "title_unit": "EUR/tH2",
-        "file_metric": "Levelized_Net_Margin_per_tH2",
-        "ranking_label": "levelized net margin",
+        "file_metric": "Levelized_Profit_Margin_per_tH2",
+        "ranking_label": "levelized profit margin",
         "higher_is_better": True,
         "color_by_sign": True,
         "zero_baseline": False,

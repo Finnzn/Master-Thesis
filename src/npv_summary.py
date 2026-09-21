@@ -101,7 +101,7 @@ def mean_metric(
     """Calculate mean values for a selected metric column.
 
     `scale` converts stored model units into display units. For example,
-    `npv_eur` uses `scale=1_000_000` for million EUR, while levelized net
+    `npv_eur` uses `scale=1_000_000` for million EUR, while levelized profit
     margin uses `scale=1`.
     """
 

@@ -2,7 +2,7 @@
 
 All sector models eventually reduce to the same financial structure: an upfront
 capital cost at year 0 and a constant annual net cash flow over the asset
-lifetime. Keeping the NPV, levelized net margin, and levelized cost formulas
+lifetime. Keeping the NPV, levelized profit margin, and levelized cost formulas
 here makes it easier to compare electricity, cement, and future sectors with
 consistent discounting.
 """
@@ -75,18 +75,20 @@ def calculate_discounted_lifetime_output(
     return discounted_output
 
 
-def calculate_levelized_net_margin(
+def calculate_levelized_profit_margin(
     npv_eur: float | np.ndarray,
     annual_output: float | np.ndarray,
     lifetime_years: int,
     discount_rate: float,
 ) -> float | np.ndarray:
-    """Calculate levelized net margin as NPV per discounted lifetime output.
+    """Calculate levelized profit margin as NPV per discounted lifetime output.
 
     The numerator and denominator use the same lifetime and discount rate. The
     result is therefore expressed in EUR per physical unit of output, while
     retaining NPV's sign: positive values create value and negative values
-    destroy value under the stated assumptions.
+    destroy value under the stated assumptions. This is algebraically equal to
+    levelized revenue minus levelized cost when both use the same discounted
+    lifetime-output denominator.
     """
 
     discounted_output = calculate_discounted_lifetime_output(
@@ -94,10 +96,10 @@ def calculate_levelized_net_margin(
         lifetime_years=lifetime_years,
         discount_rate=discount_rate,
     )
-    levelized_net_margin = np.asarray(npv_eur) / discounted_output
-    if np.ndim(levelized_net_margin) == 0:
-        return float(levelized_net_margin)
-    return levelized_net_margin
+    levelized_profit_margin = np.asarray(npv_eur) / discounted_output
+    if np.ndim(levelized_profit_margin) == 0:
+        return float(levelized_profit_margin)
+    return levelized_profit_margin
 
 
 def calculate_total_cost_present_value(

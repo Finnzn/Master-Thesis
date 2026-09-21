@@ -11,11 +11,11 @@ The project has three layers:
 1. `src/general_parameters.py` and the sector parameter modules define model
    assumptions and uncertainty distributions.
 2. Deterministic and Monte Carlo modules turn those assumptions into annual
-   costs, cash flow, NPV, levelized net margin, and LCOX arrays.
+   costs, cash flow, NPV, levelized profit margin, and LCOX arrays.
 3. Summary modules, notebooks, and the Streamlit dashboard present those
    results.
 
-The core NPV, levelized-net-margin, discounted-cost, and LCOX formulas are
+The core NPV, levelized-profit-margin, discounted-cost, and LCOX formulas are
 shared in `src/npv_finance.py`. All five sectors call this shared finance layer.
 
 ## Where to Change What
@@ -87,14 +87,12 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 
 - `figures/`: thesis-ready dated PNG files.
 - `data/raw/`: sampled or deterministic expected inputs exported by a run.
-- `data/processed/`: derived costs, cash flow, NPV, LNM, LCOX, and summary CSVs.
-- `results/`: run manifests and other numerical outputs.
+- `data/processed/`: derived costs, cash flow, NPV, LPM, LCOX, and summary CSVs.
+- `results/`: optional numerical outputs.
 
-The top-level runner writes `results/YYYY-MM-DD-run-manifest.json` with the
-seed, sample size, modes, commands, timestamps, Git state, and generated-file
-inventory. Raw-input CSVs hold normalized model inputs; derived resolved T&S
-unit costs are in processed outputs. The one direct BECCS T&S draw is retained
-as `transport_and_storage_cost_input_eur_per_mwh` in electricity raw inputs.
+Raw-input CSVs hold normalized model inputs; derived resolved T&S unit costs are
+in processed outputs. The one direct BECCS T&S draw is retained as
+`transport_and_storage_cost_input_eur_per_mwh` in electricity raw inputs.
 
 The data and results directories are ignored by Git. A generated CSV is
 reproducible only if its source code, assumptions, sample size, random seed, and
@@ -102,44 +100,44 @@ mode are recorded. The output modules encode sample size and random seed in the
 calculation but not in every filename, so keep the run command with any result
 used outside the repository.
 
-The default 100,000-draw runs create large files. Running both NPV scales repeats
-many raw and processed values because scaling NPV does not require a new Monte
-Carlo draw. Keep only the generated copies needed for analysis or archive them
-outside the working repository.
+The default 100,000-draw runs create large files. Running multiple financial
+metrics repeats many raw and processed values because changing the reported
+metric does not require a new Monte Carlo draw. Keep only the generated copies
+needed for analysis or archive them outside the working repository.
 
 ## Important Scientific Conventions
 
-- Higher total NPV and higher levelized net margin are better; lower LCOX is
+- Higher total NPV and higher levelized profit margin are better; lower LCOX is
   better.
 - A value of exactly zero is classified as non-negative.
-- Electricity levelized net margin is NPV divided by discounted lifetime
+- Electricity levelized profit margin is NPV divided by discounted lifetime
   electricity output and is reported in EUR/MWh.
-- Cement levelized net margin is NPV divided by discounted lifetime cement
+- Cement levelized profit margin is NPV divided by discounted lifetime cement
   output and is reported in EUR/t.
 - Electricity LCOX is LCOE in EUR/MWh; cement LCOX is LCOC in EUR/t cement.
 - LCOX includes year-zero CAPEX and discounted fixed OPEX, variable OPEX, fuel,
   energy, and carbon cost. It excludes product sales revenue.
-- Summary workflows switch explicitly between total NPV (`NPV`), levelized net
-  margin (`LNM`), and levelized cost (`LCOX`).
+- Summary workflows switch explicitly between total NPV (`NPV`), levelized
+  profit margin (`LPM`), and levelized cost (`LCOX`).
 - PV and onshore wind sample triangular value factors of 0.80/0.90/1.00, while
   offshore wind samples 0.85/0.95/1.00. Deterministic runs use the analytical
   triangular means: 0.90, 0.933, and 0.90, respectively.
   Captured electricity price is the model sales-price proxy multiplied by the
-  technology value factor; only electricity revenue, NPV, and LNM change. VF is
+  technology value factor; only electricity revenue, NPV, and LPM change. VF is
   included for these three technologies in the electricity sensitivity heatmap.
 - Under the current constant-price and constant-output models, captured
-  electricity price minus LCOE equals electricity LNM, while cement price minus
-  LCOC equals cement LNM.
+  electricity price minus LCOE equals electricity LPM, while cement price minus
+  LCOC equals cement LPM.
 - BECCS is registered as an electricity technology with uniformly sampled
   techno-economic ranges, a triangular biomass price of
   17.36/28.93/46.28 EUR/MWh_th, fixed full-load hours of 7,665 h/year, and an
   explicit 25-year lifetime assumption aligned with biogas.
 - BECCS emissions are negative. The common emissions-cost calculation therefore
-  produces a negative cost that acts as carbon-removal revenue in NPV/LNM and
+  produces a negative cost that acts as carbon-removal revenue in NPV/LPM and
   as a carbon credit in LCOE.
 - Monte Carlo technology rankings compare technologies within the same
   simulation ID, so shared uncertain conditions describe the same sampled
-  world. Rank 1 is the highest NPV/LNM or the lowest LCOX.
+  world. Rank 1 is the highest NPV/LPM or the lowest LCOX.
 - The default random seed is 42 and the default sample size is 100,000.
 - Cement retrofit technologies, hard-coal CCS, and CCGT CCS use a configurable
   BAU baseline mode. Electricity CCS uses hard coal or CCGT, respectively, as

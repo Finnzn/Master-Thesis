@@ -43,7 +43,7 @@ from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
     calculate_discounted_lifetime_output,
     calculate_levelized_cost,
-    calculate_levelized_net_margin,
+    calculate_levelized_profit_margin,
     calculate_npv,
     calculate_total_cost_present_value,
 )
@@ -60,8 +60,7 @@ HYDROGEN_TECHNOLOGIES = tuple(HYDROGEN_TECHNOLOGY_DISTRIBUTIONS) + tuple(
     HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
 )
 ENERGY_CARRIERS = ("natural_gas", "biomethane", "biomass")
-# Reuse the shared biomass-energy price, as in the ammonia sector. The user
-# approved the existing biogas price as a provisional biomethane price proxy.
+# Use the report-sourced shared biomass-energy price and fixed biomethane price.
 MARKET_PARAMETERS: Mapping[str, ParameterSpec] = {
     "gas_price_eur_per_mwh_th": GAS_PRICE_DISTRIBUTION,
     "biomethane_price_eur_per_mwh_th": BIOGAS_PRICE_EUR_PER_MWH_TH,
@@ -175,7 +174,7 @@ def calculate_result(
     parent_values: Mapping[str, np.ndarray] | None = None,
     increments: Mapping[str, np.ndarray] | None = None,
 ) -> dict[str, np.ndarray]:
-    """Calculate annual cash flows, NPV, LCOH, and levelized net margin."""
+    """Calculate annual cash flows, NPV, LCOH, and levelized profit margin."""
 
     size = len(values["capex_eur_per_th2"])
     output = ANNUAL_HYDROGEN_OUTPUT_TH2.value
@@ -306,7 +305,7 @@ def calculate_result(
             lifetime_years=lifetime,
             discount_rate=INTEREST_RATE.value,
         ),
-        "levelized_net_margin_eur_per_th2": calculate_levelized_net_margin(
+        "levelized_profit_margin_eur_per_th2": calculate_levelized_profit_margin(
             npv_eur=npv,
             annual_output=output,
             lifetime_years=lifetime,

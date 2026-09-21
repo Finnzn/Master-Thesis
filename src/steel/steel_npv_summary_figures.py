@@ -115,7 +115,7 @@ STEEL_PROCESSED_OUTPUT_COLUMNS = (
     "discounted_lifetime_output_tcs",
     "present_value_total_cost_eur",
     "lcos_eur_per_tcs",
-    "levelized_net_margin_eur_per_tcs",
+    "levelized_profit_margin_eur_per_tcs",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
@@ -138,15 +138,15 @@ STEEL_FINANCIAL_METRIC_OPTIONS = {
         "zero_baseline": False,
         "axis_tick_step": 500.0,
     },
-    "LNM": {
-        "metric_column": "levelized_net_margin_eur_per_tcs",
+    "LPM": {
+        "metric_column": "levelized_profit_margin_eur_per_tcs",
         "metric_unit": "EUR/tCS",
         "scale": 1.0,
-        "summary_column": "levelized_net_margin_eur_per_tcs",
-        "axis_label": "Levelized net margin (EUR/tCS)",
+        "summary_column": "levelized_profit_margin_eur_per_tcs",
+        "axis_label": "Levelized profit margin (EUR/tCS)",
         "title_unit": "EUR/tCS",
-        "file_metric": "Levelized_Net_Margin_per_tCS",
-        "ranking_label": "levelized net margin",
+        "file_metric": "Levelized_Profit_Margin_per_tCS",
+        "ranking_label": "levelized profit margin",
         "higher_is_better": True,
         "color_by_sign": True,
         "zero_baseline": False,

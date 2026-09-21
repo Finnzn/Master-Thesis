@@ -105,7 +105,7 @@ sector-specific calculations.
   distribution specifications used by Monte Carlo simulations.
 - `src/general_parameters.py` stores shared assumptions such as carbon price,
   discount rate, and fuel-price distributions.
-- `src/npv_finance.py` contains the sector-independent NPV, levelized net
+- `src/npv_finance.py` contains the sector-independent NPV, levelized profit
   margin, and LCOX formulas.
 - `src/sensitivity_analysis.py` contains deterministic one-factor-at-a-time
   sensitivity calculations and tornado-chart plotting for the dashboard.
@@ -147,7 +147,7 @@ one-point case.
 
 ## BECCS Electricity Assumptions
 
-BECCS follows the same normalized-output, deterministic, Monte Carlo, NPV, LNM,
+BECCS follows the same normalized-output, deterministic, Monte Carlo, NPV, LPM,
 and LCOE pipeline as the other electricity technologies. Its assumptions are:
 
 | Input | BECCS assumption |
@@ -248,7 +248,7 @@ The path above is specific to the original development machine. On another
 machine, activate the environment created in the quick start and use the first
 command.
 
-The dashboard uses the same `NPV`, `LNM`, and `LCOX` selector as the summary and
+The dashboard uses the same `NPV`, `LPM`, and `LCOX` selector as the summary and
 scenario notebooks. Green bars indicate changes that improve the selected
 metric and red bars indicate changes that worsen it; for LCOX, a lower value is
 treated as better. The `+x%` or `-x%` labels show which input movement caused
@@ -273,7 +273,7 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 ```
 
 The heatmaps compare equal relative input changes using the selected `NPV`,
-`LNM`, or `LCOX` metric. Annual output and product selling prices are excluded
+`LPM`, or `LCOX` metric. Annual output and product selling prices are excluded
 from these cross-technology heatmaps because they are common comparison
 assumptions rather than technology-development inputs. Lifetime and discount
 rate remain included as common financial assumptions. Every row is a
@@ -292,10 +292,10 @@ To regenerate electricity-sector total NPV figures and CSV outputs, run:
 PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric NPV
 ```
 
-For electricity levelized net margin, use:
+For electricity levelized profit margin, use:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LNM
+PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LPM
 ```
 
 For LCOE, use the same electricity workflow with `LCOX`:
@@ -313,7 +313,7 @@ PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
   --metric LCOX --retrofit-bau-mode deterministic
 ```
 
-For cement, use the same `--metric NPV`, `--metric LNM`, or `--metric LCOX`
+For cement, use the same `--metric NPV`, `--metric LPM`, or `--metric LCOX`
 switch. In the cement model, `LCOX` is reported as LCOC:
 
 ```bash
@@ -336,8 +336,7 @@ financial metric, output type, and retrofit BAU baseline mode.
 The reporting workflows can switch between:
 
 - `NPV`: total project net present value, displayed in million EUR.
-- `LNM`: levelized net margin, displayed in EUR/MWh of electricity or EUR/t of
-  cement.
+- `LPM`: levelized profit margin, displayed in EUR per sector product unit.
 - `LCOX`: levelized cost of the sector product. This is displayed as LCOE in
   EUR/MWh for electricity and LCOC in EUR/t cement for cement.
 
@@ -345,7 +344,8 @@ All three metrics use the same project lifetime, discount rate, and cash-flow
 timing:
 
 ```text
-LNM = NPV / discounted lifetime output
+LPM = NPV / discounted lifetime output
+LPM = levelized revenue - LCOX
 LCOX = discounted lifetime cost / discounted lifetime output
 discounted lifetime output = sum(output_t / (1 + r)^t)
 discounted lifetime cost = CAPEX at t=0 + sum(annual cost_t / (1 + r)^t)
@@ -353,15 +353,18 @@ discounted lifetime cost = CAPEX at t=0 + sum(annual cost_t / (1 + r)^t)
 
 For the current level annual-output models, discounted lifetime output equals
 annual output multiplied by the level cash-flow present-value factor. Positive
-LNM creates value, zero is break-even, and negative LNM destroys value under the
+LPM creates value, zero is break-even, and negative LPM destroys value under the
 stated assumptions. Lower LCOX is preferable. The LCOX boundary includes CAPEX,
 fixed OPEX, variable OPEX, fuel, cement electricity consumption, and carbon
-cost; product sales revenue is excluded. Under the current constant-price and
-constant-output assumptions:
+cost; product sales revenue is excluded. The supplied fixed and variable OPEX
+parameters exclude fuel and purchased electricity, which are added separately.
+The LPM terminology follows the life-cycle unit-profit definition introduced by
+[Glenk and Reichelstein (2022)](https://doi.org/10.1016/j.rser.2022.112758).
+Under the current constant-price and constant-output assumptions:
 
 ```text
-electricity captured price - LCOE = electricity LNM
-cement price - LCOC = cement LNM
+electricity captured price - LCOE = electricity LPM
+cement price - LCOC = cement LPM
 ```
 
 Deterministic and probabilistic LCOX comparisons are available in each
@@ -413,7 +416,7 @@ coproduct credit for methane pyrolysis.
 
 The source modules in `src/hydrogen/` compare six stand-alone hydrogen routes
 and two NG-SMR retrofits at **100,000 tH2/year**, with a 25-year lifetime and
-7,500 EUR/tH2 retail price. They calculate deterministic NPV, levelized net
+7,500 EUR/tH2 retail price. They calculate deterministic NPV, levelized profit
 margin, and levelized cost of hydrogen (LCOH), plus aligned Monte Carlo
 simulations, rankings, figures, and raw/processed CSVs. For example:
 
@@ -427,10 +430,10 @@ sampled NG-SMR inputs with biomethane SMR and NG-SMR + CCS; use
 `--retrofit-bau-mode deterministic` to hold the parent at expected inputs.
 The eight `notebooks/hydrogen/deterministic_*_npv.ipynb` notebooks show
 expected inputs, financial outputs, and parent/incremental retrofit inputs.
-The matching `plot_*_npv.ipynb` notebooks show NPV, LNM, and LCOH Monte Carlo
+The matching `plot_*_npv.ipynb` notebooks show NPV, LPM, and LCOH Monte Carlo
 distributions plus annual cost components. Notebook figures remain inline.
 `notebooks/hydrogen/hydrogen_summary.ipynb` compares all eight routes using
-aligned Monte Carlo and deterministic NPV, LNM, or LCOH results and displays
+aligned Monte Carlo and deterministic NPV, LPM, or LCOH results and displays
 the Monte Carlo ranking. The default `notebooks/sensitivity_heatmap.ipynb`
 run includes hydrogen alongside ammonia, cement, electricity, and steel.
 Biomethane SMR replaces the parent's natural gas with biomethane. NG-SMR + CCS
@@ -439,11 +442,9 @@ CCS transport/storage cost rule. Fuel and electricity costs are calculated
 separately from the supplied OPEX values; upstream emissions and carbon
 by-product credits are outside the model boundary.
 
-The hydrogen model reuses the shared biomass-energy price distribution for
-biomass gasification. At the user's direction, biomethane SMR provisionally
-uses the existing fixed biogas price of 87.5 EUR/MWh_th as its biomethane
-purchase price. Replace this proxy when a biomethane-specific price is
-available. No hydrogen MACC calculation is included.
+The hydrogen model uses the report-sourced shared biomass-energy price
+distribution for biomass gasification and the report-sourced fixed value of
+87.5 EUR/MWh_th for biomethane. No hydrogen MACC calculation is included.
 
 ## Generated Data and Version Control
 

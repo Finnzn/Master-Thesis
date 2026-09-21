@@ -1,7 +1,7 @@
 """Deterministic sensitivity-analysis helpers for the financial dashboard.
 
 The dashboard uses the existing deterministic sector models as its base case.
-This module recalculates NPV, levelized net margin, or levelized cost after
+This module recalculates NPV, levelized profit margin, or levelized cost after
 explicit user changes to prices, costs, output, lifetime, or discount rate; it
 does not change the thesis assumptions stored in the parameter modules.
 """
@@ -55,7 +55,7 @@ from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
     calculate_level_cash_flow_present_value_factor,
     calculate_levelized_cost,
-    calculate_levelized_net_margin,
+    calculate_levelized_profit_margin,
 )
 from steel.steel_npv_deterministic import calculate_deterministic_steel_result
 from steel.steel_parameters import (
@@ -129,7 +129,7 @@ SECTOR_UNITS = {
     "steel": "tCS",
 }
 
-FINANCIAL_METRIC_OPTIONS = ("NPV", "LNM", "LCOX")
+FINANCIAL_METRIC_OPTIONS = ("NPV", "LPM", "LCOX")
 
 
 SENSITIVITY_PARAMETERS: Mapping[str, tuple[SensitivityParameter, ...]] = {
@@ -769,7 +769,7 @@ def calculate_metric_value(
     inputs: ScenarioInputs,
     metric: str,
 ) -> float:
-    """Calculate NPV, levelized net margin, or levelized cost for a scenario."""
+    """Calculate NPV, levelized profit margin, or levelized cost for a scenario."""
 
     if metric not in FINANCIAL_METRIC_OPTIONS:
         valid_metrics = ", ".join(FINANCIAL_METRIC_OPTIONS)
@@ -779,9 +779,9 @@ def calculate_metric_value(
     npv_eur = calculate_sector_npv(sector, inputs)
     if metric == "NPV":
         return npv_eur / 1_000_000.0
-    if metric == "LNM":
+    if metric == "LPM":
         return float(
-            calculate_levelized_net_margin(
+            calculate_levelized_profit_margin(
                 npv_eur=npv_eur,
                 annual_output=inputs.annual_output,
                 lifetime_years=int(round(inputs.lifetime_years)),
@@ -808,8 +808,8 @@ def metric_axis_label(sector: str, metric: str) -> str:
 
     if metric == "NPV":
         return "Impact on NPV (million EUR)"
-    if metric == "LNM":
-        return f"Impact on levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LPM":
+        return f"Impact on levelized profit margin (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
         levelized_cost_name = {
             "ammonia": "LCOA",

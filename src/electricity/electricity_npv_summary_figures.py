@@ -112,7 +112,7 @@ ELECTRICITY_PROCESSED_OUTPUT_COLUMNS = (
     "discounted_lifetime_output_mwh",
     "present_value_total_cost_eur",
     "lcoe_eur_per_mwh",
-    "levelized_net_margin_eur_per_mwh",
+    "levelized_profit_margin_eur_per_mwh",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
@@ -134,15 +134,15 @@ ELECTRICITY_FINANCIAL_METRIC_OPTIONS = {
         "color_by_sign": True,
         "zero_baseline": False,
     },
-    "LNM": {
-        "metric_column": "levelized_net_margin_eur_per_mwh",
+    "LPM": {
+        "metric_column": "levelized_profit_margin_eur_per_mwh",
         "metric_unit": "EUR/MWh",
         "scale": 1.0,
-        "summary_column": "levelized_net_margin_eur_per_mwh",
-        "axis_label": "Levelized net margin (EUR/MWh)",
+        "summary_column": "levelized_profit_margin_eur_per_mwh",
+        "axis_label": "Levelized profit margin (EUR/MWh)",
         "title_unit": "EUR/MWh",
-        "file_metric": "Levelized_Net_Margin_per_MWh",
-        "ranking_label": "levelized net margin",
+        "file_metric": "Levelized_Profit_Margin_per_MWh",
+        "ranking_label": "levelized profit margin",
         "higher_is_better": True,
         "color_by_sign": True,
         "zero_baseline": False,

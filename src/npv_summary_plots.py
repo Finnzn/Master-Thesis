@@ -211,7 +211,7 @@ def plot_financial_metric_distribution(
 ) -> tuple[plt.Figure, plt.Axes]:
     """Plot one Monte Carlo financial-metric distribution.
 
-    NPV and levelized net margin callers can show the zero break-even line.
+    NPV and levelized profit margin callers can show the zero break-even line.
     Levelized cost callers omit it because zero cost is not a profitability
     threshold.
     """

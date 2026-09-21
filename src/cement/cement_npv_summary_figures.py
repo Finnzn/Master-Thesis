@@ -109,7 +109,7 @@ CEMENT_PROCESSED_OUTPUT_COLUMNS = (
     "discounted_lifetime_output_t",
     "present_value_total_cost_eur",
     "lcoc_eur_per_t",
-    "levelized_net_margin_eur_per_t",
+    "levelized_profit_margin_eur_per_t",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
@@ -131,15 +131,15 @@ CEMENT_FINANCIAL_METRIC_OPTIONS = {
         "color_by_sign": True,
         "zero_baseline": False,
     },
-    "LNM": {
-        "metric_column": "levelized_net_margin_eur_per_t",
+    "LPM": {
+        "metric_column": "levelized_profit_margin_eur_per_t",
         "metric_unit": "EUR/t",
         "scale": 1.0,
-        "summary_column": "levelized_net_margin_eur_per_t",
-        "axis_label": "Levelized net margin (EUR/t cement)",
+        "summary_column": "levelized_profit_margin_eur_per_t",
+        "axis_label": "Levelized profit margin (EUR/t cement)",
         "title_unit": "EUR/t",
-        "file_metric": "Levelized_Net_Margin_per_t",
-        "ranking_label": "levelized net margin",
+        "file_metric": "Levelized_Profit_Margin_per_t",
+        "ranking_label": "levelized profit margin",
         "higher_is_better": True,
         "color_by_sign": True,
         "zero_baseline": False,

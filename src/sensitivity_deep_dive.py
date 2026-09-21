@@ -5,7 +5,7 @@ time by the same relative amount (20% by default), and the resulting change in
 the selected financial metric is recorded. It does not perform Monte Carlo
 uncertainty-range or correlation analysis.
 
-The selected financial metric can be NPV, levelized net margin, or levelized
+The selected financial metric can be NPV, levelized profit margin, or levelized
 cost. Product selling price and annual output are excluded from the
 cross-technology heatmap because they are common comparison assumptions.
 Lifetime and discount rate remain included as common financial assumptions.
@@ -201,7 +201,7 @@ def _technology_label(technology: str) -> str:
 def standardized_sensitivity(
     sector: str,
     variation_fraction: float,
-    metric: str = "LNM",
+    metric: str = "LPM",
 ) -> pd.DataFrame:
     """Calculate equal-percentage financial sensitivity for all technologies."""
 
@@ -244,7 +244,7 @@ def plot_sensitivity_heatmap(
     sector: str,
     variation_fraction: float,
     output_path: Path,
-    metric: str = "LNM",
+    metric: str = "LPM",
 ) -> Path:
     """Save a within-technology relative sensitivity heatmap for one sector."""
 
@@ -264,7 +264,7 @@ def build_sensitivity_heatmap_figure(
     standardized: pd.DataFrame,
     sector: str,
     variation_fraction: float,
-    metric: str = "LNM",
+    metric: str = "LPM",
 ) -> plt.Figure:
     """Build a within-technology relative sensitivity heatmap for one sector."""
 
@@ -369,7 +369,7 @@ def generate_deep_dive(
     processed_data_dir: Path | None = None,
     figure_dir: Path | None = None,
     variation_fraction: float = 0.20,
-    metric: str = "LNM",
+    metric: str = "LPM",
 ) -> tuple[Path, ...]:
     """Save one standardized CSV and one heatmap per sector."""
 
@@ -415,8 +415,8 @@ def generate_deep_dive(
 def _metric_title_label(metric: str) -> str:
     """Return a concise plot-title label for a sensitivity metric."""
 
-    if metric == "LNM":
-        return "levelized net margin"
+    if metric == "LPM":
+        return "levelized profit margin"
     if metric == "NPV":
         return "total NPV"
     if metric == "LCOX":
@@ -430,8 +430,8 @@ def _metric_title_label(metric: str) -> str:
 def _metric_filename_suffix(metric: str) -> str:
     """Return a filename-safe label for a sensitivity metric."""
 
-    if metric == "LNM":
-        return "Levelized_Net_Margin"
+    if metric == "LPM":
+        return "Levelized_Profit_Margin"
     if metric == "NPV":
         return "NPV"
     if metric == "LCOX":
@@ -487,7 +487,7 @@ def main() -> None:
     parser.add_argument(
         "--metric",
         choices=FINANCIAL_METRIC_OPTIONS,
-        default="LNM",
+        default="LPM",
         help="Financial metric used for the one-at-a-time sensitivity calculation.",
     )
     args = parser.parse_args()

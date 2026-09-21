@@ -50,7 +50,7 @@ from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
     calculate_discounted_lifetime_output,
     calculate_levelized_cost,
-    calculate_levelized_net_margin,
+    calculate_levelized_profit_margin,
     calculate_npv,
     calculate_total_cost_present_value,
 )
@@ -374,7 +374,7 @@ def _calculate_cement_cash_flow_result(
         lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
     )
-    levelized_net_margin_eur_per_t = calculate_levelized_net_margin(
+    levelized_profit_margin_eur_per_t = calculate_levelized_profit_margin(
         npv_eur=npv_eur,
         annual_output=annual_output_t,
         lifetime_years=int(lifetime_years),
@@ -442,7 +442,7 @@ def _calculate_cement_cash_flow_result(
         ),
         "present_value_total_cost_eur": present_value_total_cost_eur,
         "lcoc_eur_per_t": lcoc_eur_per_t,
-        "levelized_net_margin_eur_per_t": levelized_net_margin_eur_per_t,
+        "levelized_profit_margin_eur_per_t": levelized_profit_margin_eur_per_t,
     }
 
     if bau_values is not None:

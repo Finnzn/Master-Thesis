@@ -80,7 +80,7 @@ def render_sector_dashboard(sector: str) -> None:
         metric = st.selectbox(
             "Financial metric",
             FINANCIAL_METRIC_OPTIONS,
-            index=FINANCIAL_METRIC_OPTIONS.index("LNM"),
+            index=FINANCIAL_METRIC_OPTIONS.index("LPM"),
             format_func=lambda value: format_metric_option(sector, value),
             key=f"{sector}_metric",
         )
@@ -392,8 +392,8 @@ def format_metric_option(sector: str, metric: str) -> str:
 
     if metric == "NPV":
         return "Total NPV (MEUR)"
-    if metric == "LNM":
-        return f"Levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LPM":
+        return f"Levelized profit margin (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
         levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
         return f"{levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
@@ -405,8 +405,8 @@ def selected_metric_label(sector: str, metric: str) -> str:
 
     if metric == "NPV":
         return "Scenario NPV"
-    if metric == "LNM":
-        return f"Scenario levelized net margin (EUR/{SECTOR_UNITS[sector]})"
+    if metric == "LPM":
+        return f"Scenario levelized profit margin (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
         levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
         return f"Scenario {levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
@@ -418,7 +418,7 @@ def format_metric_value(sector: str, metric: str, value: float) -> str:
 
     if metric == "NPV":
         return f"{value:,.1f} MEUR"
-    if metric in {"LNM", "LCOX"}:
+    if metric in {"LPM", "LCOX"}:
         return f"{value:,.2f} EUR/{SECTOR_UNITS[sector]}"
     raise ValueError(f"Unknown financial metric: {metric!r}.")
 

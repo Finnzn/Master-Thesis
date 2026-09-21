@@ -8311,3 +8311,55 @@ is not needed for the thesis workflow.
   remains in the workspace.
 - Compiled the remaining Python source and checked documentation references and
   `git diff --check`.
+
+## 2026-09-21 16:03 CEST — Rename levelized net margin to levelized profit margin
+
+### User request
+
+Replace the levelized net margin terminology throughout the project with
+levelized profit margin, after confirming that the two formulations are
+mathematically equivalent in the implemented financial model. Do not add the
+separately discussed carbon-price scenario.
+
+### Terminology and schema migration
+
+- Renamed the public metric key from `LNM` to `LPM`.
+- Renamed `calculate_levelized_net_margin` to
+  `calculate_levelized_profit_margin` and changed all imports and call sites.
+- Renamed every `levelized_net_margin_*` result, variable, and CSV column to
+  `levelized_profit_margin_*`.
+- Updated metric selectors, dashboard labels, sensitivity labels, ranking
+  labels, figure titles, filenames, README guidance, handover documentation,
+  and notebook source/output text.
+- Documented the literature-aligned identity
+  `LPM = levelized revenue - LCOX = NPV / discounted lifetime output`.
+- Clarified the supplied OPEX boundary and the report-sourced biomass and
+  biomethane prices in current documentation and source comments.
+
+### Regenerated artifacts
+
+- Regenerated NPV, LPM, and LCOX outputs for all five sectors with 100,000
+  samples and seed 42, including ranking tables and figures.
+- Regenerated NPV, LPM, and LCOX standardized sensitivity outputs.
+- Executed all 98 notebooks in place with the LPM API and schema.
+- Removed 31 superseded LNM CSVs, 20 superseded LNM PNGs, and the stale
+  pre-rename run manifest from the workspace. They were moved to the system
+  Trash and remain recoverable.
+
+### Numerical equivalence and verification
+
+- Compared all 31 old/new LNM/LPM CSV pairs after normalizing terminology;
+  their contents matched exactly.
+- Verified `LPM = NPV / discounted lifetime output` over all 4,400,000 sector
+  Monte Carlo rows; maximum CSV round-trip error was `9.095e-13`.
+- Verified `LPM = levelized revenue - LCOX` over the same 4,400,000 rows;
+  maximum absolute error was `4.547e-12`.
+- Confirmed that current source, documentation, notebooks, CSV content, and
+  generated filenames contain no old LNM terminology.
+- Confirmed all 98 notebooks have executed non-empty code cells and no stored
+  errors; compiled all remaining Python source and ran `git diff --check`.
+- Visually inspected all five sector mean-LPM figures and the electricity LPM
+  sensitivity heatmap.
+
+No carbon-price scenario was implemented, and no techno-economic value or
+financial calculation changed.

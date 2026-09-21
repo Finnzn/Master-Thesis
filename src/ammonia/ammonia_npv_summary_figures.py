@@ -117,7 +117,7 @@ AMMONIA_PROCESSED_OUTPUT_COLUMNS = (
     "discounted_lifetime_output_tnh3",
     "present_value_total_cost_eur",
     "lcoa_eur_per_tnh3",
-    "levelized_net_margin_eur_per_tnh3",
+    "levelized_profit_margin_eur_per_tnh3",
 )
 
 # Internal simulation arrays use `run_id`; exported CSVs use `simulation_id`
@@ -140,15 +140,15 @@ AMMONIA_FINANCIAL_METRIC_OPTIONS = {
         "zero_baseline": False,
         "axis_tick_step": 500.0,
     },
-    "LNM": {
-        "metric_column": "levelized_net_margin_eur_per_tnh3",
+    "LPM": {
+        "metric_column": "levelized_profit_margin_eur_per_tnh3",
         "metric_unit": "EUR/tNH3",
         "scale": 1.0,
-        "summary_column": "levelized_net_margin_eur_per_tnh3",
-        "axis_label": "Levelized net margin (EUR/tNH3)",
+        "summary_column": "levelized_profit_margin_eur_per_tnh3",
+        "axis_label": "Levelized profit margin (EUR/tNH3)",
         "title_unit": "EUR/tNH3",
-        "file_metric": "Levelized_Net_Margin_per_tNH3",
-        "ranking_label": "levelized net margin",
+        "file_metric": "Levelized_Profit_Margin_per_tNH3",
+        "ranking_label": "levelized profit margin",
         "higher_is_better": True,
         "color_by_sign": True,
         "zero_baseline": False,

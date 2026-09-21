@@ -42,7 +42,7 @@ from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
     calculate_discounted_lifetime_output,
     calculate_levelized_cost,
-    calculate_levelized_net_margin,
+    calculate_levelized_profit_margin,
     calculate_npv,
     calculate_total_cost_present_value,
 )
@@ -59,8 +59,8 @@ AMMONIA_TECHNOLOGIES = tuple(AMMONIA_TECHNOLOGY_DISTRIBUTIONS) + tuple(
     AMMONIA_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
 )
 ENERGY_CARRIERS = ("natural_gas", "coal", "biomass")
-# No ammonia-specific biomass price was supplied. This reuses the shared
-# biomass-energy price already used by the electricity sector as a working proxy.
+# Reuse the report-sourced shared biomass-energy price used by the electricity
+# sector.
 MARKET_PARAMETERS: Mapping[str, ParameterSpec] = {
     "gas_price_eur_per_mwh_th": GAS_PRICE_DISTRIBUTION,
     "coal_price_eur_per_mwh_th": COAL_PRICE_DISTRIBUTION,
@@ -155,7 +155,7 @@ def calculate_result(
     parent_values: Mapping[str, np.ndarray] | None = None,
     increments: Mapping[str, np.ndarray] | None = None,
 ) -> dict[str, np.ndarray]:
-    """Calculate annual cash flows, NPV, LCOA, and levelized net margin."""
+    """Calculate annual cash flows, NPV, LCOA, and levelized profit margin."""
 
     size = len(values["capex_eur_per_tnh3"])
     output = ANNUAL_AMMONIA_OUTPUT_TNH3.value
@@ -278,7 +278,7 @@ def calculate_result(
             lifetime_years=lifetime,
             discount_rate=INTEREST_RATE.value,
         ),
-        "levelized_net_margin_eur_per_tnh3": calculate_levelized_net_margin(
+        "levelized_profit_margin_eur_per_tnh3": calculate_levelized_profit_margin(
             npv_eur=npv,
             annual_output=output,
             lifetime_years=lifetime,

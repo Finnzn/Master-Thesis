@@ -34,7 +34,7 @@ from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
     calculate_discounted_lifetime_output,
     calculate_levelized_cost,
-    calculate_levelized_net_margin,
+    calculate_levelized_profit_margin,
     calculate_npv,
     calculate_total_cost_present_value,
 )
@@ -388,7 +388,7 @@ def calculate_deterministic_steel_result(
         lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
     )
-    levelized_net_margin_eur_per_tcs = calculate_levelized_net_margin(
+    levelized_profit_margin_eur_per_tcs = calculate_levelized_profit_margin(
         npv_eur=npv_eur,
         annual_output=annual_output_tcs,
         lifetime_years=int(lifetime_years),
@@ -464,8 +464,8 @@ def calculate_deterministic_steel_result(
         "discounted_lifetime_output_tcs": [discounted_lifetime_output_tcs],
         "present_value_total_cost_eur": [present_value_total_cost_eur],
         "lcos_eur_per_tcs": [lcos_eur_per_tcs],
-        "levelized_net_margin_eur_per_tcs": [
-            levelized_net_margin_eur_per_tcs
+        "levelized_profit_margin_eur_per_tcs": [
+            levelized_profit_margin_eur_per_tcs
         ],
     }
 
