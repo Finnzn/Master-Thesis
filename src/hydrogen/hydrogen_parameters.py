@@ -20,7 +20,7 @@ LIFETIME_HYDROGEN_YEARS = FixedParameter(
 )
 
 RETAIL_PRICE_HYDROGEN_EUR_PER_T = FixedParameter(
-    value=2_000.0,
+    value=3_000.0,
     unit="EUR/t",
     description="Retail price of hydrogen used in the hydrogen-sector setup.",
 )
