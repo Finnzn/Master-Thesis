@@ -8410,3 +8410,49 @@ NG-SMR + Haber-Bosch as the ammonia reference.
   axes, and footnotes render without clipping.
 
 No carbon-price scenario or techno-economic assumption was added or changed.
+
+## 2026-09-22 09:34 CEST — Refresh hydrogen summary after LPM rename
+
+### User request
+
+Investigate the hydrogen summary notebook rejecting `FINANCIAL_METRIC = "LPM"`
+and clarify whether biomass gasification is the best-performing route.
+
+### Files changed
+
+- `notebooks/hydrogen/hydrogen_summary.ipynb` — re-executed all cells in a
+  fresh kernel and saved current LPM tables and figures without the stale metric
+  configuration.
+- `CHANGELOG.md` — recorded this verification and refresh.
+
+### What was implemented
+
+- Confirmed that the current hydrogen summary source exposes `NPV`, `LPM`, and
+  `LCOX`. The reported exception came from a running notebook kernel retaining
+  the earlier `LNM` configuration in memory.
+- Refreshed the complete notebook with the current levelized-profit-margin
+  names and outputs.
+- Confirmed that biomass gasification is the strongest deterministic hydrogen
+  route under the current assumptions and has the highest Monte Carlo
+  probability of ranking first.
+
+### Verification
+
+- Executed `notebooks/hydrogen/hydrogen_summary.ipynb` in place through a new
+  Python kernel; all five code cells completed without error.
+- Confirmed the saved notebook contains no error outputs.
+- Recalculated 100,000 aligned simulations with seed 42: biomass gasification
+  ranks first in 68.196% of runs, followed by NG-SMR + CCS in 31.670%.
+- Ran `git diff --check` without errors.
+
+### Reproducibility notes
+
+- If the notebook was open before the LNM-to-LPM rename, restart its kernel and
+  run all cells so Python reloads the current source modules.
+- Results retain the current 7,500 EUR/tH2 selling price and provisional 87.5
+  EUR/MWh_th biomethane price.
+
+### Next suggested step
+
+Keep the ammonia and hydrogen presentation conclusions separate because their
+best-performing technologies differ.
