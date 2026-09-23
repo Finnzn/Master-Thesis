@@ -8456,3 +8456,135 @@ and clarify whether biomass gasification is the best-performing route.
 
 Keep the ammonia and hydrogen presentation conclusions separate because their
 best-performing technologies differ.
+
+## 2026-09-23 15:33 CEST — Consolidate financial models and summary workflows
+
+### User request
+
+Implement the agreed structural changes for the duplicated sector summary
+workflows, the inconsistent deterministic/Monte Carlo model structure, and the
+second financial calculation path in sensitivity analysis. Preserve every
+scientific result and verify all notebooks without rewriting their saved files.
+
+### Files changed
+
+- `src/financial_summary_workflow.py` — added the shared sector summary,
+  ranking, export, plotting, and command-line workflow.
+- `src/{electricity,cement,steel,ammonia,hydrogen}/*_npv_summary_figures.py` —
+  reduced each sector module to its labels, export schema, metric metadata,
+  workflow configuration, and legacy compatibility names.
+- `src/npv_finance.py` — added the common explicit-input financial-result
+  kernel plus product and electricity input adapters.
+- `src/{electricity,cement,steel}/*_npv_deterministic.py` and
+  `src/{electricity,cement,steel}/*_npv_monte_carlo.py` — routed both calculation
+  modes through the common discounted-finance kernel.
+- `src/{ammonia,hydrogen}/*_npv_deterministic.py` — routed the existing shared
+  `calculate_result` paths, already used by Monte Carlo, through the same
+  kernel.
+- `src/sensitivity_analysis.py` — removed the independent financial-component,
+  NPV, LPM, and LCOX arithmetic and delegated explicit scenarios to the shared
+  financial adapters.
+- `README.md` — documented the new source-code responsibilities.
+- `CHANGELOG.md` — recorded this refactor and its parity checks.
+
+### What was implemented
+
+- Replaced roughly 4,800 lines of repeated summary orchestration with one
+  configured workflow while retaining all existing sector module names,
+  notebook imports, output names, and CLI commands.
+- Standardized deterministic, Monte Carlo, and sensitivity calculations on one
+  financial kernel. Sector modules still own their physical assumptions,
+  technology resolution, random sampling, and CCS transport/storage basis.
+- Retained the historical sequential subtraction order for electricity and
+  cement to avoid even sub-micro-euro floating-point drift.
+- Kept the notebook organization unchanged and did not add a permanent test
+  suite, full-regeneration command, or run manifest because those items were
+  outside this requested scope.
+
+### Verification
+
+- Compiled all Python source successfully with `python -m compileall -q src`.
+- Compared all 3,839 deterministic and seeded 257-draw Monte Carlo result
+  fields for all 44 technologies against a pre-edit snapshot; every numeric
+  field was bit-for-bit equal and every text field, key, and shape matched.
+- Compared all 132 base sensitivity outputs (44 technologies times NPV, LPM,
+  and LCOX) against the pre-edit snapshot; every value was exactly equal.
+- Regenerated 135 representative NPV/LPM/LCOX summary artefacts across all five
+  sectors with 37 draws and seed 123; every PNG and CSV was byte-for-byte equal
+  to the pre-edit artefact.
+- Executed all 100 notebooks through temporary outputs; all passed with no
+  error output, no source changes, and no changes to the notebook files.
+- Ran `git diff --check` successfully.
+
+### Reproducibility notes
+
+- No techno-economic assumption, random seed, result schema, generated project
+  artefact, or notebook file was changed by this refactor.
+- The pre-existing modification to
+  `notebooks/hydrogen/hydrogen_summary.ipynb` was preserved byte-for-byte.
+- The temporary notebook audit found 17 already-stale stored outputs: the 16
+  individual hydrogen deterministic/plot notebooks and the hydrogen rows in
+  `notebooks/scenario_analysis.ipynb` still show the earlier 7,500 EUR/tH2
+  selling price, whereas the source already used 3,000 EUR/tH2 before this
+  refactor. Those files were deliberately not refreshed in this task.
+
+### Next suggested step
+
+Refresh the 17 stale hydrogen-related notebook outputs in a separate,
+explicitly reviewed change if the 3,000 EUR/tH2 source assumption is final.
+
+## 2026-09-23 15:48 CEST — Rename sector summary modules
+
+### User request
+
+Explain the shared summary and financial architecture in detail, identify the
+sector-specific calculations still assembled separately in electricity,
+cement, and steel, and replace the misleading `*_npv_summary_figures.py`
+module names with financial-summary names.
+
+### Files changed
+
+- `src/{electricity,cement,steel,ammonia,hydrogen}/*_financial_summary.py` —
+  made these the canonical sector summary configuration modules.
+- `src/{electricity,cement,steel,ammonia,hydrogen}/*_npv_summary_figures.py` —
+  replaced the former implementations with deprecated compatibility shims.
+- `src/{ammonia,hydrogen,steel}/*_macc.py` and
+  `src/sensitivity_deep_dive.py` — changed label imports to the canonical
+  financial-summary modules.
+- 23 affected notebooks — changed source imports to the canonical module names;
+  saved cell outputs were left untouched.
+- `README.md` and `docs/HANDOVER.md` — changed documented commands and source
+  references to the canonical names.
+- `CHANGELOG.md` — recorded the rename and validation.
+
+### What was implemented
+
+- Renamed each real sector summary module to `<sector>_financial_summary.py`,
+  reflecting that it supports NPV, LPM, and LCOX plus rankings and exports.
+- Retained the old module names as forwarding shims so external imports and
+  existing CLI commands continue to work during migration.
+- Updated every project-owned import to use the new canonical name.
+
+### Verification
+
+- Compiled all Python source successfully.
+- Ran both the canonical and legacy CLI for every sector with 37 draws, seed
+  123, and LPM; all 45 generated CSV/PNG artefacts were byte-for-byte equal.
+- Executed all 23 notebooks whose imports changed through temporary outputs;
+  every notebook passed.
+- Compared 123 executed code-cell outputs with the pre-rename executions; no
+  output differed.
+- Ran `git diff --check` successfully.
+
+### Reproducibility notes
+
+- No assumptions, formulas, random settings, saved notebook outputs, or
+  generated project artefacts changed.
+- New commands should use `python -m <sector>.<sector>_financial_summary`.
+  The former `*_npv_summary_figures` commands remain operational.
+
+### Next suggested step
+
+If further consolidation is wanted, move each sector's resolved physical-cost
+assembly into one pure `calculate_result` function shared by deterministic and
+Monte Carlo input providers.

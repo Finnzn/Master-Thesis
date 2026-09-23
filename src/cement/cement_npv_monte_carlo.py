@@ -48,11 +48,7 @@ from general_parameters import (
 )
 from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
-    calculate_discounted_lifetime_output,
-    calculate_levelized_cost,
-    calculate_levelized_profit_margin,
-    calculate_npv,
-    calculate_total_cost_present_value,
+    calculate_financial_result,
 )
 from npv_summary import representative_value
 
@@ -346,53 +342,35 @@ def _calculate_cement_cash_flow_result(
     annual_emissions_cost_eur = (
         annual_output_t * emissions_tco2_per_t * CARBON_PRICE_EUR_PER_T.value
     )
-    annual_net_cash_flow_eur = (
-        annual_revenue_eur
-        - annual_fixed_opex_eur
-        - annual_variable_opex_eur
-        - annual_fuel_cost_eur
-        - annual_electricity_cost_eur
-        - annual_transport_and_storage_cost_eur
-        - annual_emissions_cost_eur
-    )
-    annual_total_cost_eur = (
-        annual_fixed_opex_eur
-        + annual_variable_opex_eur
-        + annual_fuel_cost_eur
-        + annual_electricity_cost_eur
-        + annual_transport_and_storage_cost_eur
-        + annual_emissions_cost_eur
-    )
-    npv_eur = calculate_npv(
+    financial_result = calculate_financial_result(
         initial_capex_eur=initial_capex_eur,
-        annual_net_cash_flow_eur=annual_net_cash_flow_eur,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-    )
-    discounted_lifetime_output_t = calculate_discounted_lifetime_output(
         annual_output=annual_output_t,
+        annual_revenue_eur=annual_revenue_eur,
+        annual_fixed_opex_eur=annual_fixed_opex_eur,
+        annual_variable_opex_eur=annual_variable_opex_eur,
+        annual_fuel_cost_eur=annual_fuel_cost_eur,
+        annual_electricity_cost_eur=annual_electricity_cost_eur,
+        annual_transport_and_storage_cost_eur=(
+            annual_transport_and_storage_cost_eur
+        ),
+        annual_emissions_cost_eur=annual_emissions_cost_eur,
         lifetime_years=int(lifetime_years),
         discount_rate=INTEREST_RATE.value,
+        subtract_cost_components_sequentially=True,
     )
-    levelized_profit_margin_eur_per_t = calculate_levelized_profit_margin(
-        npv_eur=npv_eur,
-        annual_output=annual_output_t,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-    )
-    present_value_total_cost_eur = calculate_total_cost_present_value(
-        initial_capex_eur=initial_capex_eur,
-        annual_cost_eur=annual_total_cost_eur,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-    )
-    lcoc_eur_per_t = calculate_levelized_cost(
-        initial_capex_eur=initial_capex_eur,
-        annual_cost_eur=annual_total_cost_eur,
-        annual_output=annual_output_t,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-    )
+    annual_total_cost_eur = financial_result["annual_total_cost_eur"]
+    annual_net_cash_flow_eur = financial_result["annual_net_cash_flow_eur"]
+    npv_eur = financial_result["npv_eur"]
+    discounted_lifetime_output_t = financial_result[
+        "discounted_lifetime_output"
+    ]
+    present_value_total_cost_eur = financial_result[
+        "present_value_total_cost_eur"
+    ]
+    lcoc_eur_per_t = financial_result["levelized_cost"]
+    levelized_profit_margin_eur_per_t = financial_result[
+        "levelized_profit_margin"
+    ]
 
     result = {
         "run_id": np.arange(size),

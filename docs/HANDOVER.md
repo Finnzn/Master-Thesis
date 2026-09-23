@@ -34,13 +34,13 @@ shared in `src/npv_finance.py`. All five sectors call this shared finance layer.
 | Change deterministic calculations | the matching `*_npv_deterministic.py` module |
 | Change shared NPV summaries or CSV shaping | `src/npv_summary.py` |
 | Change shared comparison or ranking figures | `src/npv_summary_plots.py` |
-| Change output naming or command-line workflows | the matching `*_npv_summary_figures.py` module |
+| Change output naming or command-line workflows | the matching `*_financial_summary.py` module |
 | Change a sector MACC | the matching `src/<sector>/<sector>_macc.py` module |
 | Explore one technology | `notebooks/<sector>/plot_*_npv.ipynb` |
 | Compare all technologies | the sector `*_summary.ipynb` notebook |
 | Explore a marginal abatement cost curve | the sector `*_macc.ipynb` notebook |
 | Run deterministic cross-sector scenarios | `notebooks/scenario_analysis.ipynb` |
-| Compare deterministic and probabilistic LCOX | the matching sector `*_summary.ipynb` or `*_npv_summary_figures --metric LCOX` |
+| Compare deterministic and probabilistic LCOX | the matching sector `*_summary.ipynb` or `*_financial_summary --metric LCOX` |
 | Run deterministic sensitivity interactively | `sensitivity_dashboard.py` |
 
 ## Standard Workflows
@@ -51,7 +51,7 @@ Python environment is active.
 Quick electricity check:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
+PYTHONPATH=src python -m electricity.electricity_financial_summary \
   --sample-size 100 --no-data --ranking-output none
 ```
 
@@ -62,15 +62,15 @@ run should hold those BAU technical inputs at expected values.
 Quick cement check:
 
 ```bash
-PYTHONPATH=src python -m cement.cement_npv_summary_figures \
+PYTHONPATH=src python -m cement.cement_financial_summary \
   --sample-size 100 --no-data --ranking-output none
 ```
 
 Full default output generation:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures
-PYTHONPATH=src python -m cement.cement_npv_summary_figures
+PYTHONPATH=src python -m electricity.electricity_financial_summary
+PYTHONPATH=src python -m cement.cement_financial_summary
 ```
 
 Interactive sensitivity dashboard:

@@ -40,11 +40,7 @@ from general_parameters import (
 )
 from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
-    calculate_discounted_lifetime_output,
-    calculate_levelized_cost,
-    calculate_levelized_profit_margin,
-    calculate_npv,
-    calculate_total_cost_present_value,
+    calculate_financial_result,
 )
 from npv_summary import representative_value
 
@@ -213,25 +209,24 @@ def calculate_result(
 
     annual_storage = output * storage_cost_per_tnh3
     annual_emissions_cost = output * emissions * CARBON_PRICE_EUR_PER_T.value
-    annual_total_cost = (
-        annual_cost_before_carbon_and_storage + annual_storage + annual_emissions_cost
-    )
-    annual_net_cash_flow = annual_revenue - annual_total_cost
-    npv = calculate_npv(
+    financial_result = calculate_financial_result(
         initial_capex_eur=capex,
-        annual_net_cash_flow_eur=annual_net_cash_flow,
+        annual_output=output,
+        annual_revenue_eur=annual_revenue,
+        annual_fixed_opex_eur=annual_fixed_opex,
+        annual_variable_opex_eur=annual_variable_opex,
+        annual_fuel_cost_eur=annual_fuel,
+        annual_electricity_cost_eur=annual_electricity,
+        annual_transport_and_storage_cost_eur=annual_storage,
+        annual_emissions_cost_eur=annual_emissions_cost,
         lifetime_years=lifetime,
         discount_rate=INTEREST_RATE.value,
     )
-    discounted_output = calculate_discounted_lifetime_output(
-        annual_output=output, lifetime_years=lifetime, discount_rate=INTEREST_RATE.value
-    )
-    present_value_total_cost = calculate_total_cost_present_value(
-        initial_capex_eur=capex,
-        annual_cost_eur=annual_total_cost,
-        lifetime_years=lifetime,
-        discount_rate=INTEREST_RATE.value,
-    )
+    annual_total_cost = financial_result["annual_total_cost_eur"]
+    annual_net_cash_flow = financial_result["annual_net_cash_flow_eur"]
+    npv = financial_result["npv_eur"]
+    discounted_output = financial_result["discounted_lifetime_output"]
+    present_value_total_cost = financial_result["present_value_total_cost_eur"]
     result: dict[str, np.ndarray] = {
         "run_id": np.arange(size),
         "technology": np.full(size, technology),
@@ -271,19 +266,10 @@ def calculate_result(
         "npv_eur": npv,
         "discounted_lifetime_output_tnh3": np.full(size, discounted_output),
         "present_value_total_cost_eur": present_value_total_cost,
-        "lcoa_eur_per_tnh3": calculate_levelized_cost(
-            initial_capex_eur=capex,
-            annual_cost_eur=annual_total_cost,
-            annual_output=output,
-            lifetime_years=lifetime,
-            discount_rate=INTEREST_RATE.value,
-        ),
-        "levelized_profit_margin_eur_per_tnh3": calculate_levelized_profit_margin(
-            npv_eur=npv,
-            annual_output=output,
-            lifetime_years=lifetime,
-            discount_rate=INTEREST_RATE.value,
-        ),
+        "lcoa_eur_per_tnh3": financial_result["levelized_cost"],
+        "levelized_profit_margin_eur_per_tnh3": financial_result[
+            "levelized_profit_margin"
+        ],
     }
     if parent_values is not None:
         result.update({f"bau_{key}": value for key, value in parent_values.items()})

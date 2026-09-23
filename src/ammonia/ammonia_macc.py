@@ -35,7 +35,7 @@ from ammonia.ammonia_npv_monte_carlo import (
     DEFAULT_SAMPLE_SIZE,
     simulate_ammonia_results,
 )
-from ammonia.ammonia_npv_summary_figures import AMMONIA_TECHNOLOGY_LABELS
+from ammonia.ammonia_financial_summary import AMMONIA_TECHNOLOGY_LABELS
 
 
 AMMONIA_MACC_TECHNOLOGY_LABELS = AMMONIA_TECHNOLOGY_LABELS

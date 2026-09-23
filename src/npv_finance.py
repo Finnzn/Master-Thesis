@@ -12,6 +12,226 @@ from __future__ import annotations
 import numpy as np
 
 
+def calculate_financial_result(
+    *,
+    initial_capex_eur: float | np.ndarray,
+    annual_output: float | np.ndarray,
+    annual_revenue_eur: float | np.ndarray,
+    annual_fixed_opex_eur: float | np.ndarray,
+    annual_variable_opex_eur: float | np.ndarray,
+    annual_fuel_cost_eur: float | np.ndarray,
+    annual_electricity_cost_eur: float | np.ndarray,
+    annual_transport_and_storage_cost_eur: float | np.ndarray,
+    annual_emissions_cost_eur: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+    subtract_cost_components_sequentially: bool = False,
+) -> dict[str, float | np.ndarray]:
+    """Calculate the common financial outputs from explicit annual cash flows.
+
+    Sector modules remain responsible for translating their physical inputs into
+    the annual cost components below.  This function is the single discounted
+    financial calculation used by deterministic, Monte Carlo, and sensitivity
+    workflows.
+    """
+
+    annual_total_cost_eur = (
+        annual_fixed_opex_eur
+        + annual_variable_opex_eur
+        + annual_fuel_cost_eur
+        + annual_electricity_cost_eur
+        + annual_transport_and_storage_cost_eur
+        + annual_emissions_cost_eur
+    )
+    if subtract_cost_components_sequentially:
+        # Electricity and cement historically formed net cash flow with a
+        # subtraction chain.  Retaining that operation order keeps their
+        # floating-point outputs bit-for-bit compatible.
+        annual_net_cash_flow_eur = (
+            annual_revenue_eur
+            - annual_fixed_opex_eur
+            - annual_variable_opex_eur
+            - annual_fuel_cost_eur
+            - annual_electricity_cost_eur
+            - annual_transport_and_storage_cost_eur
+            - annual_emissions_cost_eur
+        )
+    else:
+        annual_net_cash_flow_eur = annual_revenue_eur - annual_total_cost_eur
+    npv_eur = calculate_npv(
+        initial_capex_eur=np.asarray(initial_capex_eur),
+        annual_net_cash_flow_eur=np.asarray(annual_net_cash_flow_eur),
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    discounted_lifetime_output = calculate_discounted_lifetime_output(
+        annual_output=annual_output,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    present_value_total_cost_eur = calculate_total_cost_present_value(
+        initial_capex_eur=initial_capex_eur,
+        annual_cost_eur=annual_total_cost_eur,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    levelized_cost = np.asarray(present_value_total_cost_eur) / np.asarray(
+        discounted_lifetime_output
+    )
+    levelized_profit_margin = np.asarray(npv_eur) / np.asarray(
+        discounted_lifetime_output
+    )
+
+    return {
+        "annual_total_cost_eur": annual_total_cost_eur,
+        "annual_net_cash_flow_eur": annual_net_cash_flow_eur,
+        "npv_eur": npv_eur,
+        "discounted_lifetime_output": discounted_lifetime_output,
+        "present_value_total_cost_eur": present_value_total_cost_eur,
+        "levelized_cost": levelized_cost,
+        "levelized_profit_margin": levelized_profit_margin,
+    }
+
+
+def calculate_product_financial_result(
+    *,
+    annual_output: float | np.ndarray,
+    capex_per_output: float | np.ndarray,
+    sales_price_per_output: float | np.ndarray,
+    fixed_opex_per_output: float | np.ndarray,
+    variable_opex_per_output: float | np.ndarray,
+    fuel_consumption_per_output: float | np.ndarray,
+    fuel_price: float | np.ndarray,
+    electricity_consumption_per_output: float | np.ndarray,
+    electricity_price: float | np.ndarray,
+    transport_and_storage_cost_per_output: float | np.ndarray,
+    emissions_per_output: float | np.ndarray,
+    carbon_price: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+    secondary_fuel_consumption_per_output: float | np.ndarray = 0.0,
+    secondary_fuel_price: float | np.ndarray = 0.0,
+    include_secondary_fuel: bool = False,
+) -> dict[str, float | np.ndarray]:
+    """Translate per-output assumptions into the common financial result."""
+
+    initial_capex_eur = annual_output * capex_per_output
+    annual_revenue_eur = annual_output * sales_price_per_output
+    annual_fixed_opex_eur = annual_output * fixed_opex_per_output
+    annual_variable_opex_eur = annual_output * variable_opex_per_output
+    if include_secondary_fuel:
+        annual_fuel_cost_eur = annual_output * (
+            fuel_consumption_per_output * fuel_price
+            + secondary_fuel_consumption_per_output * secondary_fuel_price
+        )
+    else:
+        annual_fuel_cost_eur = (
+            annual_output * fuel_consumption_per_output * fuel_price
+        )
+    annual_electricity_cost_eur = (
+        annual_output * electricity_consumption_per_output * electricity_price
+    )
+    annual_transport_and_storage_cost_eur = (
+        annual_output * transport_and_storage_cost_per_output
+    )
+    annual_emissions_cost_eur = annual_output * emissions_per_output * carbon_price
+    result = calculate_financial_result(
+        initial_capex_eur=initial_capex_eur,
+        annual_output=annual_output,
+        annual_revenue_eur=annual_revenue_eur,
+        annual_fixed_opex_eur=annual_fixed_opex_eur,
+        annual_variable_opex_eur=annual_variable_opex_eur,
+        annual_fuel_cost_eur=annual_fuel_cost_eur,
+        annual_electricity_cost_eur=annual_electricity_cost_eur,
+        annual_transport_and_storage_cost_eur=(
+            annual_transport_and_storage_cost_eur
+        ),
+        annual_emissions_cost_eur=annual_emissions_cost_eur,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    return {
+        "initial_capex_eur": initial_capex_eur,
+        "annual_revenue_eur": annual_revenue_eur,
+        "annual_fixed_opex_eur": annual_fixed_opex_eur,
+        "annual_variable_opex_eur": annual_variable_opex_eur,
+        "annual_fuel_cost_eur": annual_fuel_cost_eur,
+        "annual_electricity_cost_eur": annual_electricity_cost_eur,
+        "annual_transport_and_storage_cost_eur": (
+            annual_transport_and_storage_cost_eur
+        ),
+        "annual_emissions_cost_eur": annual_emissions_cost_eur,
+        **result,
+    }
+
+
+def calculate_electricity_financial_result(
+    *,
+    annual_output_mwh: float | np.ndarray,
+    full_load_hours_per_year: float | np.ndarray,
+    capex_eur_per_kw: float | np.ndarray,
+    electricity_price_eur_per_mwh: float | np.ndarray,
+    value_factor: float | np.ndarray,
+    fixed_opex_eur_per_kw_year: float | np.ndarray,
+    variable_opex_eur_per_mwh: float | np.ndarray,
+    fuel_consumption_mwh_th_per_mwh_e: float | np.ndarray,
+    fuel_price_eur_per_mwh_th: float | np.ndarray,
+    transport_and_storage_cost_eur_per_mwh: float | np.ndarray,
+    emissions_tco2_per_mwh_e: float | np.ndarray,
+    carbon_price_eur_per_t: float | np.ndarray,
+    lifetime_years: int,
+    discount_rate: float,
+) -> dict[str, float | np.ndarray]:
+    """Translate electricity assumptions into the common financial result."""
+
+    capacity_kw = annual_output_mwh / full_load_hours_per_year * 1_000.0
+    initial_capex_eur = capacity_kw * capex_eur_per_kw
+    annual_revenue_eur = (
+        annual_output_mwh * electricity_price_eur_per_mwh * value_factor
+    )
+    annual_fixed_opex_eur = capacity_kw * fixed_opex_eur_per_kw_year
+    annual_variable_opex_eur = annual_output_mwh * variable_opex_eur_per_mwh
+    annual_fuel_cost_eur = (
+        annual_output_mwh
+        * fuel_consumption_mwh_th_per_mwh_e
+        * fuel_price_eur_per_mwh_th
+    )
+    annual_transport_and_storage_cost_eur = (
+        annual_output_mwh * transport_and_storage_cost_eur_per_mwh
+    )
+    annual_emissions_cost_eur = (
+        annual_output_mwh * emissions_tco2_per_mwh_e * carbon_price_eur_per_t
+    )
+    result = calculate_financial_result(
+        initial_capex_eur=initial_capex_eur,
+        annual_output=annual_output_mwh,
+        annual_revenue_eur=annual_revenue_eur,
+        annual_fixed_opex_eur=annual_fixed_opex_eur,
+        annual_variable_opex_eur=annual_variable_opex_eur,
+        annual_fuel_cost_eur=annual_fuel_cost_eur,
+        annual_electricity_cost_eur=0.0,
+        annual_transport_and_storage_cost_eur=(
+            annual_transport_and_storage_cost_eur
+        ),
+        annual_emissions_cost_eur=annual_emissions_cost_eur,
+        lifetime_years=lifetime_years,
+        discount_rate=discount_rate,
+    )
+    return {
+        "capacity_kw": capacity_kw,
+        "initial_capex_eur": initial_capex_eur,
+        "annual_revenue_eur": annual_revenue_eur,
+        "annual_fixed_opex_eur": annual_fixed_opex_eur,
+        "annual_variable_opex_eur": annual_variable_opex_eur,
+        "annual_fuel_cost_eur": annual_fuel_cost_eur,
+        "annual_transport_and_storage_cost_eur": (
+            annual_transport_and_storage_cost_eur
+        ),
+        "annual_emissions_cost_eur": annual_emissions_cost_eur,
+        **result,
+    }
+
+
 def calculate_level_cash_flow_present_value_factor(
     lifetime_years: int,
     discount_rate: float,

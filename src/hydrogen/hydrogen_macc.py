@@ -35,7 +35,7 @@ from hydrogen.hydrogen_npv_monte_carlo import (
     DEFAULT_SAMPLE_SIZE,
     simulate_hydrogen_results,
 )
-from hydrogen.hydrogen_npv_summary_figures import HYDROGEN_TECHNOLOGY_LABELS
+from hydrogen.hydrogen_financial_summary import HYDROGEN_TECHNOLOGY_LABELS
 
 
 HYDROGEN_MACC_TECHNOLOGY_LABELS = HYDROGEN_TECHNOLOGY_LABELS

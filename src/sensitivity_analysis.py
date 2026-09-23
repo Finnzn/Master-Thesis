@@ -53,9 +53,8 @@ from hydrogen.hydrogen_parameters import (
 )
 from npv_finance import (
     calculate_ccs_transport_and_storage_cost_per_output,
-    calculate_level_cash_flow_present_value_factor,
-    calculate_levelized_cost,
-    calculate_levelized_profit_margin,
+    calculate_electricity_financial_result,
+    calculate_product_financial_result,
 )
 from steel.steel_npv_deterministic import calculate_deterministic_steel_result
 from steel.steel_parameters import (
@@ -673,95 +672,67 @@ def sensitivity_parameter_is_applicable(
     return True
 
 
-def _sector_financial_components(
+def _calculate_sector_financial_result(
     sector: str,
     inputs: ScenarioInputs,
-) -> tuple[float, float, float]:
-    """Return initial CAPEX, annual revenue, and annual cost for a scenario."""
-
-    if sector in {"ammonia", "cement", "hydrogen"}:
-        initial_capex_eur = inputs.annual_output * inputs.capex
-        annual_revenue_eur = inputs.annual_output * inputs.sales_price
-        annual_fixed_opex_eur = inputs.annual_output * inputs.fixed_opex
-        annual_variable_opex_eur = inputs.annual_output * inputs.variable_opex
-        annual_fuel_cost_eur = (
-            inputs.annual_output * inputs.fuel_consumption * inputs.fuel_price
-        )
-        annual_electricity_cost_eur = (
-            inputs.annual_output
-            * inputs.electricity_consumption
-            * inputs.electricity_price
-        )
-        annual_emissions_cost_eur = (
-            inputs.annual_output * inputs.emissions * inputs.carbon_price
-        )
-    elif sector == "electricity":
-        if inputs.full_load_hours is None:
-            raise ValueError("Electricity scenarios require full_load_hours.")
-        capacity_kw = calculate_capacity_kw(
-            annual_electricity_output_mwh=inputs.annual_output,
-            full_load_hours_per_year=inputs.full_load_hours,
-        )
-        initial_capex_eur = capacity_kw * inputs.capex
-        annual_revenue_eur = (
-            inputs.annual_output * inputs.sales_price * inputs.value_factor
-        )
-        annual_fixed_opex_eur = capacity_kw * inputs.fixed_opex
-        annual_variable_opex_eur = inputs.annual_output * inputs.variable_opex
-        annual_fuel_cost_eur = (
-            inputs.annual_output * inputs.fuel_consumption * inputs.fuel_price
-        )
-        annual_electricity_cost_eur = 0.0
-        annual_emissions_cost_eur = (
-            inputs.annual_output * inputs.emissions * inputs.carbon_price
-        )
-    elif sector == "steel":
-        initial_capex_eur = inputs.annual_output * inputs.capex
-        annual_revenue_eur = inputs.annual_output * inputs.sales_price
-        annual_fixed_opex_eur = inputs.annual_output * inputs.fixed_opex
-        annual_variable_opex_eur = inputs.annual_output * inputs.variable_opex
-        annual_fuel_cost_eur = inputs.annual_output * (
-            inputs.fuel_consumption * inputs.fuel_price
-            + inputs.secondary_fuel_consumption * inputs.secondary_fuel_price
-        )
-        annual_electricity_cost_eur = (
-            inputs.annual_output
-            * inputs.electricity_consumption
-            * inputs.electricity_price
-        )
-        annual_emissions_cost_eur = (
-            inputs.annual_output * inputs.emissions * inputs.carbon_price
-        )
-    else:
-        raise ValueError(f"Unknown sector: {sector!r}.")
+) -> Mapping[str, float | object]:
+    """Delegate an explicit scenario to the shared sector financial kernel."""
 
     transport_and_storage_cost = calculate_transport_and_storage_cost_per_output(
         sector,
         inputs,
     )
-    annual_total_cost_eur = (
-        annual_fixed_opex_eur
-        + annual_variable_opex_eur
-        + annual_fuel_cost_eur
-        + annual_electricity_cost_eur
-        + inputs.annual_output * transport_and_storage_cost
-        + annual_emissions_cost_eur
+    lifetime_years = int(round(inputs.lifetime_years))
+    if sector == "electricity":
+        if inputs.full_load_hours is None:
+            raise ValueError("Electricity scenarios require full_load_hours.")
+        return calculate_electricity_financial_result(
+            annual_output_mwh=inputs.annual_output,
+            full_load_hours_per_year=inputs.full_load_hours,
+            capex_eur_per_kw=inputs.capex,
+            electricity_price_eur_per_mwh=inputs.sales_price,
+            value_factor=inputs.value_factor,
+            fixed_opex_eur_per_kw_year=inputs.fixed_opex,
+            variable_opex_eur_per_mwh=inputs.variable_opex,
+            fuel_consumption_mwh_th_per_mwh_e=inputs.fuel_consumption,
+            fuel_price_eur_per_mwh_th=inputs.fuel_price,
+            transport_and_storage_cost_eur_per_mwh=(
+                transport_and_storage_cost
+            ),
+            emissions_tco2_per_mwh_e=inputs.emissions,
+            carbon_price_eur_per_t=inputs.carbon_price,
+            lifetime_years=lifetime_years,
+            discount_rate=inputs.discount_rate,
+        )
+    if sector not in {"ammonia", "cement", "hydrogen", "steel"}:
+        raise ValueError(f"Unknown sector: {sector!r}.")
+    return calculate_product_financial_result(
+        annual_output=inputs.annual_output,
+        capex_per_output=inputs.capex,
+        sales_price_per_output=inputs.sales_price,
+        fixed_opex_per_output=inputs.fixed_opex,
+        variable_opex_per_output=inputs.variable_opex,
+        fuel_consumption_per_output=inputs.fuel_consumption,
+        fuel_price=inputs.fuel_price,
+        secondary_fuel_consumption_per_output=(
+            inputs.secondary_fuel_consumption
+        ),
+        secondary_fuel_price=inputs.secondary_fuel_price,
+        include_secondary_fuel=sector == "steel",
+        electricity_consumption_per_output=inputs.electricity_consumption,
+        electricity_price=inputs.electricity_price,
+        transport_and_storage_cost_per_output=transport_and_storage_cost,
+        emissions_per_output=inputs.emissions,
+        carbon_price=inputs.carbon_price,
+        lifetime_years=lifetime_years,
+        discount_rate=inputs.discount_rate,
     )
-    return initial_capex_eur, annual_revenue_eur, annual_total_cost_eur
 
 
 def calculate_sector_npv(sector: str, inputs: ScenarioInputs) -> float:
     """Calculate NPV for one sector and one explicit scenario."""
 
-    initial_capex_eur, annual_revenue_eur, annual_total_cost_eur = (
-        _sector_financial_components(sector, inputs)
-    )
-    annual_net_cash_flow_eur = annual_revenue_eur - annual_total_cost_eur
-    present_value_factor = calculate_level_cash_flow_present_value_factor(
-        lifetime_years=int(round(inputs.lifetime_years)),
-        discount_rate=inputs.discount_rate,
-    )
-    return -initial_capex_eur + annual_net_cash_flow_eur * present_value_factor
+    return float(_calculate_sector_financial_result(sector, inputs)["npv_eur"])
 
 
 def calculate_metric_value(
@@ -776,31 +747,13 @@ def calculate_metric_value(
         raise ValueError(
             f"Unknown financial metric {metric!r}. Use one of: {valid_metrics}."
         )
-    npv_eur = calculate_sector_npv(sector, inputs)
+    result = _calculate_sector_financial_result(sector, inputs)
+    npv_eur = float(result["npv_eur"])
     if metric == "NPV":
         return npv_eur / 1_000_000.0
     if metric == "LPM":
-        return float(
-            calculate_levelized_profit_margin(
-                npv_eur=npv_eur,
-                annual_output=inputs.annual_output,
-                lifetime_years=int(round(inputs.lifetime_years)),
-                discount_rate=inputs.discount_rate,
-            )
-        )
-    initial_capex_eur, _, annual_total_cost_eur = _sector_financial_components(
-        sector,
-        inputs,
-    )
-    return float(
-        calculate_levelized_cost(
-            initial_capex_eur=initial_capex_eur,
-            annual_cost_eur=annual_total_cost_eur,
-            annual_output=inputs.annual_output,
-            lifetime_years=int(round(inputs.lifetime_years)),
-            discount_rate=inputs.discount_rate,
-        )
-    )
+        return float(result["levelized_profit_margin"])
+    return float(result["levelized_cost"])
 
 
 def metric_axis_label(sector: str, metric: str) -> str:

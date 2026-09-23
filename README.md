@@ -66,9 +66,9 @@ python -m pip install -r requirements.txt
 Run a small smoke check before starting a large simulation:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
+PYTHONPATH=src python -m electricity.electricity_financial_summary \
   --sample-size 100 --no-data --ranking-output none
-PYTHONPATH=src python -m cement.cement_npv_summary_figures \
+PYTHONPATH=src python -m cement.cement_financial_summary \
   --sample-size 100 --no-data --ranking-output none
 ```
 
@@ -105,14 +105,21 @@ sector-specific calculations.
   distribution specifications used by Monte Carlo simulations.
 - `src/general_parameters.py` stores shared assumptions such as carbon price,
   discount rate, and fuel-price distributions.
-- `src/npv_finance.py` contains the sector-independent NPV, levelized profit
-  margin, and LCOX formulas.
-- `src/sensitivity_analysis.py` contains deterministic one-factor-at-a-time
-  sensitivity calculations and tornado-chart plotting for the dashboard.
+- `src/npv_finance.py` is the single discounted-finance kernel used by the
+  deterministic, Monte Carlo, and sensitivity paths for NPV, levelized profit
+  margin, and LCOX.
+- `src/sensitivity_analysis.py` translates editable scenarios into that shared
+  financial kernel and contains one-factor-at-a-time tables and tornado plots;
+  it does not maintain a second NPV calculation engine.
 - `src/npv_summary.py` converts simulation outputs into summary tables, rankings,
   and CSV files.
 - `src/npv_summary_plots.py` contains reusable plotting functions for NPV bar
   charts and ranking figures.
+- `src/financial_summary_workflow.py` owns the common simulation, summary,
+  ranking, export, plotting, and CLI orchestration for every sector. The five
+  `*_financial_summary.py` modules now contain only sector configuration and
+  compatibility names. The former `*_npv_summary_figures.py` names remain as
+  deprecated forwarding shims for existing external commands.
 - `src/<sector>/` contains the assumptions, deterministic calculation, Monte
   Carlo calculation, and output workflow for electricity, cement, steel,
   ammonia, or hydrogen.
@@ -289,19 +296,19 @@ written to `figures/`.
 To regenerate electricity-sector total NPV figures and CSV outputs, run:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric NPV
+PYTHONPATH=src python -m electricity.electricity_financial_summary --metric NPV
 ```
 
 For electricity levelized profit margin, use:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LPM
+PYTHONPATH=src python -m electricity.electricity_financial_summary --metric LPM
 ```
 
 For LCOE, use the same electricity workflow with `LCOX`:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures --metric LCOX
+PYTHONPATH=src python -m electricity.electricity_financial_summary --metric LCOX
 ```
 
 Electricity Monte Carlo summaries use sampled BAU values for the coal and CCGT
@@ -309,7 +316,7 @@ CCS retrofits by default. To hold those BAU inputs at expected values, add
 the electricity summary flag:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_npv_summary_figures \
+PYTHONPATH=src python -m electricity.electricity_financial_summary \
   --metric LCOX --retrofit-bau-mode deterministic
 ```
 
@@ -317,7 +324,7 @@ For cement, use the same `--metric NPV`, `--metric LPM`, or `--metric LCOX`
 switch. In the cement model, `LCOX` is reported as LCOC:
 
 ```bash
-PYTHONPATH=src python -m cement.cement_npv_summary_figures --metric LCOX
+PYTHONPATH=src python -m cement.cement_financial_summary --metric LCOX
 ```
 
 Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
@@ -369,7 +376,7 @@ cement price - LCOC = cement LPM
 
 Deterministic and probabilistic LCOX comparisons are available in each
 sector's `*_summary.ipynb` notebook and through the corresponding
-`*_npv_summary_figures --metric LCOX` command. Cross-sector LCOX values should
+`*_financial_summary --metric LCOX` command. Cross-sector LCOX values should
 not be placed on one ranking because they refer to different products and
 functional units.
 
@@ -405,7 +412,7 @@ Run the deterministic and Monte Carlo figures, raw inputs, processed outputs,
 and rankings with:
 
 ```bash
-PYTHONPATH=src python -m ammonia.ammonia_npv_summary_figures \
+PYTHONPATH=src python -m ammonia.ammonia_financial_summary \
   --metric LCOX --sample-size 1000
 ```
 
@@ -433,7 +440,7 @@ margin, and levelized cost of hydrogen (LCOH), plus aligned Monte Carlo
 simulations, rankings, figures, and raw/processed CSVs. For example:
 
 ```bash
-PYTHONPATH=src python -m hydrogen.hydrogen_npv_summary_figures \
+PYTHONPATH=src python -m hydrogen.hydrogen_financial_summary \
   --metric LCOX --sample-size 1000
 ```
 

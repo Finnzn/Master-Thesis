@@ -21,8 +21,8 @@ from typing import Mapping
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from ammonia.ammonia_npv_summary_figures import AMMONIA_TECHNOLOGY_LABELS
-from hydrogen.hydrogen_npv_summary_figures import HYDROGEN_TECHNOLOGY_LABELS
+from ammonia.ammonia_financial_summary import AMMONIA_TECHNOLOGY_LABELS
+from hydrogen.hydrogen_financial_summary import HYDROGEN_TECHNOLOGY_LABELS
 from sensitivity_analysis import (
     FINANCIAL_METRIC_OPTIONS,
     available_technologies,

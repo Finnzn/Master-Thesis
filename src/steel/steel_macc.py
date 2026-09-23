@@ -35,7 +35,7 @@ from steel.steel_npv_monte_carlo import (
     DEFAULT_SAMPLE_SIZE,
     simulate_steel_results,
 )
-from steel.steel_npv_summary_figures import STEEL_TECHNOLOGY_LABELS
+from steel.steel_financial_summary import STEEL_TECHNOLOGY_LABELS
 
 
 STEEL_MACC_TECHNOLOGY_LABELS = STEEL_TECHNOLOGY_LABELS
