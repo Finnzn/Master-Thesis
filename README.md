@@ -512,9 +512,11 @@ coproduct credit for methane pyrolysis.
 
 The source modules in `src/hydrogen/` compare six stand-alone hydrogen routes
 and two NG-SMR retrofits at **100,000 tH2/year**, with a 25-year lifetime and
-7,500 EUR/tH2 retail price. They calculate deterministic NPV, levelized profit
-margin, and levelized cost of hydrogen (LCOH), plus aligned Monte Carlo
-simulations, rankings, figures, and raw/processed CSVs. For example:
+technology-specific retail prices: 7,500 EUR/tH2 for AEL, PEM, and SOEC, and
+2,800 EUR/tH2 for every non-electrolysis route. They calculate deterministic
+NPV, levelized profit margin, and levelized cost of hydrogen (LCOH), plus
+aligned Monte Carlo simulations, rankings, figures, and raw/processed CSVs.
+For example:
 
 ```bash
 PYTHONPATH=src python -m hydrogen.hydrogen_financial_summary \

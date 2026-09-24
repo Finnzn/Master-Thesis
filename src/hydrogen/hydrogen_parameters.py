@@ -19,11 +19,19 @@ LIFETIME_HYDROGEN_YEARS = FixedParameter(
     description="Economic lifetime of hydrogen-sector assets.",
 )
 
-RETAIL_PRICE_HYDROGEN_EUR_PER_T = FixedParameter(
-    value=3_000.0,
-    unit="EUR/t",
-    description="Retail price of hydrogen used in the hydrogen-sector setup.",
+ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T = FixedParameter(
+    value=7_500.0,
+    unit="EUR/tH2",
+    description="Retail price of hydrogen from AEL, PEM, and SOEC electrolysis.",
 )
+
+NON_ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T = FixedParameter(
+    value=2_800.0,
+    unit="EUR/tH2",
+    description="Retail price of hydrogen from all non-electrolysis routes.",
+)
+
+ELECTROLYSIS_HYDROGEN_TECHNOLOGIES = frozenset({"ael", "pem", "soec"})
 
 
 # Greenfield European natural-gas steam-methane reforming (NG-SMR), without
@@ -442,7 +450,12 @@ NG_SMR_CCS_CAPTURE_FRACTION = FixedParameter(
 HYDROGEN_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {
     "annual_hydrogen_output_th2": ANNUAL_HYDROGEN_OUTPUT_TH2,
     "lifetime_hydrogen_years": LIFETIME_HYDROGEN_YEARS,
-    "retail_price_hydrogen_eur_per_t": RETAIL_PRICE_HYDROGEN_EUR_PER_T,
+    "electrolysis_hydrogen_retail_price_eur_per_t": (
+        ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T
+    ),
+    "non_electrolysis_hydrogen_retail_price_eur_per_t": (
+        NON_ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T
+    ),
 }
 
 HYDROGEN_TECHNOLOGY_DISTRIBUTIONS: Mapping[

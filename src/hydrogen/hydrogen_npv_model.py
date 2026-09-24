@@ -11,8 +11,10 @@ from hydrogen.hydrogen_parameters import (
     HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     HYDROGEN_TECHNOLOGY_DISTRIBUTIONS,
     ANNUAL_HYDROGEN_OUTPUT_TH2,
+    ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T,
+    ELECTROLYSIS_HYDROGEN_TECHNOLOGIES,
     LIFETIME_HYDROGEN_YEARS,
-    RETAIL_PRICE_HYDROGEN_EUR_PER_T,
+    NON_ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T,
 )
 from general_parameters import (
     BIOMASS_PRICE_DISTRIBUTION,
@@ -114,6 +116,12 @@ def calculate_result(
     }
     electricity = values["electricity_consumption_mwh_per_th2"]
     emissions = values["emissions_tco2_per_th2"]
+    hydrogen_price = (
+        ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T.value
+        if technology in ELECTROLYSIS_HYDROGEN_TECHNOLOGIES
+        else NON_ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T.value
+    )
+
     def carrier_costs(inputs: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
         costs: dict[str, np.ndarray] = {}
         for carrier in ENERGY_CARRIERS:
@@ -130,7 +138,7 @@ def calculate_result(
     annual_fuel = sum(energy_costs.values())
     annual_electricity = output * electricity * prices["electricity_price_eur_per_mwh"]
     capex = output * values["capex_eur_per_th2"]
-    annual_revenue = np.full(size, output * RETAIL_PRICE_HYDROGEN_EUR_PER_T.value)
+    annual_revenue = np.full(size, output * hydrogen_price)
     annual_fixed_opex = output * values["fixed_opex_eur_per_th2"]
     annual_variable_opex = output * values["variable_opex_eur_per_th2"]
     annual_cost_before_carbon_and_storage = (
@@ -204,7 +212,7 @@ def calculate_result(
         "biomethane_price_eur_per_mwh_th": prices.get(
             "biomethane_price_eur_per_mwh_th", np.full(size, np.nan)
         ),
-        "hydrogen_price_eur_per_th2": np.full(size, RETAIL_PRICE_HYDROGEN_EUR_PER_T.value),
+        "hydrogen_price_eur_per_th2": np.full(size, hydrogen_price),
         "carbon_price_eur_per_t": np.full(size, CARBON_PRICE_EUR_PER_T.value),
         "transport_and_storage_share_of_capture_cost": storage_share,
         "transport_and_storage_cost_eur_per_th2": storage_cost_per_th2,

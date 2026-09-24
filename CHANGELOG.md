@@ -9003,3 +9003,57 @@ can be verified.
 
 Inspect `results/runs/Run_2/manifest.json` and the five top-level artifact
 folders to confirm that the named-run structure is convenient for final use.
+
+## 2026-09-24 13:02 CEST — Split hydrogen retail prices by production route
+
+### User request
+
+Use a 7,500 EUR/tH2 hydrogen retail price for the three electrolysis
+technologies and a 2,800 EUR/tH2 grey/blue price for every other hydrogen
+technology.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — replaced the single shared hydrogen
+  retail-price parameter with explicit electrolysis and non-electrolysis
+  parameters and identified AEL, PEM, and SOEC as electrolysis technologies.
+- `src/hydrogen/hydrogen_npv_model.py` — selects the appropriate retail price
+  by technology and uses it for both annual revenue and exported model inputs.
+- `README.md` — documented the two technology-specific hydrogen retail prices.
+- `CHANGELOG.md` — recorded the implementation and verification.
+
+### What was implemented
+
+- Set AEL, PEM, and SOEC to 7,500 EUR/tH2.
+- Set NG-SMR, NG-SMR + CCS, methane pyrolysis, biomass gasification, and
+  biomethane SMR to 2,800 EUR/tH2, following the requested rule that every
+  non-electrolysis route uses the grey/blue price.
+- Applied the selected price consistently to annual revenue and the
+  `hydrogen_price_eur_per_th2` result field used by deterministic, Monte Carlo,
+  summary, and sensitivity workflows.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m compileall -q src/hydrogen`
+  - A focused Python assertion script over all eight deterministic results and
+    four seeded Monte Carlo samples per technology.
+  - `git diff --check`
+- Result:
+  - Passed. All electrolysis routes returned 7,500 EUR/tH2 and 750 million
+    EUR/year revenue; every other route returned 2,800 EUR/tH2 and 280 million
+    EUR/year revenue at the shared 100,000 tH2/year output.
+
+### Reproducibility notes
+
+- This changes a scientific/model assumption and therefore changes hydrogen
+  NPV and levelized profit-margin results. LCOH is unaffected because it does
+  not depend on product revenue.
+- Existing hydrogen result files, figures, rankings, and executed notebook
+  outputs predate this change and should be regenerated before use. No
+  generated artifact or source notebook was overwritten in this task.
+
+### Next suggested step
+
+Regenerate the hydrogen financial outputs and notebooks so all derived
+artifacts reflect the new route-specific retail prices.
