@@ -75,6 +75,73 @@ PYTHONPATH=src python -m cement.cement_financial_summary \
 The default Monte Carlo sample size is 100,000 per technology. Start with a
 smaller value while testing changes.
 
+## Reproduce a Complete Result Run
+
+`regenerate_all.py` is the single entry point for the existing financial-summary,
+MACC, sensitivity-heatmap, and notebook commands. It contains no scientific
+calculation logic of its own. Every invocation receives a descriptive run name
+and stores its outputs together in one isolated, manifest-backed directory.
+
+The standard command generates deterministic, Monte Carlo mean, and ranking
+figures and CSVs for NPV, LPM, and LCOX across all five sectors:
+
+```bash
+PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results
+```
+
+That default creates 135 core CSV/PNG artifacts under
+`results/runs/thesis_results/financial/`. Add `--full` to run the complete
+workflow—financial summaries, both MACC variants, all selected sensitivity
+heatmaps, and all notebooks—with the same command:
+
+```bash
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results_full --full
+```
+
+Each run also writes command logs and a `manifest.json` containing the active
+global assumptions, sample size, seed, retrofit mode, Git state,
+Python/dependency versions, command results, and SHA-256 hash of every generated
+file. Existing run directories are never overwritten.
+
+Use `--dry-run` to inspect the commands without creating files. Runs can be
+limited with `--sectors` and `--metrics`, while additional analyses are opt-in:
+
+```bash
+# Small NPV check for two sectors.
+PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name quick_check \
+  --sectors electricity cement --metrics NPV --sample-size 100
+
+# Financial summaries plus both deterministic and simulated MACCs.
+PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name macc_results \
+  --macc-mode both
+
+# Financial summaries plus sensitivity CSVs and heatmaps.
+PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name heatmap_results \
+  --include-heatmaps
+```
+
+The main options are:
+
+- `--run-name NAME`: names the result set and its directory.
+- `--full`: enables both MACC modes, heatmaps, and notebook verification.
+- `--macc-mode deterministic|simulated|both`: selects MACC output independently.
+- `--include-heatmaps`: adds sensitivity CSVs and heatmap figures.
+- `--verify-notebooks`: saves executed notebook copies without overwriting the
+  sources.
+- `--sectors ...` and `--metrics ...`: restrict the generated result scope.
+- `--sample-size`, `--random-seed`, and `--retrofit-bau-mode`: configure the
+  Monte Carlo runs.
+- `--output-root`: changes the parent output directory.
+- `--dry-run`: prints the exact command plan without creating outputs.
+
+Run `.venv/bin/python regenerate_all.py --help` for the full descriptions,
+examples, and exact output layout.
+
+The manifest records all global assumptions imported by the run, including the
+carbon price and discount rate. If those assumptions are intentionally changed,
+use a new descriptive run name so the resulting sets remain distinguishable.
+
 ## Repository Structure
 
 ```text
@@ -87,6 +154,7 @@ MasterThesis/
 ├── results/              # Simulation results, usually not tracked by Git
 ├── figures/              # Plots and figures for reports
 ├── docs/                 # Handover and workflow documentation
+├── regenerate_all.py     # Manifest-backed full-result regeneration command
 ├── sensitivity_dashboard.py # Streamlit sensitivity analysis dashboard
 ├── README.md             # Project overview
 ├── requirements.txt      # Python dependencies
@@ -120,9 +188,15 @@ sector-specific calculations.
   `*_financial_summary.py` modules now contain only sector configuration and
   compatibility names. The former `*_npv_summary_figures.py` names remain as
   deprecated forwarding shims for existing external commands.
-- `src/<sector>/` contains the assumptions, deterministic calculation, Monte
-  Carlo calculation, and output workflow for electricity, cement, steel,
-  ammonia, or hydrogen.
+- Every `src/<sector>/` now uses the same calculation boundary:
+  `<sector>_npv_model.py` resolves absolute technology inputs and owns the
+  sector-specific cost/result calculation; `<sector>_npv_deterministic.py`
+  chooses representative inputs; and `<sector>_npv_monte_carlo.py` samples
+  input arrays. Both input providers call the same sector model, which in turn
+  calls `src/npv_finance.py`.
+- The remaining sector modules contain assumptions, MACC calculations, and
+  financial-summary configuration for electricity, cement, steel, ammonia, or
+  hydrogen.
 
 ## Which Notebook or Script Should I Use?
 
@@ -234,10 +308,10 @@ electricity sensitivity heatmap.
 
 ## Sensitivity Dashboard
 
-The Streamlit dashboard provides an interactive deterministic sensitivity
-analysis for the cement and electricity sectors. It lets you select a sector,
-technology, financial metric, and scenario inputs, then generates a tornado diagram
-showing one-factor-at-a-time impacts.
+The Streamlit dashboard provides interactive deterministic sensitivity analysis
+for cement, electricity, steel, ammonia, and hydrogen. Each sector has its own
+tab for selecting a technology, financial metric, and scenario inputs and for
+generating a one-factor-at-a-time tornado diagram.
 
 To run the dashboard from the repository root:
 
@@ -264,14 +338,17 @@ the impact. Downloaded or in-app saved dashboard figures can be written to
 
 Each sector tab also contains a **Variables in sensitivity analysis** panel.
 Check or uncheck inputs there to control which variables are recalculated and
-shown in the tornado diagram. For hard-coal CCS, CCGT CCS, and cement CCS the
+shown in the tornado diagram. The product sectors expose their relevant fuel,
+electricity, and emissions inputs; H2-DRI-EAF also exposes hydrogen and its
+secondary charcoal input separately. For BAU-relative CCS technologies the
 dashboard exposes the T&S share of capture cost; for BECCS it exposes the direct
 T&S cost. The same assumptions appear in the standardized heatmaps as `T&S`.
 
 The dashboard is a deterministic scenario tool. It does not change stored model
 assumptions, and it currently varies annual production/generation consistently
 with the deterministic plant-size setup rather than holding capacity
-fixed.
+fixed. Its carbon-price control starts from the active value in
+`src/general_parameters.py`; restart Streamlit after changing that file.
 
 To regenerate the standardized technology-input sensitivity CSV and heatmaps:
 

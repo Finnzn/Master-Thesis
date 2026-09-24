@@ -39,18 +39,91 @@ st.set_page_config(
     layout="wide",
 )
 
+DASHBOARD_SECTORS = (
+    "cement",
+    "electricity",
+    "steel",
+    "ammonia",
+    "hydrogen",
+)
+
+ANNUAL_OUTPUT_LABELS = {
+    "ammonia": "Annual ammonia production (t/year)",
+    "cement": "Annual cement production (t/year)",
+    "electricity": "Annual generation (MWh/year)",
+    "hydrogen": "Annual hydrogen production (t/year)",
+    "steel": "Annual steel production (t/year)",
+}
+
+SALES_PRICE_LABELS = {
+    "ammonia": "Ammonia price (EUR/t)",
+    "cement": "Cement price (EUR/t)",
+    "electricity": "Power price (EUR/MWh)",
+    "hydrogen": "Hydrogen price (EUR/t)",
+    "steel": "Steel price (EUR/t)",
+}
+
+CAPEX_LABELS = {
+    "ammonia": "Investment cost (EUR/t)",
+    "cement": "Investment cost (EUR/t)",
+    "electricity": "Investment cost (EUR/kW)",
+    "hydrogen": "Investment cost (EUR/t)",
+    "steel": "Investment cost (EUR/t)",
+}
+
+FIXED_OPEX_LABELS = {
+    "ammonia": "Fixed OPEX (EUR/t)",
+    "cement": "Fixed OPEX (EUR/t)",
+    "electricity": "Fixed OPEX (EUR/kW/year)",
+    "hydrogen": "Fixed OPEX (EUR/t)",
+    "steel": "Fixed OPEX (EUR/t)",
+}
+
+VARIABLE_OPEX_LABELS = {
+    "ammonia": "Variable OPEX (EUR/t)",
+    "cement": "Variable OPEX (EUR/t)",
+    "electricity": "Variable OPEX (EUR/MWh)",
+    "hydrogen": "Variable OPEX (EUR/t)",
+    "steel": "Variable OPEX (EUR/t)",
+}
+
+FUEL_CONSUMPTION_LABELS = {
+    "ammonia": "Fuel use (MWh_th/t)",
+    "cement": "Fuel use (MWh_th/t)",
+    "electricity": "Fuel use (MWh_th/MWh)",
+    "hydrogen": "Fuel use (MWh_th/t)",
+    "steel": "Fuel / reductant use (MWh_th/t)",
+}
+
+EMISSIONS_LABELS = {
+    "ammonia": "Direct emissions (tCO2/t)",
+    "cement": "Direct emissions (tCO2/t)",
+    "electricity": "Direct emissions (tCO2/MWh)",
+    "hydrogen": "Direct emissions (tCO2/t)",
+    "steel": "Direct emissions (tCO2/t)",
+}
+
+LEVELIZED_COST_NAMES = {
+    "ammonia": "LCOA",
+    "cement": "LCOC",
+    "electricity": "LCOE",
+    "hydrogen": "LCOH",
+    "steel": "LCOS",
+}
+
 
 def main() -> None:
     """Render the sensitivity-analysis dashboard."""
 
     st.title("Financial Metric Sensitivity Dashboard")
-    st.caption("Deterministic one-factor-at-a-time sensitivity around editable inputs.")
+    st.caption(
+        "Deterministic one-factor-at-a-time sensitivity across all five sectors."
+    )
 
-    cement_tab, electricity_tab = st.tabs(["Cement", "Electricity"])
-    with cement_tab:
-        render_sector_dashboard("cement")
-    with electricity_tab:
-        render_sector_dashboard("electricity")
+    tabs = st.tabs([SECTOR_DISPLAY_NAMES[sector] for sector in DASHBOARD_SECTORS])
+    for tab, sector in zip(tabs, DASHBOARD_SECTORS):
+        with tab:
+            render_sector_dashboard(sector)
 
 
 def render_sector_dashboard(sector: str) -> None:
@@ -115,7 +188,9 @@ def render_sector_dashboard(sector: str) -> None:
     )
 
     with figure_area:
-        metric_columns = st.columns(3)
+        # Give the financial result enough width to show units such as
+        # ``EUR/MWh`` in full at the large metric font size.
+        metric_columns = st.columns([1.6, 0.7, 0.7])
         metric_columns[0].metric(
             selected_metric_label(sector, metric),
             format_metric_value(sector, metric, base_metric_value),
@@ -183,34 +258,17 @@ def build_input_controls(sector: str, technology: str, defaults):
     """Build sector-specific numeric controls and return scenario inputs."""
 
     unit = SECTOR_UNITS[sector]
-    annual_output_label = {
-        "cement": "Annual production (t/year)",
-        "electricity": "Annual generation (MWh/year)",
-    }[sector]
-    sales_price_label = {
-        "cement": "Cement price (EUR/t)",
-        "electricity": "Power price (EUR/MWh)",
-    }[sector]
-    capex_label = {
-        "cement": "Investment cost (EUR/t)",
-        "electricity": "Investment cost (EUR/kW)",
-    }[sector]
-    fixed_opex_label = {
-        "cement": "Fixed OPEX (EUR/t)",
-        "electricity": "Fixed OPEX (EUR/kW/year)",
-    }[sector]
-    variable_opex_label = {
-        "cement": "Variable OPEX (EUR/t)",
-        "electricity": "Variable OPEX (EUR/MWh)",
-    }[sector]
-    fuel_consumption_label = {
-        "cement": "Fuel use (MWh_th/t)",
-        "electricity": "Fuel use (MWh_th/MWh)",
-    }[sector]
-    emissions_label = {
-        "cement": "Direct emissions (tCO2/t)",
-        "electricity": "Direct emissions (tCO2/MWh)",
-    }[sector]
+    annual_output_label = ANNUAL_OUTPUT_LABELS[sector]
+    sales_price_label = SALES_PRICE_LABELS[sector]
+    capex_label = CAPEX_LABELS[sector]
+    fixed_opex_label = FIXED_OPEX_LABELS[sector]
+    variable_opex_label = VARIABLE_OPEX_LABELS[sector]
+    fuel_consumption_label = FUEL_CONSUMPTION_LABELS[sector]
+    fuel_price_label = "Fuel price (EUR/MWh_th)"
+    if sector == "steel" and technology == "h2_dri_eaf":
+        fuel_consumption_label = "Hydrogen use (kg/t)"
+        fuel_price_label = "Hydrogen price (EUR/kg)"
+    emissions_label = EMISSIONS_LABELS[sector]
 
     annual_output = st.number_input(
         annual_output_label,
@@ -289,7 +347,7 @@ def build_input_controls(sector: str, technology: str, defaults):
         key=f"{sector}_{technology}_fuel_consumption",
     )
     fuel_price = st.number_input(
-        "Fuel price (EUR/MWh_th)",
+        fuel_price_label,
         min_value=0.0,
         value=float(defaults.fuel_price),
         step=max(0.1, defaults.fuel_price * 0.05),
@@ -297,7 +355,7 @@ def build_input_controls(sector: str, technology: str, defaults):
     )
     electricity_consumption = defaults.electricity_consumption
     electricity_price = defaults.electricity_price
-    if sector == "cement":
+    if sector != "electricity":
         electricity_consumption = st.number_input(
             f"Electricity use (MWh/{unit})",
             min_value=0.0,
@@ -312,6 +370,25 @@ def build_input_controls(sector: str, technology: str, defaults):
             value=float(defaults.electricity_price),
             step=max(0.1, defaults.electricity_price * 0.05),
             key=f"{sector}_{technology}_electricity_price",
+        )
+
+    secondary_fuel_consumption = defaults.secondary_fuel_consumption
+    secondary_fuel_price = defaults.secondary_fuel_price
+    if sector == "steel" and secondary_fuel_consumption > 0.0:
+        secondary_fuel_consumption = st.number_input(
+            "Secondary fuel / reductant use (MWh_th/t)",
+            min_value=0.0,
+            value=float(secondary_fuel_consumption),
+            step=max(0.001, secondary_fuel_consumption * 0.05),
+            format="%.4f",
+            key=f"{sector}_{technology}_secondary_fuel_consumption",
+        )
+        secondary_fuel_price = st.number_input(
+            "Secondary fuel / reductant price (EUR/MWh_th)",
+            min_value=0.0,
+            value=float(secondary_fuel_price),
+            step=max(0.1, secondary_fuel_price * 0.05),
+            key=f"{sector}_{technology}_secondary_fuel_price",
         )
 
     # BECCS has net-negative emissions. Keep the zero floor for conventional
@@ -372,6 +449,8 @@ def build_input_controls(sector: str, technology: str, defaults):
         full_load_hours=full_load_hours,
         value_factor=value_factor,
         uses_value_factor=defaults.uses_value_factor,
+        secondary_fuel_consumption=secondary_fuel_consumption,
+        secondary_fuel_price=secondary_fuel_price,
     )
     if defaults.capture_cost_baseline is not None:
         applied_transport_and_storage_cost = (
@@ -395,7 +474,7 @@ def format_metric_option(sector: str, metric: str) -> str:
     if metric == "LPM":
         return f"Levelized profit margin (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
-        levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
+        levelized_cost_name = LEVELIZED_COST_NAMES[sector]
         return f"{levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
     raise ValueError(f"Unknown financial metric: {metric!r}.")
 
@@ -406,9 +485,9 @@ def selected_metric_label(sector: str, metric: str) -> str:
     if metric == "NPV":
         return "Scenario NPV"
     if metric == "LPM":
-        return f"Scenario levelized profit margin (EUR/{SECTOR_UNITS[sector]})"
+        return f"Scenario LPM (EUR/{SECTOR_UNITS[sector]})"
     if metric == "LCOX":
-        levelized_cost_name = "LCOE" if sector == "electricity" else "LCOC"
+        levelized_cost_name = LEVELIZED_COST_NAMES[sector]
         return f"Scenario {levelized_cost_name} (EUR/{SECTOR_UNITS[sector]})"
     raise ValueError(f"Unknown financial metric: {metric!r}.")
 

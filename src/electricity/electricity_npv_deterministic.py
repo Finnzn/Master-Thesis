@@ -1,12 +1,4 @@
-"""Deterministic NPV calculations for electricity technologies.
-
-The deterministic calculation is the one-point counterpart to the Monte Carlo
-model. It uses the same electricity assumptions and cash-flow formula, but each
-uncertain parameter is replaced by its expected value. Hard coal CCS and CCGT
-CCS are retrofit technologies: their expected changes are resolved against the
-expected values of their parent BAU technology before the
-cash-flow calculation.
-"""
+"""Deterministic input provider for the shared electricity NPV model."""
 
 from __future__ import annotations
 
@@ -20,32 +12,26 @@ from distributions import (
     TriangularDistribution,
     UniformDistribution,
 )
-from electricity.electricity_capacity_calculation import calculate_capacity_kw
+from electricity.electricity_npv_model import (
+    calculate_result,
+    resolve_technology_values,
+)
 from electricity.electricity_parameters import (
-    ANNUAL_ELECTRICITY_OUTPUT_MWH,
     BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION,
     ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES,
     ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,
-    RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
     BIOMASS_PRICE_DISTRIBUTION,
     BIOGAS_PRICE_EUR_PER_MWH_TH,
-    CARBON_PRICE_EUR_PER_T,
-    CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
     COAL_PRICE_DISTRIBUTION,
     GAS_PRICE_DISTRIBUTION,
-    INTEREST_RATE,
     NO_FUEL_PRICE_EUR_PER_MWH_TH,
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
 )
 from npv_summary import representative_value
-from npv_finance import (
-    calculate_ccs_transport_and_storage_cost_per_output,
-    calculate_financial_result,
-)
 
 
 ParameterSpec = (
@@ -56,18 +42,9 @@ ParameterSpec = (
 )
 
 
-def electricity_fuel_price_parameter(
-    technology: str,
-) -> ParameterSpec:
-    """Return the fuel-price parameter used by an electricity technology.
+def electricity_fuel_price_parameter(technology: str) -> ParameterSpec:
+    """Return the shared fuel-price parameter used by a technology."""
 
-    Fuel prices are not stored inside every technology block because several
-    technologies share the same fuel market assumption. This mapping connects
-    each electricity technology to the relevant shared fuel-price parameter.
-    """
-
-    # Fuel-price assumptions match the Monte Carlo model. The deterministic run
-    # later reduces the returned parameter to its expected value.
     fuel_price_by_technology = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "hard_coal_ccs": COAL_PRICE_DISTRIBUTION,
@@ -82,297 +59,88 @@ def electricity_fuel_price_parameter(
     }
     if technology not in fuel_price_by_technology:
         raise ValueError(f"No fuel-price parameter configured for {technology!r}.")
-
     return fuel_price_by_technology[technology]
 
 
 def _representative_values(
     parameters: Mapping[str, ParameterSpec],
-) -> dict[str, float]:
-    """Convert one parameter mapping into deterministic expected values."""
+) -> dict[str, np.ndarray]:
+    """Convert one parameter mapping to one-element representative arrays."""
 
     return {
-        parameter_name: representative_value(parameter)
+        parameter_name: np.full(1, representative_value(parameter))
         for parameter_name, parameter in parameters.items()
-    }
-
-
-def _deterministic_electricity_technology_values(
-    technology: str,
-) -> dict[str, float]:
-    """Resolve absolute deterministic values for one electricity technology."""
-
-    if technology in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
-        return _representative_values(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology])
-
-    if technology not in ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS:
-        raise ValueError(f"Unknown electricity technology: {technology!r}.")
-
-    bau_technology = ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
-    bau_values = _representative_values(
-        ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[bau_technology]
-    )
-    retrofit_values = _representative_values(
-        ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS[technology]
-    )
-
-    return {
-        "capex_eur_per_kw": (
-            bau_values["capex_eur_per_kw"]
-            + retrofit_values["capex_change_eur_per_kw"]
-        ),
-        "fixed_opex_eur_per_kw_year": (
-            bau_values["fixed_opex_eur_per_kw_year"]
-            + retrofit_values["fixed_opex_change_eur_per_kw_year"]
-        ),
-        "variable_opex_eur_per_mwh": (
-            bau_values["variable_opex_eur_per_mwh"]
-            + retrofit_values["variable_opex_change_eur_per_mwh"]
-        ),
-        "fuel_consumption_mwh_th_per_mwh_e": (
-            bau_values["fuel_consumption_mwh_th_per_mwh_e"]
-            * (1.0 - retrofit_values["fuel_consumption_reduction_fraction"])
-        ),
-        "emissions_tco2_per_mwh_e": (
-            bau_values["emissions_tco2_per_mwh_e"]
-            * (1.0 - retrofit_values["emissions_reduction_fraction"])
-        ),
-        **retrofit_values,
     }
 
 
 def calculate_deterministic_electricity_result(
     technology: str,
 ) -> Mapping[str, object]:
-    """Calculate deterministic electricity inputs and outputs for one technology.
+    """Choose representative inputs and call the shared electricity model."""
 
-    The returned structure deliberately mirrors the Monte Carlo result keys, but
-    each value is a one-element list. This allows shared CSV and plotting helpers
-    to work for deterministic and simulated results.
-    """
+    if technology not in ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS:
+        raise ValueError(f"Unknown electricity technology: {technology!r}.")
 
-    values = _deterministic_electricity_technology_values(technology)
+    is_retrofit = technology in ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
+    baseline_values = None
+    retrofit_values = None
+    if is_retrofit:
+        bau_technology = ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
+        baseline_values = _representative_values(
+            ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[bau_technology]
+        )
+        retrofit_values = _representative_values(
+            ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS[technology]
+        )
+        values = resolve_technology_values(baseline_values, retrofit_values)
+    else:
+        values = _representative_values(
+            ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[technology]
+        )
+
     fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
-
-    # Deterministic calculations use the expected value for each uncertain
-    # input, then follow the same sizing and cash-flow sequence as the Monte Carlo
-    # calculation.
-    annual_output_mwh = ANNUAL_ELECTRICITY_OUTPUT_MWH.value
-    full_load_hours = representative_value(
-        fixed_parameters["full_load_hours_per_year"]
-    )
-    lifetime_years = representative_value(fixed_parameters["lifetime_years"])
     value_factor_parameter = fixed_parameters.get("value_factor")
-    value_factor = (
-        representative_value(value_factor_parameter)
-        if value_factor_parameter is not None
-        else 1.0
-    )
-    capacity_kw = calculate_capacity_kw(
-        annual_electricity_output_mwh=annual_output_mwh,
-        full_load_hours_per_year=full_load_hours,
-    )
-
-    capex_eur_per_kw = values["capex_eur_per_kw"]
-    fixed_opex_eur_per_kw_year = values["fixed_opex_eur_per_kw_year"]
-    variable_opex_eur_per_mwh = values["variable_opex_eur_per_mwh"]
-    fuel_consumption_mwh_th_per_mwh_e = values[
-        "fuel_consumption_mwh_th_per_mwh_e"
-    ]
-    emissions_tco2_per_mwh_e = values["emissions_tco2_per_mwh_e"]
-    fuel_price_eur_per_mwh_th = representative_value(
-        electricity_fuel_price_parameter(technology)
-    )
-
-    # The cash-flow structure mirrors the Monte Carlo calculation. Renewable
-    # value factors scale the common sales-price proxy to the captured price;
-    # costs and physical generation remain unchanged.
-    initial_capex_eur = capacity_kw * capex_eur_per_kw
-    captured_electricity_price_eur_per_mwh = (
-        RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value * value_factor
-    )
-    annual_revenue_eur = (
-        annual_output_mwh * captured_electricity_price_eur_per_mwh
-    )
-    annual_fixed_opex_eur = capacity_kw * fixed_opex_eur_per_kw_year
-    annual_variable_opex_eur = annual_output_mwh * variable_opex_eur_per_mwh
-    annual_fuel_cost_eur = (
-        annual_output_mwh
-        * fuel_consumption_mwh_th_per_mwh_e
-        * fuel_price_eur_per_mwh_th
-    )
-    capture_cost_excluding_transport_and_storage_eur_per_mwh = float("nan")
-    transport_and_storage_cost_eur_per_mwh = 0.0
-    transport_and_storage_cost_input_eur_per_mwh = float("nan")
-    transport_and_storage_share_of_capture_cost = float("nan")
-    if technology in ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES:
-        transport_and_storage_share_of_capture_cost = (
-            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
-        )
-        bau_values = _representative_values(
-            ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS[
-                ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
-            ]
-        )
-        bau_initial_capex_eur = capacity_kw * bau_values["capex_eur_per_kw"]
-        bau_annual_cost_excluding_carbon_eur = (
-            capacity_kw * bau_values["fixed_opex_eur_per_kw_year"]
-            + annual_output_mwh * bau_values["variable_opex_eur_per_mwh"]
-            + annual_output_mwh
-            * bau_values["fuel_consumption_mwh_th_per_mwh_e"]
-            * fuel_price_eur_per_mwh_th
-        )
-        annual_cost_excluding_carbon_eur = (
-            annual_fixed_opex_eur
-            + annual_variable_opex_eur
-            + annual_fuel_cost_eur
-        )
-        (
-            capture_cost_excluding_transport_and_storage_eur_per_mwh,
-            transport_and_storage_cost_eur_per_mwh,
-        ) = calculate_ccs_transport_and_storage_cost_per_output(
-            ccs_initial_capex_eur=initial_capex_eur,
-            bau_initial_capex_eur=bau_initial_capex_eur,
-            ccs_annual_cost_excluding_carbon_eur=(
-                annual_cost_excluding_carbon_eur
-            ),
-            bau_annual_cost_excluding_carbon_eur=(
-                bau_annual_cost_excluding_carbon_eur
-            ),
-            annual_output=annual_output_mwh,
-            lifetime_years=int(lifetime_years),
-            discount_rate=INTEREST_RATE.value,
-            transport_and_storage_share=(
-                transport_and_storage_share_of_capture_cost
-            ),
-        )
-    elif technology == "beccs":
-        transport_and_storage_cost_eur_per_mwh = representative_value(
-            BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION
-        )
-        transport_and_storage_cost_input_eur_per_mwh = (
-            transport_and_storage_cost_eur_per_mwh
-        )
-    annual_transport_and_storage_cost_eur = (
-        annual_output_mwh * transport_and_storage_cost_eur_per_mwh
-    )
-    # Negative BECCS emissions produce a negative carbon-cost value. Subtracting
-    # that value below turns the carbon term into revenue without a separate
-    # technology-specific cash-flow formula.
-    annual_emissions_cost_eur = (
-        annual_output_mwh * emissions_tco2_per_mwh_e * CARBON_PRICE_EUR_PER_T.value
-    )
-    financial_result = calculate_financial_result(
-        initial_capex_eur=initial_capex_eur,
-        annual_output=annual_output_mwh,
-        annual_revenue_eur=annual_revenue_eur,
-        annual_fixed_opex_eur=annual_fixed_opex_eur,
-        annual_variable_opex_eur=annual_variable_opex_eur,
-        annual_fuel_cost_eur=annual_fuel_cost_eur,
-        annual_electricity_cost_eur=0.0,
-        annual_transport_and_storage_cost_eur=(
-            annual_transport_and_storage_cost_eur
+    result = calculate_result(
+        technology=technology,
+        technology_type="retrofit" if is_retrofit else "absolute",
+        bau_mode="deterministic" if is_retrofit else "not_applicable",
+        values=values,
+        size=1,
+        full_load_hours=np.full(
+            1,
+            representative_value(fixed_parameters["full_load_hours_per_year"]),
         ),
-        annual_emissions_cost_eur=annual_emissions_cost_eur,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-        subtract_cost_components_sequentially=True,
+        lifetime_years=representative_value(fixed_parameters["lifetime_years"]),
+        value_factor=(
+            np.full(1, representative_value(value_factor_parameter))
+            if value_factor_parameter is not None
+            else np.ones(1)
+        ),
+        fuel_price_eur_per_mwh_th=np.full(
+            1,
+            representative_value(electricity_fuel_price_parameter(technology)),
+        ),
+        baseline_values=baseline_values,
+        retrofit_values=retrofit_values,
+        beccs_transport_and_storage_cost_eur_per_mwh=(
+            np.full(
+                1,
+                representative_value(BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION),
+            )
+            if technology == "beccs"
+            else None
+        ),
+        include_retrofit_bau_mode=False,
+        include_bau_values=False,
+        include_fuel_price_source=False,
+        # Preserve the historical deterministic export operation order.
+        export_capacity_mw_from_kw=True,
     )
-    annual_total_cost_eur = float(financial_result["annual_total_cost_eur"])
-    annual_net_cash_flow_eur = float(financial_result["annual_net_cash_flow_eur"])
-    npv_eur = float(financial_result["npv_eur"])
-    discounted_lifetime_output_mwh = float(
-        financial_result["discounted_lifetime_output"]
-    )
-    present_value_total_cost_eur = float(
-        financial_result["present_value_total_cost_eur"]
-    )
-    lcoe_eur_per_mwh = float(financial_result["levelized_cost"])
-    levelized_profit_margin_eur_per_mwh = float(
-        financial_result["levelized_profit_margin"]
-    )
-
-    # Keep the same output keys as the Monte Carlo result for shared export helpers.
-    result = {
-        "run_id": [0],
-        "technology": [technology],
-        "technology_type": [
-            "retrofit"
-            if technology in ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
-            else "absolute"
-        ],
-        "annual_output_mwh": [annual_output_mwh],
-        "full_load_hours_per_year": [full_load_hours],
-        "lifetime_years": [lifetime_years],
-        "capex_eur_per_kw": [capex_eur_per_kw],
-        "fixed_opex_eur_per_kw_year": [fixed_opex_eur_per_kw_year],
-        "variable_opex_eur_per_mwh": [variable_opex_eur_per_mwh],
-        "fuel_consumption_mwh_th_per_mwh_e": [
-            fuel_consumption_mwh_th_per_mwh_e
-        ],
-        "emissions_tco2_per_mwh_e": [emissions_tco2_per_mwh_e],
-        "fuel_price_eur_per_mwh_th": [fuel_price_eur_per_mwh_th],
-        "electricity_price_eur_per_mwh": [
-            RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
-        ],
-        "value_factor": [value_factor],
-        "captured_electricity_price_eur_per_mwh": [
-            captured_electricity_price_eur_per_mwh
-        ],
-        "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
-        "capture_cost_excluding_transport_and_storage_eur_per_mwh": [
-            capture_cost_excluding_transport_and_storage_eur_per_mwh
-        ],
-        "transport_and_storage_cost_eur_per_mwh": [
-            transport_and_storage_cost_eur_per_mwh
-        ],
-        "transport_and_storage_cost_input_eur_per_mwh": [
-            transport_and_storage_cost_input_eur_per_mwh
-        ],
-        "transport_and_storage_share_of_capture_cost": [
-            transport_and_storage_share_of_capture_cost
-        ],
-        "capacity_mw": [capacity_kw / 1_000.0],
-        "capacity_kw": [capacity_kw],
-        "initial_capex_eur": [initial_capex_eur],
-        "annual_revenue_eur": [annual_revenue_eur],
-        "annual_fixed_opex_eur": [annual_fixed_opex_eur],
-        "annual_variable_opex_eur": [annual_variable_opex_eur],
-        "annual_fuel_cost_eur": [annual_fuel_cost_eur],
-        "annual_transport_and_storage_cost_eur": [
-            annual_transport_and_storage_cost_eur
-        ],
-        "annual_emissions_cost_eur": [annual_emissions_cost_eur],
-        "annual_total_cost_eur": [annual_total_cost_eur],
-        "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
-        "npv_eur": [npv_eur],
-        "discounted_lifetime_output_mwh": [discounted_lifetime_output_mwh],
-        "present_value_total_cost_eur": [present_value_total_cost_eur],
-        "lcoe_eur_per_mwh": [lcoe_eur_per_mwh],
-        "levelized_profit_margin_eur_per_mwh": [
-            levelized_profit_margin_eur_per_mwh
-        ],
-    }
-
-    for retrofit_key in (
-        "capex_change_eur_per_kw",
-        "fixed_opex_change_eur_per_kw_year",
-        "variable_opex_change_eur_per_mwh",
-        "fuel_consumption_reduction_fraction",
-        "emissions_reduction_fraction",
-    ):
-        if retrofit_key in values:
-            result[retrofit_key] = [values[retrofit_key]]
-
-    return result
+    return {key: value.tolist() for key, value in result.items()}
 
 
 def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
-    """Calculate deterministic electricity NPV from expected input values.
-
-    This small wrapper is useful when only the final NPV is needed and not the
-    intermediate deterministic inputs and cost components.
-    """
+    """Return the deterministic NPV for one electricity technology."""
 
     return float(calculate_deterministic_electricity_result(technology)["npv_eur"][0])
 
@@ -380,11 +148,7 @@ def calculate_deterministic_electricity_npv_eur(technology: str) -> float:
 def calculate_deterministic_electricity_results(
     technologies: tuple[str, ...] | None = None,
 ) -> Mapping[str, Mapping[str, object]]:
-    """Calculate deterministic electricity results for all selected technologies.
-
-    By default this follows the fixed-parameter registry, which preserves the
-    established display order across absolute and retrofit technologies.
-    """
+    """Calculate deterministic results for all selected technologies."""
 
     selected_technologies = technologies or tuple(
         ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS

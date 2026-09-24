@@ -1,4 +1,4 @@
-"""Aligned Monte Carlo NPV simulations for hydrogen technologies."""
+"""Monte Carlo input provider for the shared hydrogen NPV model."""
 
 from __future__ import annotations
 
@@ -6,24 +6,76 @@ from typing import Mapping
 
 import numpy as np
 
-from hydrogen.hydrogen_npv_deterministic import (
+from hydrogen.hydrogen_npv_model import (
     HYDROGEN_TECHNOLOGIES,
-    absolute_values,
+    MARKET_PARAMETERS,
     calculate_result,
-    market_values as draw_market_values,
-    parameter_values,
-    resolve_retrofit_values,
+    resolve_technology_values,
 )
 from hydrogen.hydrogen_parameters import (
     HYDROGEN_RETROFIT_BASE_TECHNOLOGIES,
     HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
+    HYDROGEN_TECHNOLOGY_DISTRIBUTIONS,
 )
+from distributions import (
+    FixedParameter,
+    ScaledBetaDistribution,
+    TriangularDistribution,
+    UniformDistribution,
+    sample_scaled_beta,
+    sample_triangular,
+    sample_uniform,
+)
+from npv_summary import representative_value
 
 
 DEFAULT_SAMPLE_SIZE = 100_000
 DEFAULT_RANDOM_SEED = 42
 DEFAULT_RETROFIT_BAU_MODE = "sampled"
 RETROFIT_BAU_MODES = ("sampled", "deterministic")
+
+ParameterSpec = (
+    FixedParameter
+    | ScaledBetaDistribution
+    | TriangularDistribution
+    | UniformDistribution
+)
+
+
+def _parameter_values(
+    parameters: Mapping[str, ParameterSpec],
+    size: int,
+    rng: np.random.Generator | None,
+) -> dict[str, np.ndarray]:
+    """Sample Monte Carlo inputs, or broadcast means for deterministic BAU."""
+
+    values: dict[str, np.ndarray] = {}
+    for name, parameter in parameters.items():
+        if rng is None or isinstance(parameter, FixedParameter):
+            values[name] = np.full(
+                size, representative_value(parameter), dtype=float
+            )
+        elif isinstance(parameter, ScaledBetaDistribution):
+            values[name] = sample_scaled_beta(parameter, size=size, rng=rng)
+        elif isinstance(parameter, TriangularDistribution):
+            values[name] = sample_triangular(parameter, size=size, rng=rng)
+        elif isinstance(parameter, UniformDistribution):
+            values[name] = sample_uniform(parameter, size=size, rng=rng)
+        else:
+            raise TypeError(f"Unsupported parameter type: {type(parameter)!r}.")
+    return values
+
+
+def _absolute_values(
+    technology: str,
+    size: int,
+    rng: np.random.Generator | None,
+) -> dict[str, np.ndarray]:
+    if technology not in HYDROGEN_TECHNOLOGY_DISTRIBUTIONS:
+        raise ValueError(f"Unknown absolute hydrogen technology: {technology!r}.")
+    return _parameter_values(
+        HYDROGEN_TECHNOLOGY_DISTRIBUTIONS[technology], size=size, rng=rng
+    )
 
 
 def _validate(size: int, retrofit_bau_mode: str) -> None:
@@ -52,13 +104,13 @@ def simulate_hydrogen_technology_npv(
     prices = (
         dict(market_values)
         if market_values is not None
-        else draw_market_values(size=size, rng=generator)
+        else _parameter_values(MARKET_PARAMETERS, size=size, rng=generator)
     )
     if technology not in HYDROGEN_RETROFIT_BASE_TECHNOLOGIES:
         values = (
             dict(bau_values)
             if bau_values is not None
-            else absolute_values(technology, size=size, rng=generator)
+            else _absolute_values(technology, size=size, rng=generator)
         )
         return calculate_result(technology, values, prices)
 
@@ -66,18 +118,18 @@ def simulate_hydrogen_technology_npv(
     parent = (
         dict(bau_values)
         if bau_values is not None and retrofit_bau_mode == "sampled"
-        else absolute_values(
+        else _absolute_values(
             parent_name,
             size=size,
             rng=generator if retrofit_bau_mode == "sampled" else None,
         )
     )
-    increments = parameter_values(
+    increments = _parameter_values(
         HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS[technology],
         size=size,
         rng=generator,
     )
-    values = resolve_retrofit_values(technology, parent, increments)
+    values = resolve_technology_values(technology, parent, increments)
     return calculate_result(
         technology,
         values,
@@ -102,7 +154,7 @@ def simulate_hydrogen_technologies_npv(
     if unknown:
         raise ValueError(f"Unknown hydrogen technologies: {sorted(unknown)!r}.")
     generator = rng if rng is not None else np.random.default_rng()
-    prices = draw_market_values(size=size, rng=generator)
+    prices = _parameter_values(MARKET_PARAMETERS, size=size, rng=generator)
     parents_needed = {
         HYDROGEN_RETROFIT_BASE_TECHNOLOGIES[technology]
         for technology in selected
@@ -110,7 +162,7 @@ def simulate_hydrogen_technologies_npv(
     }
     shared_parents = (
         {
-            parent: absolute_values(parent, size=size, rng=generator)
+            parent: _absolute_values(parent, size=size, rng=generator)
             for parent in HYDROGEN_TECHNOLOGIES
             if parent in parents_needed
         }

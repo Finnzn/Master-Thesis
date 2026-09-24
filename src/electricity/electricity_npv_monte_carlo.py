@@ -1,9 +1,8 @@
-"""Monte Carlo NPV calculations for electricity technologies.
+"""Monte Carlo input provider for the shared electricity NPV model.
 
-This module is the main electricity-sector simulation engine. For each
-technology, it samples uncertain techno-economic inputs, sizes the plant to
-produce the same annual electricity output, calculates annual costs and revenue,
-and converts the resulting annual net cash flow into NPV.
+For each technology, this module samples uncertain techno-economic inputs and
+passes the aligned arrays to :mod:`electricity.electricity_npv_model`, which
+owns plant sizing, sector costs, and financial-result assembly.
 
 Hard coal CCS and CCGT CCS are modelled as retrofits of their unabated parent
 technologies. `retrofit_bau_mode` controls whether their BAU inputs are sampled
@@ -21,6 +20,11 @@ from typing import Mapping
 
 import numpy as np
 
+from electricity.electricity_npv_model import (
+    FUEL_PRICE_KEY_BY_TECHNOLOGY,
+    calculate_result,
+    resolve_technology_values,
+)
 from distributions import (
     FixedParameter,
     ScaledBetaDistribution,
@@ -31,28 +35,19 @@ from distributions import (
     sample_uniform,
 )
 from electricity.electricity_parameters import (
-    ANNUAL_ELECTRICITY_OUTPUT_MWH,
     BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION,
     ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES,
     ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS,
     ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS,
-    RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH,
 )
 from general_parameters import (
     BIOMASS_PRICE_DISTRIBUTION,
     BIOGAS_PRICE_EUR_PER_MWH_TH,
-    CARBON_PRICE_EUR_PER_T,
-    CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
     COAL_PRICE_DISTRIBUTION,
     GAS_PRICE_DISTRIBUTION,
-    INTEREST_RATE,
     NO_FUEL_PRICE_EUR_PER_MWH_TH,
     NUCLEAR_FUEL_PRICE_EUR_PER_MWH_TH,
-)
-from npv_finance import (
-    calculate_ccs_transport_and_storage_cost_per_output,
-    calculate_financial_result,
 )
 from npv_summary import representative_value
 
@@ -192,139 +187,8 @@ def _sample_retrofit_values(
     }
 
 
-def _resolve_retrofit_values(
-    bau_values: Mapping[str, np.ndarray],
-    retrofit_values: Mapping[str, np.ndarray],
-) -> dict[str, np.ndarray]:
-    """Resolve absolute retrofit inputs from BAU arrays and sampled changes."""
-
-    return {
-        "capex_eur_per_kw": (
-            bau_values["capex_eur_per_kw"]
-            + retrofit_values["capex_change_eur_per_kw"]
-        ),
-        "fixed_opex_eur_per_kw_year": (
-            bau_values["fixed_opex_eur_per_kw_year"]
-            + retrofit_values["fixed_opex_change_eur_per_kw_year"]
-        ),
-        "variable_opex_eur_per_mwh": (
-            bau_values["variable_opex_eur_per_mwh"]
-            + retrofit_values["variable_opex_change_eur_per_mwh"]
-        ),
-        "fuel_consumption_mwh_th_per_mwh_e": (
-            bau_values["fuel_consumption_mwh_th_per_mwh_e"]
-            * (1.0 - retrofit_values["fuel_consumption_reduction_fraction"])
-        ),
-        "emissions_tco2_per_mwh_e": (
-            bau_values["emissions_tco2_per_mwh_e"]
-            * (1.0 - retrofit_values["emissions_reduction_fraction"])
-        ),
-    }
-
-
-def simulate_electricity_technology_npv(
-    technology: str,
-    size: int,
-    rng: np.random.Generator | None = None,
-    market_values: Mapping[str, np.ndarray] | None = None,
-    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
-    bau_values: Mapping[str, np.ndarray] | None = None,
-) -> Mapping[str, np.ndarray]:
-    """Run a Monte Carlo NPV simulation for one electricity technology.
-
-    Absolute technologies are sampled directly. Retrofit technologies sample
-    incremental inputs and resolve them against either sampled or deterministic
-    parent-technology BAU values. Each returned array has length `size`.
-    """
-
-    _validate_size(size)
-    _validate_retrofit_bau_mode(retrofit_bau_mode)
-    all_technologies = (
-        set(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
-        | set(ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)
-    )
-    if technology not in all_technologies:
-        raise ValueError(f"Unknown electricity technology: {technology!r}.")
-
-    generator = rng if rng is not None else np.random.default_rng()
-    technology_fixed_parameters = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
-
-    baseline_values: Mapping[str, np.ndarray] | None = None
-    retrofit_values: Mapping[str, np.ndarray] | None = None
-    if technology in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
-        parent_technologies = set(ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES.values())
-        values = (
-            dict(bau_values)
-            if technology in parent_technologies and bau_values is not None
-            else _sample_absolute_technology_values(
-                technology=technology,
-                size=size,
-                rng=generator,
-            )
-        )
-        technology_type = "absolute"
-        bau_mode = "not_applicable"
-    else:
-        bau_technology = ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
-        if retrofit_bau_mode == "sampled":
-            baseline_values = (
-                dict(bau_values)
-                if bau_values is not None
-                else _sample_absolute_technology_values(
-                    technology=bau_technology,
-                    size=size,
-                    rng=generator,
-                )
-            )
-        else:
-            baseline_values = _deterministic_bau_values(
-                technology=bau_technology,
-                size=size,
-            )
-        retrofit_values = _sample_retrofit_values(
-            technology=technology,
-            size=size,
-            rng=generator,
-        )
-        values = _resolve_retrofit_values(
-            bau_values=baseline_values,
-            retrofit_values=retrofit_values,
-        )
-        technology_type = "retrofit"
-        bau_mode = retrofit_bau_mode
-
-    # All technologies are normalized to the same annual electricity output. The
-    # model therefore compares the economic value of supplying the same amount of
-    # electricity, not the economics of arbitrary plant sizes.
-    annual_output_mwh = ANNUAL_ELECTRICITY_OUTPUT_MWH.value
-    full_load_hours = _sample_parameter(
-        technology_fixed_parameters["full_load_hours_per_year"],
-        size=size,
-        rng=generator,
-    )
-    lifetime_years = technology_fixed_parameters["lifetime_years"].value
-    value_factor_parameter = technology_fixed_parameters.get("value_factor")
-    value_factor = (
-        _sample_parameter(value_factor_parameter, size=size, rng=generator)
-        if value_factor_parameter is not None
-        else np.ones(size)
-    )
-    capacity_mw = annual_output_mwh / full_load_hours
-    capacity_kw = capacity_mw * 1_000.0
-
-    # Absolute and resolved retrofit values use one shared key schema, so the
-    # capacity, cash-flow, and NPV formulas below remain technology-agnostic.
-    capex_eur_per_kw = values["capex_eur_per_kw"]
-    fixed_opex_eur_per_kw_year = values["fixed_opex_eur_per_kw_year"]
-    variable_opex_eur_per_mwh = values["variable_opex_eur_per_mwh"]
-    fuel_consumption_mwh_th_per_mwh_e = values[
-        "fuel_consumption_mwh_th_per_mwh_e"
-    ]
-    emissions_tco2_per_mwh_e = values["emissions_tco2_per_mwh_e"]
-    # Fuel prices are shared by fuel type, while renewable technologies use zero
-    # fuel cost. This avoids duplicating the same gas or coal price assumption in
-    # every technology definition.
-    fuel_price_distribution_by_technology = {
+def _fuel_price_parameter(technology: str) -> ParameterSpec:
+    parameters = {
         "hard_coal": COAL_PRICE_DISTRIBUTION,
         "hard_coal_ccs": COAL_PRICE_DISTRIBUTION,
         "ccgt": GAS_PRICE_DISTRIBUTION,
@@ -336,205 +200,101 @@ def simulate_electricity_technology_npv(
         "biogas": BIOGAS_PRICE_EUR_PER_MWH_TH,
         "beccs": BIOMASS_PRICE_DISTRIBUTION,
     }
-    fuel_price_key_by_technology = {
-        "hard_coal": "coal_price_eur_per_mwh_th",
-        "hard_coal_ccs": "coal_price_eur_per_mwh_th",
-        "ccgt": "gas_price_eur_per_mwh_th",
-        "ccgt_ccs": "gas_price_eur_per_mwh_th",
-        "nuclear": "uranium_price_eur_per_mwh_th",
-        "wind_offshore": "no_fuel_price_eur_per_mwh_th",
-        "wind_onshore": "no_fuel_price_eur_per_mwh_th",
-        "pv": "no_fuel_price_eur_per_mwh_th",
-        "biogas": "biogas_price_eur_per_mwh_th",
-        "beccs": "biomass_price_eur_per_mwh_th",
-    }
-    if technology not in fuel_price_distribution_by_technology:
-        raise ValueError(f"No fuel-price distribution configured for {technology!r}.")
+    try:
+        return parameters[technology]
+    except KeyError as error:
+        raise ValueError(
+            f"No fuel-price distribution configured for {technology!r}."
+        ) from error
 
-    fuel_price_key = fuel_price_key_by_technology[technology]
-    if market_values is None:
-        fuel_price_eur_per_mwh_th = _sample_parameter(
-            parameter=fuel_price_distribution_by_technology[technology],
-            size=size,
-            rng=generator,
+
+def simulate_electricity_technology_npv(
+    technology: str,
+    size: int,
+    rng: np.random.Generator | None = None,
+    market_values: Mapping[str, np.ndarray] | None = None,
+    retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
+    bau_values: Mapping[str, np.ndarray] | None = None,
+) -> Mapping[str, np.ndarray]:
+    """Sample electricity inputs and delegate resolved arrays to the model."""
+
+    _validate_size(size)
+    _validate_retrofit_bau_mode(retrofit_bau_mode)
+    all_technologies = (
+        set(ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS)
+        | set(ELECTRICITY_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)
+    )
+    if technology not in all_technologies:
+        raise ValueError(f"Unknown electricity technology: {technology!r}.")
+
+    generator = rng if rng is not None else np.random.default_rng()
+    baseline_values: Mapping[str, np.ndarray] | None = None
+    retrofit_values: Mapping[str, np.ndarray] | None = None
+    if technology in ELECTRICITY_TECHNOLOGY_DISTRIBUTIONS:
+        parent_technologies = set(ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES.values())
+        values = (
+            dict(bau_values)
+            if technology in parent_technologies and bau_values is not None
+            else _sample_absolute_technology_values(technology, size, generator)
         )
+        technology_type = "absolute"
+        bau_mode = "not_applicable"
     else:
-        fuel_price_eur_per_mwh_th = market_values[fuel_price_key]
-    electricity_price_eur_per_mwh = RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH.value
-    captured_electricity_price_eur_per_mwh = (
-        electricity_price_eur_per_mwh * value_factor
-    )
+        parent = ELECTRICITY_RETROFIT_BASE_TECHNOLOGIES[technology]
+        baseline_values = (
+            dict(bau_values)
+            if retrofit_bau_mode == "sampled" and bau_values is not None
+            else (
+                _sample_absolute_technology_values(parent, size, generator)
+                if retrofit_bau_mode == "sampled"
+                else _deterministic_bau_values(parent, size)
+            )
+        )
+        retrofit_values = _sample_retrofit_values(technology, size, generator)
+        values = resolve_technology_values(baseline_values, retrofit_values)
+        technology_type = "retrofit"
+        bau_mode = retrofit_bau_mode
 
-    # Renewable value factors scale the common sales-price proxy to the captured
-    # price. Annual cash flow is revenue minus operating, fuel, and carbon-cost
-    # terms; CAPEX is handled separately in the NPV formula.
-    initial_capex_eur = capacity_kw * capex_eur_per_kw
-    annual_revenue_eur = (
-        annual_output_mwh * captured_electricity_price_eur_per_mwh
+    fixed = ELECTRICITY_TECHNOLOGY_FIXED_PARAMETERS[technology]
+    full_load_hours = _sample_parameter(
+        fixed["full_load_hours_per_year"], size=size, rng=generator
     )
-    annual_fixed_opex_eur = capacity_kw * fixed_opex_eur_per_kw_year
-    annual_variable_opex_eur = annual_output_mwh * variable_opex_eur_per_mwh
-    annual_fuel_cost_eur = (
-        annual_output_mwh
-        * fuel_consumption_mwh_th_per_mwh_e
-        * fuel_price_eur_per_mwh_th
+    lifetime_years = fixed["lifetime_years"].value
+    value_factor_parameter = fixed.get("value_factor")
+    value_factor = (
+        _sample_parameter(value_factor_parameter, size=size, rng=generator)
+        if value_factor_parameter is not None
+        else np.ones(size)
     )
-    capture_cost_excluding_transport_and_storage_eur_per_mwh = np.full(
-        size, np.nan
+    fuel_price_key = FUEL_PRICE_KEY_BY_TECHNOLOGY[technology]
+    fuel_price = (
+        _sample_parameter(_fuel_price_parameter(technology), size, generator)
+        if market_values is None
+        else market_values[fuel_price_key]
     )
-    transport_and_storage_cost_eur_per_mwh = np.zeros(size)
-    transport_and_storage_cost_input_eur_per_mwh = np.full(size, np.nan)
-    transport_and_storage_share_of_capture_cost = np.full(size, np.nan)
-    if baseline_values is not None:
-        transport_and_storage_share_of_capture_cost = np.full(
-            size,
-            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value,
-        )
-        bau_initial_capex_eur = capacity_kw * baseline_values["capex_eur_per_kw"]
-        bau_annual_cost_excluding_carbon_eur = (
-            capacity_kw * baseline_values["fixed_opex_eur_per_kw_year"]
-            + annual_output_mwh * baseline_values["variable_opex_eur_per_mwh"]
-            + annual_output_mwh
-            * baseline_values["fuel_consumption_mwh_th_per_mwh_e"]
-            * fuel_price_eur_per_mwh_th
-        )
-        annual_cost_excluding_carbon_eur = (
-            annual_fixed_opex_eur
-            + annual_variable_opex_eur
-            + annual_fuel_cost_eur
-        )
-        (
-            capture_cost_excluding_transport_and_storage_eur_per_mwh,
-            transport_and_storage_cost_eur_per_mwh,
-        ) = calculate_ccs_transport_and_storage_cost_per_output(
-            ccs_initial_capex_eur=initial_capex_eur,
-            bau_initial_capex_eur=bau_initial_capex_eur,
-            ccs_annual_cost_excluding_carbon_eur=(
-                annual_cost_excluding_carbon_eur
-            ),
-            bau_annual_cost_excluding_carbon_eur=(
-                bau_annual_cost_excluding_carbon_eur
-            ),
-            annual_output=annual_output_mwh,
-            lifetime_years=int(lifetime_years),
-            discount_rate=INTEREST_RATE.value,
-            transport_and_storage_share=(
-                CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
-            ),
-        )
-    elif technology == "beccs":
-        transport_and_storage_cost_eur_per_mwh = _sample_parameter(
+    beccs_storage_cost = (
+        _sample_parameter(
             BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION,
             size=size,
             rng=generator,
         )
-        transport_and_storage_cost_input_eur_per_mwh = (
-            transport_and_storage_cost_eur_per_mwh.copy()
-        )
-    annual_transport_and_storage_cost_eur = (
-        annual_output_mwh * transport_and_storage_cost_eur_per_mwh
+        if technology == "beccs"
+        else None
     )
-    # For BECCS, sampled emissions are negative. The resulting negative
-    # carbon-cost value is subtracted from cash flow and therefore acts as
-    # carbon-removal revenue while retaining one shared formula.
-    annual_emissions_cost_eur = (
-        annual_output_mwh * emissions_tco2_per_mwh_e * CARBON_PRICE_EUR_PER_T.value
+    return calculate_result(
+        technology=technology,
+        technology_type=technology_type,
+        bau_mode=bau_mode,
+        values=values,
+        size=size,
+        full_load_hours=full_load_hours,
+        lifetime_years=lifetime_years,
+        value_factor=value_factor,
+        fuel_price_eur_per_mwh_th=fuel_price,
+        baseline_values=baseline_values,
+        retrofit_values=retrofit_values,
+        beccs_transport_and_storage_cost_eur_per_mwh=beccs_storage_cost,
     )
-    financial_result = calculate_financial_result(
-        initial_capex_eur=initial_capex_eur,
-        annual_output=annual_output_mwh,
-        annual_revenue_eur=annual_revenue_eur,
-        annual_fixed_opex_eur=annual_fixed_opex_eur,
-        annual_variable_opex_eur=annual_variable_opex_eur,
-        annual_fuel_cost_eur=annual_fuel_cost_eur,
-        annual_electricity_cost_eur=0.0,
-        annual_transport_and_storage_cost_eur=(
-            annual_transport_and_storage_cost_eur
-        ),
-        annual_emissions_cost_eur=annual_emissions_cost_eur,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-        subtract_cost_components_sequentially=True,
-    )
-    annual_total_cost_eur = financial_result["annual_total_cost_eur"]
-    annual_net_cash_flow_eur = financial_result["annual_net_cash_flow_eur"]
-    npv_eur = financial_result["npv_eur"]
-    discounted_lifetime_output_mwh = financial_result[
-        "discounted_lifetime_output"
-    ]
-    present_value_total_cost_eur = financial_result[
-        "present_value_total_cost_eur"
-    ]
-    lcoe_eur_per_mwh = financial_result["levelized_cost"]
-    levelized_profit_margin_eur_per_mwh = financial_result[
-        "levelized_profit_margin"
-    ]
-
-    # Return both sampled inputs and derived outputs so CSV exports are traceable.
-    # `run_id` links technologies when they are ranked within the same simulation.
-    result = {
-        "run_id": np.arange(size),
-        "technology": np.full(size, technology),
-        "technology_type": np.full(size, technology_type),
-        "retrofit_bau_mode": np.full(size, bau_mode),
-        "annual_output_mwh": np.full(size, annual_output_mwh),
-        "full_load_hours_per_year": full_load_hours,
-        "lifetime_years": np.full(size, lifetime_years),
-        "capacity_mw": capacity_mw,
-        "capacity_kw": capacity_kw,
-        "capex_eur_per_kw": capex_eur_per_kw,
-        "fixed_opex_eur_per_kw_year": fixed_opex_eur_per_kw_year,
-        "variable_opex_eur_per_mwh": variable_opex_eur_per_mwh,
-        "fuel_consumption_mwh_th_per_mwh_e": fuel_consumption_mwh_th_per_mwh_e,
-        "emissions_tco2_per_mwh_e": emissions_tco2_per_mwh_e,
-        "fuel_price_eur_per_mwh_th": fuel_price_eur_per_mwh_th,
-        fuel_price_key: fuel_price_eur_per_mwh_th,
-        "electricity_price_eur_per_mwh": np.full(size, electricity_price_eur_per_mwh),
-        "value_factor": value_factor,
-        "captured_electricity_price_eur_per_mwh": (
-            captured_electricity_price_eur_per_mwh
-        ),
-        "carbon_price_eur_per_t": np.full(size, CARBON_PRICE_EUR_PER_T.value),
-        "capture_cost_excluding_transport_and_storage_eur_per_mwh": (
-            capture_cost_excluding_transport_and_storage_eur_per_mwh
-        ),
-        "transport_and_storage_cost_eur_per_mwh": (
-            transport_and_storage_cost_eur_per_mwh
-        ),
-        "transport_and_storage_cost_input_eur_per_mwh": (
-            transport_and_storage_cost_input_eur_per_mwh
-        ),
-        "transport_and_storage_share_of_capture_cost": (
-            transport_and_storage_share_of_capture_cost
-        ),
-        "initial_capex_eur": initial_capex_eur,
-        "annual_revenue_eur": annual_revenue_eur,
-        "annual_fixed_opex_eur": annual_fixed_opex_eur,
-        "annual_variable_opex_eur": annual_variable_opex_eur,
-        "annual_fuel_cost_eur": annual_fuel_cost_eur,
-        "annual_transport_and_storage_cost_eur": (
-            annual_transport_and_storage_cost_eur
-        ),
-        "annual_emissions_cost_eur": annual_emissions_cost_eur,
-        "annual_total_cost_eur": annual_total_cost_eur,
-        "annual_net_cash_flow_eur": annual_net_cash_flow_eur,
-        "npv_eur": npv_eur,
-        "discounted_lifetime_output_mwh": np.full(
-            size, discounted_lifetime_output_mwh
-        ),
-        "present_value_total_cost_eur": present_value_total_cost_eur,
-        "lcoe_eur_per_mwh": lcoe_eur_per_mwh,
-        "levelized_profit_margin_eur_per_mwh": levelized_profit_margin_eur_per_mwh,
-    }
-
-    if baseline_values is not None:
-        for parameter_name, baseline_value in baseline_values.items():
-            result[f"bau_{parameter_name}"] = baseline_value
-
-    if retrofit_values is not None:
-        result.update(retrofit_values)
-
-    return result
 
 
 def simulate_hard_coal_npv(

@@ -370,16 +370,24 @@ def generate_deep_dive(
     figure_dir: Path | None = None,
     variation_fraction: float = 0.20,
     metric: str = "LPM",
+    sectors: tuple[str, ...] | None = None,
 ) -> tuple[Path, ...]:
-    """Save one standardized CSV and one heatmap per sector."""
+    """Save one standardized CSV and one heatmap per selected sector."""
 
     if not 0.0 < variation_fraction < 1.0:
         raise ValueError("variation_fraction must be greater than 0 and smaller than 1.")
 
+    selected_sectors = HEATMAP_SECTORS if sectors is None else sectors
+    unknown_sectors = set(selected_sectors) - set(HEATMAP_SECTORS)
+    if unknown_sectors:
+        raise ValueError(f"Unknown sensitivity sectors: {sorted(unknown_sectors)!r}.")
+    if not selected_sectors:
+        raise ValueError("At least one sensitivity sector must be selected.")
+
     standardized = pd.concat(
         [
             standardized_sensitivity(sector, variation_fraction, metric=metric)
-            for sector in HEATMAP_SECTORS
+            for sector in selected_sectors
         ],
         ignore_index=True,
     )
@@ -407,7 +415,7 @@ def generate_deep_dive(
             ),
             metric=metric,
         )
-        for sector in HEATMAP_SECTORS
+        for sector in selected_sectors
     )
     return (csv_path, *figure_paths)
 
@@ -490,6 +498,13 @@ def main() -> None:
         default="LPM",
         help="Financial metric used for the one-at-a-time sensitivity calculation.",
     )
+    parser.add_argument(
+        "--sectors",
+        nargs="+",
+        choices=HEATMAP_SECTORS,
+        default=None,
+        help="Sectors to include; defaults to all five sectors.",
+    )
     args = parser.parse_args()
     if args.processed_data_dir is not None and args.legacy_output_dir is not None:
         parser.error("use either --processed-data-dir or --output-dir, not both")
@@ -499,6 +514,7 @@ def main() -> None:
         figure_dir=args.figure_dir,
         variation_fraction=args.variation,
         metric=args.metric,
+        sectors=tuple(args.sectors) if args.sectors is not None else None,
     )
     for path in paths:
         print(path)

@@ -1,15 +1,4 @@
-"""Deterministic NPV calculations for cement technologies.
-
-The deterministic cement calculation mirrors the electricity deterministic
-workflow: each uncertain input is reduced to its expected value, annual
-cash flow is calculated for a normalized output volume, and the shared NPV
-formula discounts that cash flow over the asset lifetime.
-
-BAU and alternative cement technologies use absolute parameter values. Retrofit
-technologies are different: their assumptions are changes relative to the BAU
-cement baseline, so this module first resolves them into absolute intensities
-before calculating costs and NPV.
-"""
+"""Deterministic cement NPV input provider."""
 
 from __future__ import annotations
 
@@ -17,12 +6,10 @@ from typing import Mapping
 
 import numpy as np
 
+from cement.cement_npv_model import calculate_result, resolve_technology_values
 from cement.cement_parameters import (
-    ANNUAL_CEMENT_OUTPUT_T,
     CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     CEMENT_TECHNOLOGY_DISTRIBUTIONS,
-    LIFETIME_CEMENT_YEARS,
-    RETAIL_PRICE_CEMENT_EUR_PER_T,
 )
 from distributions import (
     FixedParameter,
@@ -32,15 +19,8 @@ from distributions import (
 )
 from general_parameters import (
     BIOFUEL_PRICE_DISTRIBUTION,
-    CARBON_PRICE_EUR_PER_T,
-    CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST,
     COAL_PRICE_DISTRIBUTION,
     ELECTRICITY_PRICE_DISTRIBUTION,
-    INTEREST_RATE,
-)
-from npv_finance import (
-    calculate_ccs_transport_and_storage_cost_per_output,
-    calculate_financial_result,
 )
 from npv_summary import representative_value
 
@@ -56,7 +36,7 @@ ParameterSpec = (
 def cement_fuel_price_parameter(
     technology: str,
 ) -> ScaledBetaDistribution | UniformDistribution:
-    """Return the deterministic fossil fuel-price source for a cement technology."""
+    """Return the fossil fuel-price source for a cement technology."""
 
     all_technologies = (
         set(CEMENT_TECHNOLOGY_DISTRIBUTIONS)
@@ -64,294 +44,74 @@ def cement_fuel_price_parameter(
     )
     if technology not in all_technologies:
         raise ValueError(f"No fuel-price parameter configured for {technology!r}.")
-
     return COAL_PRICE_DISTRIBUTION
 
 
 def _representative_values(
     parameters: Mapping[str, ParameterSpec],
-) -> dict[str, float]:
-    """Convert one parameter mapping into deterministic expected values."""
+) -> dict[str, np.ndarray]:
+    """Return one-element arrays containing representative input values."""
 
     return {
-        parameter_name: representative_value(parameter)
-        for parameter_name, parameter in parameters.items()
+        name: np.full(1, representative_value(parameter))
+        for name, parameter in parameters.items()
     }
 
 
-def _deterministic_bau_values() -> dict[str, float]:
-    """Return expected-input absolute BAU cement values."""
-
+def _deterministic_bau_values() -> dict[str, np.ndarray]:
     return _representative_values(CEMENT_TECHNOLOGY_DISTRIBUTIONS["bau"])
-
-
-def _deterministic_cement_technology_values(technology: str) -> dict[str, float]:
-    """Resolve absolute deterministic values for one cement technology.
-
-    Absolute technologies are read directly from the cement technology registry.
-    Retrofit technologies are calculated relative to deterministic BAU values:
-    CAPEX and OPEX changes are added to BAU, while positive reduction fractions
-    reduce BAU fuel use, electricity use, and direct emissions. Negative
-    reduction fractions therefore increase the corresponding BAU value.
-    """
-
-    if technology in CEMENT_TECHNOLOGY_DISTRIBUTIONS:
-        return _representative_values(CEMENT_TECHNOLOGY_DISTRIBUTIONS[technology])
-
-    if technology not in CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS:
-        raise ValueError(f"Unknown cement technology: {technology!r}.")
-
-    bau_values = _deterministic_bau_values()
-    retrofit_values = _representative_values(
-        CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS[technology]
-    )
-
-    return {
-        "capex_eur_per_t": (
-            bau_values["capex_eur_per_t"]
-            + retrofit_values["capex_change_eur_per_t"]
-        ),
-        "fixed_opex_eur_per_t": (
-            bau_values["fixed_opex_eur_per_t"]
-            + retrofit_values["fixed_opex_change_eur_per_t"]
-        ),
-        "variable_opex_eur_per_t": (
-            bau_values["variable_opex_eur_per_t"]
-            + retrofit_values["variable_opex_change_eur_per_t"]
-        ),
-        "fuel_consumption_mwh_th_per_t": (
-            bau_values["fuel_consumption_mwh_th_per_t"]
-            * (1.0 - retrofit_values["fuel_consumption_reduction_fraction"])
-        ),
-        "electricity_consumption_mwh_per_t": (
-            bau_values["electricity_consumption_mwh_per_t"]
-            * (1.0 - retrofit_values["electricity_consumption_reduction_fraction"])
-        ),
-        "emissions_tco2_per_t": (
-            bau_values["emissions_tco2_per_t"]
-            * (1.0 - retrofit_values["emissions_reduction_fraction"])
-        ),
-        "capex_change_eur_per_t": retrofit_values["capex_change_eur_per_t"],
-        "fixed_opex_change_eur_per_t": (
-            retrofit_values["fixed_opex_change_eur_per_t"]
-        ),
-        "variable_opex_change_eur_per_t": (
-            retrofit_values["variable_opex_change_eur_per_t"]
-        ),
-        "fuel_consumption_reduction_fraction": (
-            retrofit_values["fuel_consumption_reduction_fraction"]
-        ),
-        "electricity_consumption_reduction_fraction": (
-            retrofit_values["electricity_consumption_reduction_fraction"]
-        ),
-        **(
-            {
-                "alternative_fuel_share_fraction": retrofit_values[
-                    "alternative_fuel_share_fraction"
-                ]
-            }
-            if "alternative_fuel_share_fraction" in retrofit_values
-            else {}
-        ),
-        "emissions_reduction_fraction": (
-            retrofit_values["emissions_reduction_fraction"]
-        ),
-    }
 
 
 def calculate_deterministic_cement_result(
     technology: str,
 ) -> Mapping[str, object]:
-    """Calculate deterministic cement inputs and outputs for one technology."""
+    """Calculate one-row cement results from representative inputs."""
 
-    values = _deterministic_cement_technology_values(technology)
-
-    annual_output_t = ANNUAL_CEMENT_OUTPUT_T.value
-    lifetime_years = LIFETIME_CEMENT_YEARS.value
-    capex_eur_per_t = values["capex_eur_per_t"]
-    fixed_opex_eur_per_t = values["fixed_opex_eur_per_t"]
-    variable_opex_eur_per_t = values["variable_opex_eur_per_t"]
-    fuel_consumption_mwh_th_per_t = values["fuel_consumption_mwh_th_per_t"]
-    electricity_consumption_mwh_per_t = values["electricity_consumption_mwh_per_t"]
-    emissions_tco2_per_t = values["emissions_tco2_per_t"]
-    coal_price_eur_per_mwh_th = representative_value(COAL_PRICE_DISTRIBUTION)
-    biofuel_price_eur_per_mwh_th = representative_value(BIOFUEL_PRICE_DISTRIBUTION)
-    alternative_fuel_share_fraction = float("nan")
-    fossil_fuel_share_fraction = float("nan")
-    if technology == "alternative_fuels":
-        alternative_fuel_share_fraction = values["alternative_fuel_share_fraction"]
-        fossil_fuel_share_fraction = 1.0 - alternative_fuel_share_fraction
-        fuel_price_eur_per_mwh_th = (
-            alternative_fuel_share_fraction * biofuel_price_eur_per_mwh_th
-            + fossil_fuel_share_fraction * coal_price_eur_per_mwh_th
+    if technology in CEMENT_TECHNOLOGY_DISTRIBUTIONS:
+        values = _representative_values(CEMENT_TECHNOLOGY_DISTRIBUTIONS[technology])
+        baseline = None
+        increments = None
+        technology_type = "absolute"
+        bau_mode = "not_applicable"
+    elif technology in CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS:
+        baseline = _deterministic_bau_values()
+        increments = _representative_values(
+            CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS[technology]
         )
+        values = resolve_technology_values(baseline, increments)
+        technology_type = "retrofit"
+        bau_mode = "deterministic"
     else:
-        fuel_price_eur_per_mwh_th = coal_price_eur_per_mwh_th
-    electricity_price_eur_per_mwh = representative_value(
-        ELECTRICITY_PRICE_DISTRIBUTION
-    )
+        raise ValueError(f"Unknown cement technology: {technology!r}.")
 
-    initial_capex_eur = annual_output_t * capex_eur_per_t
-    annual_revenue_eur = annual_output_t * RETAIL_PRICE_CEMENT_EUR_PER_T.value
-    annual_fixed_opex_eur = annual_output_t * fixed_opex_eur_per_t
-    annual_variable_opex_eur = annual_output_t * variable_opex_eur_per_t
-    annual_fuel_cost_eur = (
-        annual_output_t
-        * fuel_consumption_mwh_th_per_t
-        * fuel_price_eur_per_mwh_th
-    )
-    annual_electricity_cost_eur = (
-        annual_output_t
-        * electricity_consumption_mwh_per_t
-        * electricity_price_eur_per_mwh
-    )
-    capture_cost_excluding_transport_and_storage_eur_per_t = float("nan")
-    transport_and_storage_cost_eur_per_t = 0.0
-    transport_and_storage_share_of_capture_cost = float("nan")
-    if technology == "ccs":
-        transport_and_storage_share_of_capture_cost = (
-            CCS_TRANSPORT_STORAGE_SHARE_OF_CAPTURE_COST.value
-        )
-        bau_values = _deterministic_bau_values()
-        bau_initial_capex_eur = annual_output_t * bau_values["capex_eur_per_t"]
-        bau_annual_cost_excluding_carbon_eur = annual_output_t * (
-            bau_values["fixed_opex_eur_per_t"]
-            + bau_values["variable_opex_eur_per_t"]
-            + bau_values["fuel_consumption_mwh_th_per_t"]
-            * fuel_price_eur_per_mwh_th
-            + bau_values["electricity_consumption_mwh_per_t"]
-            * electricity_price_eur_per_mwh
-        )
-        annual_cost_excluding_carbon_eur = (
-            annual_fixed_opex_eur
-            + annual_variable_opex_eur
-            + annual_fuel_cost_eur
-            + annual_electricity_cost_eur
-        )
-        (
-            capture_cost_excluding_transport_and_storage_eur_per_t,
-            transport_and_storage_cost_eur_per_t,
-        ) = calculate_ccs_transport_and_storage_cost_per_output(
-            ccs_initial_capex_eur=initial_capex_eur,
-            bau_initial_capex_eur=bau_initial_capex_eur,
-            ccs_annual_cost_excluding_carbon_eur=(
-                annual_cost_excluding_carbon_eur
-            ),
-            bau_annual_cost_excluding_carbon_eur=(
-                bau_annual_cost_excluding_carbon_eur
-            ),
-            annual_output=annual_output_t,
-            lifetime_years=int(lifetime_years),
-            discount_rate=INTEREST_RATE.value,
-            transport_and_storage_share=(
-                transport_and_storage_share_of_capture_cost
-            ),
-        )
-    annual_transport_and_storage_cost_eur = (
-        annual_output_t * transport_and_storage_cost_eur_per_t
-    )
-    annual_emissions_cost_eur = (
-        annual_output_t * emissions_tco2_per_t * CARBON_PRICE_EUR_PER_T.value
-    )
-    financial_result = calculate_financial_result(
-        initial_capex_eur=initial_capex_eur,
-        annual_output=annual_output_t,
-        annual_revenue_eur=annual_revenue_eur,
-        annual_fixed_opex_eur=annual_fixed_opex_eur,
-        annual_variable_opex_eur=annual_variable_opex_eur,
-        annual_fuel_cost_eur=annual_fuel_cost_eur,
-        annual_electricity_cost_eur=annual_electricity_cost_eur,
-        annual_transport_and_storage_cost_eur=(
-            annual_transport_and_storage_cost_eur
+    prices = {
+        "coal_price_eur_per_mwh_th": np.full(
+            1, representative_value(COAL_PRICE_DISTRIBUTION)
         ),
-        annual_emissions_cost_eur=annual_emissions_cost_eur,
-        lifetime_years=int(lifetime_years),
-        discount_rate=INTEREST_RATE.value,
-        subtract_cost_components_sequentially=True,
-    )
-    annual_total_cost_eur = float(financial_result["annual_total_cost_eur"])
-    annual_net_cash_flow_eur = float(financial_result["annual_net_cash_flow_eur"])
-    npv_eur = float(financial_result["npv_eur"])
-    discounted_lifetime_output_t = float(
-        financial_result["discounted_lifetime_output"]
-    )
-    present_value_total_cost_eur = float(
-        financial_result["present_value_total_cost_eur"]
-    )
-    lcoc_eur_per_t = float(financial_result["levelized_cost"])
-    levelized_profit_margin_eur_per_t = float(
-        financial_result["levelized_profit_margin"]
-    )
-
-    result = {
-        "run_id": [0],
-        "technology": [technology],
-        "technology_type": [
-            "retrofit"
-            if technology in CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS
-            else "absolute"
-        ],
-        "annual_output_t": [annual_output_t],
-        "lifetime_years": [lifetime_years],
-        "capex_eur_per_t": [capex_eur_per_t],
-        "fixed_opex_eur_per_t": [fixed_opex_eur_per_t],
-        "variable_opex_eur_per_t": [variable_opex_eur_per_t],
-        "fuel_consumption_mwh_th_per_t": [fuel_consumption_mwh_th_per_t],
-        "electricity_consumption_mwh_per_t": [electricity_consumption_mwh_per_t],
-        "emissions_tco2_per_t": [emissions_tco2_per_t],
-        "fuel_price_eur_per_mwh_th": [fuel_price_eur_per_mwh_th],
-        "coal_price_eur_per_mwh_th": [coal_price_eur_per_mwh_th],
-        "biofuel_price_eur_per_mwh_th": [biofuel_price_eur_per_mwh_th],
-        "alternative_fuel_share_fraction": [alternative_fuel_share_fraction],
-        "fossil_fuel_share_fraction": [fossil_fuel_share_fraction],
-        "electricity_price_eur_per_mwh": [electricity_price_eur_per_mwh],
-        "cement_price_eur_per_t": [RETAIL_PRICE_CEMENT_EUR_PER_T.value],
-        "carbon_price_eur_per_t": [CARBON_PRICE_EUR_PER_T.value],
-        "capture_cost_excluding_transport_and_storage_eur_per_t": [
-            capture_cost_excluding_transport_and_storage_eur_per_t
-        ],
-        "transport_and_storage_cost_eur_per_t": [
-            transport_and_storage_cost_eur_per_t
-        ],
-        "transport_and_storage_share_of_capture_cost": [
-            transport_and_storage_share_of_capture_cost
-        ],
-        "initial_capex_eur": [initial_capex_eur],
-        "annual_revenue_eur": [annual_revenue_eur],
-        "annual_fixed_opex_eur": [annual_fixed_opex_eur],
-        "annual_variable_opex_eur": [annual_variable_opex_eur],
-        "annual_fuel_cost_eur": [annual_fuel_cost_eur],
-        "annual_electricity_cost_eur": [annual_electricity_cost_eur],
-        "annual_transport_and_storage_cost_eur": [
-            annual_transport_and_storage_cost_eur
-        ],
-        "annual_emissions_cost_eur": [annual_emissions_cost_eur],
-        "annual_total_cost_eur": [annual_total_cost_eur],
-        "annual_net_cash_flow_eur": [annual_net_cash_flow_eur],
-        "npv_eur": [npv_eur],
-        "discounted_lifetime_output_t": [discounted_lifetime_output_t],
-        "present_value_total_cost_eur": [present_value_total_cost_eur],
-        "lcoc_eur_per_t": [lcoc_eur_per_t],
-        "levelized_profit_margin_eur_per_t": [levelized_profit_margin_eur_per_t],
+        "biofuel_price_eur_per_mwh_th": np.full(
+            1, representative_value(BIOFUEL_PRICE_DISTRIBUTION)
+        ),
+        "electricity_price_eur_per_mwh": np.full(
+            1, representative_value(ELECTRICITY_PRICE_DISTRIBUTION)
+        ),
     }
-
-    for retrofit_key in (
-        "capex_change_eur_per_t",
-        "fixed_opex_change_eur_per_t",
-        "variable_opex_change_eur_per_t",
-        "fuel_consumption_reduction_fraction",
-        "electricity_consumption_reduction_fraction",
-        "alternative_fuel_share_fraction",
-        "emissions_reduction_fraction",
-    ):
-        if retrofit_key in values:
-            result[retrofit_key] = [values[retrofit_key]]
-
-    return result
+    result = calculate_result(
+        technology=technology,
+        technology_type=technology_type,
+        bau_mode=bau_mode,
+        values=values,
+        size=1,
+        bau_values=baseline,
+        retrofit_values=increments,
+        market_values=prices,
+        include_retrofit_bau_mode=False,
+        include_bau_values=False,
+    )
+    return {key: value.tolist() for key, value in result.items()}
 
 
 def calculate_deterministic_cement_npv_eur(technology: str) -> float:
-    """Calculate deterministic cement NPV from expected input values."""
+    """Calculate deterministic cement NPV from representative inputs."""
 
     return float(calculate_deterministic_cement_result(technology)["npv_eur"][0])
 
@@ -359,13 +119,13 @@ def calculate_deterministic_cement_npv_eur(technology: str) -> float:
 def calculate_deterministic_cement_results(
     technologies: tuple[str, ...] | None = None,
 ) -> Mapping[str, Mapping[str, object]]:
-    """Calculate deterministic cement results for all selected technologies."""
+    """Calculate deterministic cement results for selected technologies."""
 
-    selected_technologies = technologies or tuple(
+    selected = technologies or tuple(
         list(CEMENT_TECHNOLOGY_DISTRIBUTIONS)
         + list(CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS)
     )
     return {
         technology: calculate_deterministic_cement_result(technology)
-        for technology in selected_technologies
+        for technology in selected
     }

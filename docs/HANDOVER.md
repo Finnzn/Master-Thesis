@@ -6,13 +6,16 @@ the repository fits together and where mistakes are most likely.
 
 ## Mental Model
 
-The project has three layers:
+The project has four layers:
 
 1. `src/general_parameters.py` and the sector parameter modules define model
    assumptions and uncertainty distributions.
-2. Deterministic and Monte Carlo modules turn those assumptions into annual
-   costs, cash flow, NPV, levelized profit margin, and LCOX arrays.
-3. Summary modules, notebooks, and the Streamlit dashboard present those
+2. Each `<sector>_npv_deterministic.py` chooses representative inputs and each
+   `<sector>_npv_monte_carlo.py` samples input arrays.
+3. Each `<sector>_npv_model.py` resolves absolute technology inputs and turns
+   them into sector costs and financial-result arrays. Both input providers
+   call this one sector model.
+4. Summary modules, notebooks, and the Streamlit dashboard present those
    results.
 
 The core NPV, levelized-profit-margin, discounted-cost, and LCOX formulas are
@@ -28,10 +31,9 @@ shared in `src/npv_finance.py`. All five sectors call this shared finance layer.
 | Change steel technology assumptions | `src/steel/steel_parameters.py` |
 | Change ammonia technology assumptions | `src/ammonia/ammonia_parameters.py` |
 | Change hydrogen technology assumptions | `src/hydrogen/hydrogen_parameters.py` |
-| Change electricity Monte Carlo calculations | `src/electricity/electricity_npv_monte_carlo.py` |
-| Change cement Monte Carlo calculations | `src/cement/cement_npv_monte_carlo.py` |
-| Change another sector's Monte Carlo calculations | the matching `src/<sector>/*_npv_monte_carlo.py` module |
-| Change deterministic calculations | the matching `*_npv_deterministic.py` module |
+| Change a sector's technology resolution, physical costs, or result assembly | the matching `src/<sector>/<sector>_npv_model.py` module |
+| Change Monte Carlo sampling or alignment | the matching `src/<sector>/<sector>_npv_monte_carlo.py` module |
+| Change deterministic representative-input selection | the matching `src/<sector>/<sector>_npv_deterministic.py` module |
 | Change shared NPV summaries or CSV shaping | `src/npv_summary.py` |
 | Change shared comparison or ranking figures | `src/npv_summary_plots.py` |
 | Change output naming or command-line workflows | the matching `*_financial_summary.py` module |
@@ -42,6 +44,7 @@ shared in `src/npv_finance.py`. All five sectors call this shared finance layer.
 | Run deterministic cross-sector scenarios | `notebooks/scenario_analysis.ipynb` |
 | Compare deterministic and probabilistic LCOX | the matching sector `*_summary.ipynb` or `*_financial_summary --metric LCOX` |
 | Run deterministic sensitivity interactively | `sensitivity_dashboard.py` |
+| Regenerate an isolated, reproducible result set | `regenerate_all.py` |
 
 ## Standard Workflows
 
@@ -66,14 +69,30 @@ PYTHONPATH=src python -m cement.cement_financial_summary \
   --sample-size 100 --no-data --ranking-output none
 ```
 
-Full default output generation:
+Standard financial-summary generation for all five sectors and all three
+financial metrics:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_financial_summary
-PYTHONPATH=src python -m cement.cement_financial_summary
+PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results
 ```
 
-Interactive sensitivity dashboard:
+Complete generation—including both deterministic and simulated MACCs, all
+selected sensitivity heatmaps, and non-destructive execution copies of all
+notebooks—is available through one preset:
+
+```bash
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results_full --full
+```
+
+Use `--macc-mode deterministic|simulated|both`, `--include-heatmaps`, and
+`--verify-notebooks` to select those additions independently. Use `--sectors`,
+`--metrics`, `--sample-size`, `--random-seed`, and `--retrofit-bau-mode` to
+control scope and simulations, or `--dry-run` to inspect the exact plan. Run
+`.venv/bin/python regenerate_all.py --help` for all options and examples. The
+script refuses to reuse a run directory.
+
+Interactive five-sector sensitivity dashboard:
 
 ```bash
 PYTHONPATH=src streamlit run sensitivity_dashboard.py
@@ -91,16 +110,20 @@ PYTHONPATH=src python -m sensitivity_deep_dive
 - `data/raw/`: sampled or deterministic expected inputs exported by a run.
 - `data/processed/`: derived costs, cash flow, NPV, LPM, LCOX, and summary CSVs.
 - `results/`: optional numerical outputs.
+- `results/runs/<run-name>/`: isolated regeneration outputs, command logs, and
+  the run's `manifest.json`.
+- `results/runs/<run-name>/heatmaps/`: optional sensitivity CSVs and heatmap
+  figures created with `--include-heatmaps` or `--full`.
 
 Raw-input CSVs hold normalized model inputs; derived resolved T&S unit costs are
 in processed outputs. The one direct BECCS T&S draw is retained as
 `transport_and_storage_cost_input_eur_per_mwh` in electricity raw inputs.
 
-The data and results directories are ignored by Git. A generated CSV is
-reproducible only if its source code, assumptions, sample size, random seed, and
-mode are recorded. The output modules encode sample size and random seed in the
-calculation but not in every filename, so keep the run command with any result
-used outside the repository.
+The data and results directories are ignored by Git. Prefer
+`regenerate_all.py` for final result sets: its manifest records the active
+carbon price and discount rate, source revision and dirty state, sample size,
+random seed, retrofit mode, environment, commands, and output hashes. Individual
+sector commands remain useful for development but do not create that manifest.
 
 The default 100,000-draw runs create large files. Running multiple financial
 metrics repeats many raw and processed values because changing the reported

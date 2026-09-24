@@ -121,11 +121,13 @@ SECTOR_DISPLAY_NAMES = {
 }
 
 SECTOR_UNITS = {
-    "ammonia": "tNH3",
+    # Keep dashboard/chart labels compact. The active sector already identifies
+    # which product the tonne refers to (ammonia, cement, hydrogen, or steel).
+    "ammonia": "t",
     "cement": "t",
     "electricity": "MWh",
-    "hydrogen": "tH2",
-    "steel": "tCS",
+    "hydrogen": "t",
+    "steel": "t",
 }
 
 FINANCIAL_METRIC_OPTIONS = ("NPV", "LPM", "LCOX")

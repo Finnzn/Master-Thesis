@@ -8588,3 +8588,418 @@ module names with financial-summary names.
 If further consolidation is wanted, move each sector's resolved physical-cost
 assembly into one pure `calculate_result` function shared by deterministic and
 Monte Carlo input providers.
+
+## 2026-09-24 09:19 CEST — Standardize sector NPV model architecture
+
+### User request
+
+Give all five sectors the same three-module calculation structure: one sector
+model that resolves absolute technology inputs and calculates sector costs and
+results, one deterministic representative-input provider, and one Monte Carlo
+sampling provider. Preserve every calculation and output exactly.
+
+### Files changed
+
+- `src/{electricity,cement,steel,ammonia,hydrogen}/<sector>_npv_model.py` —
+  added the shared sector calculation boundary for technology resolution,
+  sector-specific costs, CCS transport/storage, result assembly, and delegation
+  to the common finance kernel.
+- `src/{electricity,cement,steel,ammonia,hydrogen}/<sector>_npv_deterministic.py`
+  — reduced each deterministic path to representative-input selection and one
+  call to its sector model.
+- `src/{electricity,cement,steel,ammonia,hydrogen}/<sector>_npv_monte_carlo.py`
+  — reduced each stochastic path to input sampling/alignment and one call to its
+  sector model.
+- `README.md` and `docs/HANDOVER.md` — documented the common model/provider
+  boundary and the correct module to edit for assumptions, input selection, or
+  sector calculations.
+- `CHANGELOG.md` — recorded the refactor and parity checks.
+
+### What was implemented
+
+- Standardized all sectors on this dependency direction:
+  `parameters -> deterministic or Monte Carlo provider -> sector NPV model ->
+  npv_finance`.
+- Removed the duplicated electricity, cement, and steel technology-resolution,
+  cost, CCS, and result-assembly logic from their deterministic and Monte Carlo
+  modules. Each sector now has one `calculate_result(...)` implementation.
+- Kept random sampling and aligned shared-market/BAU draws in the Monte Carlo
+  modules, and kept analytical-mean selection in the deterministic modules.
+  Ammonia and hydrogen model modules no longer select or sample inputs.
+- Retained legacy public wrapper functions and the ammonia/hydrogen
+  `resolve_retrofit_values` aliases for compatibility.
+- Preserved the historical deterministic electricity MW export operation order
+  through an explicit model option; this prevents a former PV rounding value
+  from changing by approximately `1.1e-13` MW.
+
+### Verification
+
+- Compiled `src/` and `sensitivity_dashboard.py` successfully.
+- Compared all 3,839 deterministic and seeded 257-draw Monte Carlo result fields
+  for all 44 technologies against the frozen pre-refactor snapshot; every
+  numeric field was bit-for-bit equal and every text field, key, and shape
+  matched.
+- Compared all 132 base sensitivity values (44 technologies times NPV, LPM, and
+  LCOX) against the pre-refactor snapshot; every value was exactly equal.
+- Executed all 100 notebooks through temporary output files; all passed. All
+  620 executed code cells and all 539 output blocks were exactly identical to
+  the pre-refactor notebook executions.
+- Ran all 15 canonical financial-summary combinations (five sectors times NPV,
+  LPM, and LCOX) with 37 draws and seed 123. All 135 generated CSV/PNG artifacts
+  were byte-for-byte identical to the pre-refactor artifacts after normalizing
+  only the date prefix in their filenames.
+- Ran `git diff --check` successfully.
+
+### Reproducibility notes
+
+- No techno-economic assumption, hydrogen retail price, formula, random-draw
+  order, result schema, notebook source/output, or generated project artifact
+  changed.
+- All notebook and summary verification outputs were written only to temporary
+  directories under `/tmp`; ignored project output directories were not edited.
+
+### Next suggested step
+
+For future sector formula changes, edit the matching `<sector>_npv_model.py`;
+edit provider modules only when deterministic input selection or Monte Carlo
+sampling behavior itself must change.
+
+## 2026-09-24 09:43 CEST — Add full regeneration workflow and five-sector dashboard
+
+### User request
+
+Add one well-documented command that regenerates the thesis analyses into a
+clear output structure with reproducibility metadata, extend the interactive
+sensitivity dashboard to every sector, and start the dashboard for review.
+
+### Files changed
+
+- `regenerate_all.py` — added the orchestration-only regeneration command,
+  isolated run directories, command logs, output hashing, and run manifests.
+- `sensitivity_dashboard.py` — added steel, ammonia, and hydrogen tabs plus
+  sector-correct controls and LCOX names while retaining cement and electricity.
+- `src/sensitivity_deep_dive.py` — added optional sector selection so a
+  regeneration run's sensitivity scope matches its selected sectors.
+- `README.md` — documented the regeneration command, options, output layout,
+  carbon-price workflow, and five-sector dashboard.
+- `docs/HANDOVER.md` — made the new command the standard full-generation
+  workflow and documented its output contract.
+- `CHANGELOG.md` — recorded this implementation and its verification.
+
+### What was implemented
+
+- The default command runs all five sector financial summaries for NPV, LPM,
+  and LCOX and writes 135 core CSV/PNG artifacts beneath
+  `results/runs/<run-name>/financial/`.
+- Each run records the active global carbon price and discount rate, sample
+  size, seed, retrofit mode, Git revision and dirty state, Python and dependency
+  versions, every command and return code, log paths, and SHA-256 hashes in
+  `manifest.json`.
+- Existing run directories are never reused. `--dry-run`, `--sectors`,
+  `--metrics`, `--sample-size`, `--random-seed`, and `--retrofit-bau-mode`
+  control the core run.
+- `--macc-mode`, `--include-sensitivity`, and `--verify-notebooks` optionally
+  add deterministic/simulated MACCs, selected-sector heatmaps, and executed
+  notebook copies without overwriting notebook sources.
+- The Streamlit dashboard now presents Cement, Electricity, Steel, Ammonia,
+  and Hydrogen tabs. Product-sector electricity inputs and H2-DRI-EAF's primary
+  hydrogen and secondary charcoal inputs are preserved in scenario calculations.
+- LCOX labels now resolve to LCOC, LCOE, LCOS, LCOA, or LCOH by sector.
+
+### Verification
+
+- Compiled `regenerate_all.py`, `sensitivity_dashboard.py`, and all `src/`
+  modules successfully and ran `git diff --check` successfully.
+- Confirmed the documented `--help` and `--dry-run` plans.
+- Ran a complete temporary regeneration smoke test with all five sectors, NPV,
+  seven Monte Carlo draws, seed 123, both MACC modes, sensitivity, and notebook
+  verification. All 114 commands passed.
+- Confirmed the completed smoke manifest recorded 114/114 successful steps,
+  the active 80 EUR/tCO2 price, and 281 hashed generated/log files: 45 financial
+  artifacts, 16 MACC artifacts, six sensitivity artifacts, 100 executed
+  notebooks, and 114 logs.
+- Compared the 620 code cells and 539 output blocks in all 100 executed
+  notebooks with the pre-change executions; no output changed.
+- Ran the Streamlit application test with zero exceptions and confirmed all five
+  tabs. Also selected H2-DRI-EAF and confirmed both hydrogen and secondary-fuel
+  controls render.
+- Started Streamlit on port 8501, received an `ok` health response, and visibly
+  verified the five tabs at `http://localhost:8501` in Safari.
+
+### Reproducibility notes
+
+- No techno-economic assumption, global carbon price, model formula, result
+  schema, notebook source/output, or tracked generated artifact changed.
+- The comprehensive regeneration smoke outputs were written only beneath
+  `/tmp`; no ignored project output directory was modified during verification.
+- A user changing `CARBON_PRICE_EUR_PER_T` must restart active Python, Jupyter,
+  or Streamlit processes before generating or reviewing the next price case.
+
+### Next suggested step
+
+Use `python regenerate_all.py --help`, then run one named result set per selected
+global carbon price; the current dashboard is available at
+`http://localhost:8501` for interactive review.
+
+## 2026-09-24 09:55 CEST — Standardize dashboard product units
+
+### User request
+
+Make the sector units in the sensitivity dashboard readable and consistent,
+using tonnes for every product sector while retaining the electricity unit.
+
+### Files changed
+
+- `sensitivity_dashboard.py` — standardized product-sector input labels to
+  tonnes and shortened the headline LPM label so its unit remains visible.
+- `src/sensitivity_analysis.py` — standardized display-only sensitivity units
+  to `t` for ammonia, cement, hydrogen, and steel while retaining `MWh` for
+  electricity.
+- `CHANGELOG.md` — recorded the presentation update and verification.
+
+### What was implemented
+
+- Ammonia, cement, hydrogen, and steel now consistently display annual output
+  in `t/year`, financial values in `EUR/t`, energy intensity in `MWh/t`, and
+  emissions intensity in `tCO2/t`.
+- Electricity continues to use `MWh` and `EUR/MWh`.
+- The dashboard headline now uses the compact label `Scenario LPM`, preventing
+  Streamlit from hiding the unit in the three-column metric layout.
+- The same compact product units are used in exported sensitivity-chart titles
+  and axes.
+
+### Verification
+
+- Ran the Streamlit application test across all five tabs with zero exceptions.
+- Confirmed the five headline labels are `Scenario LPM (EUR/t)` for product
+  sectors and `Scenario LPM (EUR/MWh)` for electricity.
+- Compiled the modified Python files, ran `git diff --check`, and confirmed the
+  live dashboard health endpoint returned `ok`.
+- Reloaded the active Safari dashboard and visibly confirmed `Scenario LPM
+  (EUR/t)` and the corresponding `EUR/t` value on the hydrogen tab.
+
+### Reproducibility notes
+
+- This is a display-only change. No model inputs, formulas, assumptions,
+  calculations, numerical results, or generated project artifacts changed.
+- Here `t` means one tonne of the product named by the active sector tab.
+
+### Next suggested step
+
+Review the other sector tabs in the already-running dashboard at
+`http://localhost:8501`; no restart is needed.
+
+## 2026-09-24 09:58 CEST — Prevent electricity metric-unit truncation
+
+### User request
+
+Make the dashboard show the full electricity unit instead of truncating it to
+`EUR/M...`.
+
+### Files changed
+
+- `sensitivity_dashboard.py` — widened the financial-result metric card.
+- `CHANGELOG.md` — recorded the display adjustment and verification.
+
+### What was implemented
+
+- Changed the three dashboard metric columns from equal widths to a wider
+  financial-result column and narrower variation and technology columns.
+- Retained the standard energy-unit spelling `EUR/MWh`; it now has enough room
+  to render in full at Streamlit's large metric font size.
+
+### Verification
+
+- Ran the Streamlit application test with zero exceptions and confirmed the
+  electricity card contains `Scenario LPM (EUR/MWh)` and `-64.70 EUR/MWh`.
+- Compiled the dashboard, ran `git diff --check`, and confirmed the live server
+  health endpoint returned `ok`.
+
+### Reproducibility notes
+
+- This is only a layout change. No calculation, value, input, scientific
+  assumption, or generated artifact changed.
+
+### Next suggested step
+
+Review the refreshed Electricity tab at `http://localhost:8501`.
+
+## 2026-09-24 10:07 CEST — Refocus the regeneration command on the full workflow
+
+### User request
+
+Present `regenerate_all.py` as the single command for the complete thesis
+generation workflow rather than as a carbon-price tool, and document how to
+name runs and include MACCs and heatmaps.
+
+### Files changed
+
+- `regenerate_all.py` — rewrote the module and CLI descriptions, added the
+  complete-workflow preset and explicit heatmap option, and aligned heatmap
+  output naming.
+- `README.md` — documented standard, complete, MACC-only, and heatmap-enabled
+  named commands plus the principal options.
+- `docs/HANDOVER.md` — documented the same command hierarchy and output
+  contract for future users.
+- `CHANGELOG.md` — recorded the change and verification.
+
+### What was implemented
+
+- The command is now described as an orchestration entry point for financial
+  summaries, MACCs, sensitivity heatmaps, and notebook verification. Carbon
+  price is only one of the global assumptions recorded in the manifest.
+- Added `--full`, which enables deterministic and simulated MACCs,
+  sensitivity heatmaps, and non-destructive execution of every notebook in
+  addition to the always-generated financial summaries.
+- Added the clear `--include-heatmaps` option for independently selecting
+  sensitivity CSVs and heatmap figures. The former `--include-sensitivity`
+  spelling remains accepted as a hidden compatibility alias.
+- Heatmap outputs now use the explicit path
+  `results/runs/<run-name>/heatmaps/<metric>/` and manifest step names such as
+  `heatmaps_npv`.
+- Expanded `--help` and the opening module documentation with commands for a
+  standard run, complete run, targeted check, MACCs, heatmaps, dry-run preview,
+  and descriptive `--run-name` values.
+
+### Verification
+
+- Confirmed `--help` presents `--full`, `--include-heatmaps`, MACC choices,
+  run naming, scope/simulation controls, examples, and the output layout.
+- Confirmed `--full --dry-run` plans 126 steps: 15 financial summaries, eight
+  MACCs, three heatmap commands, and 100 notebook executions.
+- Ran a temporary named cement/NPV regeneration with three Monte Carlo draws
+  and `--include-heatmaps`; both planned commands completed successfully.
+- Verified its manifest stored the requested run name and heatmap setting and
+  its outputs appeared beneath both `financial/cement/NPV/` and
+  `heatmaps/NPV/`.
+- Confirmed the compatibility alias still builds the same heatmap step,
+  compiled the script, and ran `git diff --check` successfully.
+
+### Reproducibility notes
+
+- No financial model, scientific assumption, simulation method, notebook, or
+  existing result changed.
+- All execution outputs used for verification were written beneath `/tmp`; no
+  ignored project output directory was modified.
+
+### Next suggested step
+
+Preview a specifically named complete result set with
+`.venv/bin/python regenerate_all.py --run-name <name> --full --dry-run` before
+starting the potentially long full execution.
+
+## 2026-09-24 10:15 CEST — Generate Run_1 and audit Monte Carlo alignment
+
+### User request
+
+Run the general regeneration command with the name `Run_1`, verify its output
+storage, and recheck whether shared fuel-price samples are identical across
+technologies for the same sample ID.
+
+### Files changed
+
+- `results/runs/Run_1/` — generated the requested named financial result set,
+  including figures, raw and processed CSVs, logs, and its manifest. This
+  directory is intentionally ignored by Git.
+- `CHANGELOG.md` — recorded the generation and sampling audit.
+
+### What was implemented
+
+- Ran the standard financial regeneration for all five sectors and all three
+  metrics with the default 100,000 samples, seed 42, and sampled retrofit BAU
+  mode.
+- Confirmed that each sector samples its shared market-price arrays once and
+  reuses them for every applicable technology at the same `simulation_id`.
+- Confirmed that sampled BAU parent arrays are also reused exactly by the BAU
+  technology and its retrofit technologies for the same run ID.
+- Identified an important scope boundary: run IDs are aligned within a sector,
+  but are not currently global scenarios across sectors. For example, gas-price
+  sample 1 is shared by gas-using technologies within one sector, but is not
+  guaranteed to equal gas-price sample 1 in another sector.
+
+### Verification
+
+- `Run_1` completed 15/15 commands successfully and its manifest reports
+  `status: complete`.
+- Confirmed 135 financial artifacts and 15 command logs in the manifest, plus
+  the manifest itself, using approximately 7.8 GB.
+- Checked all 100,000 exported sample IDs. Shared coal, gas, biofuel, biomass,
+  biomethane, charcoal, hydrogen, no-fuel, and electricity-price arrays were
+  identical across every applicable technology within their sector.
+- Confirmed all technologies in all five sectors use IDs 0 through 99,999.
+- Confirmed sampled BAU parent reuse with 10 electricity, 36 cement, 12 steel,
+  12 ammonia, and 12 hydrogen field-level array comparisons.
+- Confirmed each sector's raw Monte Carlo inputs are byte-identical across its
+  NPV, LPM, and LCOX runs because those commands use the same seed and sampling
+  configuration.
+
+### Reproducibility notes
+
+- The exact command was
+  `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name Run_1`.
+- The result set is stored at `results/runs/Run_1/`; it includes only the
+  standard financial outputs. MACCs, heatmaps, and notebook verification were
+  not requested through `--full` or their individual flags.
+- No source code, model input, assumption, or sampling algorithm changed.
+
+### Next suggested step
+
+Decide whether sample IDs should remain sector-local or represent one global
+market scenario shared across all five sectors before changing the random-stream
+architecture, because global coupling would change joint results while leaving
+each variable's marginal distribution unchanged.
+
+## 2026-09-24 10:45 CEST — Generate and verify complete Run_2 workflow
+
+### User request
+
+Run a second named regeneration containing every optional workflow—including
+MACCs, heatmaps, and all notebooks—so the complete command and output structure
+can be verified.
+
+### Files changed
+
+- `results/runs/Run_2/` — generated the complete named result set, including
+  financial summaries, MACCs, heatmaps, executed notebook copies, logs, and the
+  final manifest. This directory is intentionally ignored by Git.
+- `CHANGELOG.md` — recorded the execution and verification results.
+
+### What was implemented
+
+- Ran `regenerate_all.py --run-name Run_2 --full` with the default 100,000
+  samples, seed 42, sampled retrofit BAU mode, active 80 EUR/tCO2 carbon price,
+  and 8% interest rate.
+- Generated every financial NPV/LPM/LCOX summary, deterministic and simulated
+  MACC, NPV/LPM/LCOX sensitivity heatmap, and non-destructive executed notebook
+  copy included by the full preset.
+
+### Verification
+
+- All 126/126 commands completed with return code zero: 15 financial-summary
+  commands, eight MACC commands, three heatmap commands, and 100 notebook
+  executions.
+- The completed manifest inventories 395 generated files: 135 financial
+  artifacts, 16 MACC artifacts, 18 heatmap artifacts, 100 executed notebooks,
+  and 126 logs. Together with `manifest.json`, the run contains 396 files and
+  uses approximately 7.8 GB.
+- Loaded all 100 executed notebooks successfully, counted 539 retained output
+  blocks, and confirmed there are zero notebook error outputs.
+- Confirmed no source notebook appears in Git status; verification wrote only
+  the copies beneath `Run_2/notebook_verification/`.
+- Confirmed all 135 financial artifacts are byte-identical to `Run_1`, as
+  expected from the same assumptions, seed, sample size, and retrofit mode.
+- Confirmed each NPV, LPM, and LCOX heatmap directory contains five sector PNGs
+  plus one processed sensitivity CSV.
+
+### Reproducibility notes
+
+- The exact command was
+  `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name Run_2 --full`.
+- Outputs are stored at `results/runs/Run_2/`; neither existing generated
+  outputs nor original notebook sources were overwritten.
+- No source code, model input, scientific assumption, or calculation changed.
+
+### Next suggested step
+
+Inspect `results/runs/Run_2/manifest.json` and the five top-level artifact
+folders to confirm that the named-run structure is convenient for final use.
