@@ -3,8 +3,8 @@
 All sector models eventually reduce to the same financial structure: an upfront
 capital cost at year 0 and a constant annual net cash flow over the asset
 lifetime. Keeping the NPV, levelized profit margin, and levelized cost formulas
-here makes it easier to compare electricity, cement, and future sectors with
-consistent discounting.
+here ensures that electricity, cement, steel, ammonia, and hydrogen use the
+same discounting conventions.
 """
 
 from __future__ import annotations

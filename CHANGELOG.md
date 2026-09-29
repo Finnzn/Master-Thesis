@@ -9793,3 +9793,424 @@ the 2024 cost normalization.
 Use the controlled plots in the final cross-sector review and clearly label the
 pre-normalization hydrogen scenario to prevent confusion with the historical
 2026-09-21 output.
+
+## 2026-09-29 14:53 CEST — Complete full Run_3_CEPCI regeneration
+
+### User request
+
+Create a complete named run called `Run_3_CEPCI`, including all financial
+outputs, MACCs, sensitivity heatmaps, and executed notebook copies, and provide
+the most important changes from the prior run as short PowerPoint bullets.
+
+### Files changed
+
+- `results/runs/Run_3_CEPCI/` — generated the complete isolated result set,
+  execution logs, notebook copies, and reproducibility manifest. This standard
+  generated-results directory is intentionally Git-ignored.
+- `CHANGELOG.md` — recorded the run configuration, verification, and principal
+  comparison findings.
+
+### What was implemented
+
+- Ran the complete regeneration workflow for all five sectors and the NPV,
+  LPM, and LCOX metrics with 100,000 Monte Carlo draws, random seed 42, and
+  sampled retrofit-parent inputs.
+- Generated deterministic and simulated MACCs for cement, steel, ammonia, and
+  hydrogen; standardized 20% sensitivity heatmaps for all three financial
+  metrics; and non-destructive executed copies of all 100 notebooks.
+- Compared 100,000-draw mean NPV outputs with `Run_2`, which used the same run
+  settings, while separating the intervening hydrogen retail-price change from
+  the CEPCI cost-normalization interpretation.
+
+### Verification
+
+- Command run:
+  - `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name
+    Run_3_CEPCI --full`.
+- Result:
+  - Passed. The manifest status is `complete`; all 126 of 126 commands returned
+    successfully and no command failed.
+  - The run contains 395 manifest-inventoried artifacts: 101 CSV files, 68 PNG
+    figures, 100 executed notebooks, and 126 command logs. The isolated run
+    occupies approximately 7.8 GB.
+  - `manifest.json` records the complete configuration, clean Git commit
+    `a60ad67a16659628ef6817fad87128e5d1a8cf85`, environment, commands, file
+    sizes, and SHA-256 hashes.
+
+### Result and interpretation
+
+- The largest CEPCI-driven deterioration occurs in steel and ammonia:
+  Scrap-EAF falls from +991.9 to -980.3 million EUR mean NPV; ammonia
+  coal+CCS from +976.7 to -817.9 million EUR; and ammonia biomass from
+  +1,003.5 to -746.0 million EUR.
+- Electricity changes are concentrated in the normalized capture routes:
+  BECCS falls from +89.5 to -177.8 million EUR and hard-coal+CCS loses
+  274.6 million EUR; technologies without updated costs are unchanged.
+- Cement rankings remain broadly stable. CCS has the largest mean-NPV decline
+  at 226.1 million EUR, while the 2023-proxy electrolysis route changes by only
+  2.5 million EUR.
+- In the controlled hydrogen cost-only comparison, NG-SMR, NG-SMR+CCS, and PEM
+  cross into negative mean NPV, AEL becomes approximately break-even, and SOEC
+  remains the strongest route.
+- Direct `Run_2` to `Run_3_CEPCI` hydrogen comparisons also include the
+  intervening differentiated retail-price assumption. The resulting AEL and
+  SOEC improvements of approximately 4.4 and 4.8 billion EUR must not be
+  attributed to CEPCI normalization.
+
+### Reproducibility notes
+
+- The complete result set is stored at `results/runs/Run_3_CEPCI/`; its
+  `manifest.json` is the authoritative run record.
+- The run directory is isolated and did not overwrite `Run_1`, `Run_2`, source
+  notebooks, or top-level raw/processed result files.
+
+### Next suggested step
+
+Use `Run_3_CEPCI` as the source for final thesis figures and state separately
+that the Run 2-to-Run 3 hydrogen comparison includes a retail-price-model
+change in addition to CEPCI normalization.
+
+## 2026-09-29 15:31 CEST — Audit all technology parameter descriptions
+
+### User request
+
+Explain why steel technology comments document emissions-unit conversions and
+check whether the descriptions for all technologies and sectors make sense.
+
+### Files changed
+
+- `CHANGELOG.md` — recorded this read-only documentation audit. No parameter or
+  model source was changed.
+
+### What was implemented
+
+- Reviewed all comments and all 306 parameter descriptions in the cement,
+  electricity, steel, ammonia, and hydrogen parameter catalogues.
+- Confirmed that every parameter has a description and that every stated
+  distribution type agrees with the implemented constructor.
+- Distinguished scientifically useful implementation notes—unit conversions,
+  avoidance of feedstock double counting, retrofit sign conventions, and
+  parent/add-on composition—from wording that is misleading, cryptic, or
+  outdated.
+
+### Verification
+
+- Commands run:
+  - AST-based count of descriptions and checks for distribution-type wording
+    mismatches across all five parameter modules.
+  - Focused searches for unit-conversion, source-qualification, CEPCI,
+    emissions-accounting, provisional-base, and retrofit-language statements.
+  - Manual review of each technology block and its registered parameters.
+- Result:
+  - Passed structurally: all 306 parameter objects have descriptions and no
+    uniform/triangular/fixed type-description mismatch was found.
+  - The emissions conversions from kgCO2 to tCO2 are numerically and
+    scientifically appropriate, but their repeated placement in technology
+    introductions is unnecessarily verbose.
+  - Several wording issues should be corrected separately, including outdated
+    cement placeholder language, ammonia CCS add-ons described as greenfield,
+    cryptic ammonia source terminology, BECCS described as having negative
+    direct emissions, inconsistent biogenic-emissions terminology, and unclear
+    monetary-basis wording for unchanged costs.
+
+### Reproducibility notes
+
+- This was a read-only audit. No assumptions, calculations, figures, data, or
+  `Run_3_CEPCI` outputs changed.
+- Any later wording cleanup can be verified as calculation-neutral through
+  deterministic-result regression checks and a complete description audit.
+
+### Next suggested step
+
+Rewrite the flagged comments and descriptions consistently while keeping every
+numerical assumption and model result unchanged.
+
+## 2026-09-29 16:27 CEST — Rework all technology comments and descriptions
+
+### User request
+
+Perform a complete final-hand-in audit and rewrite of technology comments and
+parameter descriptions so that they are clean, consistent, and focused on
+scientifically important modelling information.
+
+### Files changed
+
+- `src/cement/cement_parameters.py` — removed placeholder language and clarified
+  absolute routes, BAU-relative retrofits, zero assumptions, and emissions scope.
+- `src/electricity/electricity_parameters.py` — clarified generation-route and
+  retrofit accounting, direct versus life-cycle emissions, biogas treatment,
+  and the BECCS net-emissions convention.
+- `src/steel/steel_parameters.py` — consolidated emissions-unit conversion
+  notes, clarified route configurations and retrofit inheritance, and moved
+  exceptional distribution decisions into technology-level comments.
+- `src/ammonia/ammonia_parameters.py` — clarified feedstock-cost accounting,
+  source limitations, provisional/base cases, zero assumptions, and CCS add-on
+  composition; removed contradictory greenfield-CCS wording.
+- `src/hydrogen/hydrogen_parameters.py` — distinguished technology scenario
+  years from monetary years, clarified direct and biogenic-emissions boundaries,
+  and documented biomethane and CCS parent-route inheritance.
+- `CHANGELOG.md` — recorded the documentation rework and regression checks.
+
+### What was implemented
+
+- Standardized all five module introductions around monetary basis, absolute
+  versus retrofit technologies, and emissions-accounting boundaries.
+- Rewrote technology-block comments to explain only configuration, energy and
+  feedstock treatment, parent/add-on relationships, distribution decisions,
+  and material source limitations.
+- Consolidated repeated kgCO2-to-tCO2 conversion explanations at module or
+  reference-route level while retaining the conversion rationale needed to
+  prevent 1,000-fold carbon-cost errors.
+- Standardized zero-valued inputs as explicit modelling assumptions rather than
+  descriptions that could be mistaken for missing data.
+- Replaced misleading BECCS “negative direct emissions” language with a net-CO2
+  accounting description and clarified that biogenic zero-emission values do
+  not imply zero physical stack or life-cycle emissions.
+- Kept unresolved or exceptional inputs visible: alternative-fuels CAPEX has no
+  monetary basis year; ammonia biomass retains a zero with an unavailable source
+  footnote; the SOEC base is provisional; the NRR base is source-labelled as a
+  purge case; and TCD costs remain at supplied values.
+
+### Verification
+
+- Commands run:
+  - Compiled all five parameter modules with `python -m py_compile`.
+  - AST-based validation of all 306 parameter objects: every object has a
+    non-empty description, distribution labels match constructors, and every
+    fixed zero is described explicitly as zero or no change.
+  - Calculation-bearing AST comparison against `HEAD` after excluding module
+    docstrings and `description=` values.
+  - Exact deterministic regression comparison against the five sector outputs
+    stored in `Run_3_CEPCI`.
+  - `git diff --check`.
+- Result:
+  - Passed. Comments and metadata are the only source changes; values, units,
+    constructors, registry keys, and formulas are unchanged.
+  - All 895 deterministic numeric outputs match `Run_3_CEPCI`; the maximum
+    relative difference is approximately 2e-16 and results only from CSV
+    floating-point round-trip representation.
+
+### Reproducibility notes
+
+- No figures, CSVs, notebooks, or run outputs were regenerated because this is
+  a calculation-neutral documentation change.
+- `Run_3_CEPCI` remains numerically valid. Its manifest records the source
+  commit immediately before this comments-only cleanup, which is documented
+  here and verified by the regression checks above.
+
+### Next suggested step
+
+Commit the final documentation cleanup so the hand-in source clearly separates
+scientific assumptions, accounting boundaries, and source-data limitations.
+
+## 2026-09-29 16:40 CEST — Audit code and notebook documentation; remove notebook saving
+
+### User request
+
+Extend the final-hand-in comment and description audit to all source modules and
+notebooks, remove notebook-level output-saving features, make notebook behaviour
+consistent across technologies and sectors, and verify that every notebook still
+runs.
+
+### Files changed
+
+- `src/financial_summary_workflow.py` — documented the shared summary workflow's
+  public methods and command-line entry points.
+- `src/electricity/electricity_financial_summary.py`,
+  `src/cement/cement_financial_summary.py`,
+  `src/steel/steel_financial_summary.py`,
+  `src/ammonia/ammonia_financial_summary.py`, and
+  `src/hydrogen/hydrogen_financial_summary.py` — standardized module and
+  compatibility-entry-point documentation.
+- `src/npv_finance.py`, `src/npv_summary.py`, `src/general_parameters.py`,
+  `src/hydrogen/hydrogen_npv_model.py`, and `src/sensitivity_deep_dive.py` —
+  replaced stale or vague wording and documented previously opaque helpers.
+- `src/ammonia/ammonia_parameters.py` — replaced vague “unresolved” wording with
+  an explicit description of the unavailable source qualification.
+- `notebooks/cement/cement_macc.ipynb`, `notebooks/steel/steel_macc.ipynb`,
+  `notebooks/ammonia/ammonia_macc.ipynb`, and
+  `notebooks/hydrogen/hydrogen_macc.ipynb` — removed the `SAVE_OUTPUTS` setting,
+  save-helper import, and optional file-output cells; retained inline tables and
+  figures.
+- `notebooks/sensitivity_heatmap.ipynb` — removed the `SAVE_OUTPUTS` setting,
+  file-writing imports, CSV/PNG output block, and related instructions; retained
+  inline sensitivity tables and heatmaps.
+- `notebooks/ammonia/deterministic_biomass_gasification_hb_npv.ipynb`,
+  `notebooks/ammonia/plot_biomass_gasification_hb_npv.ipynb`,
+  `notebooks/hydrogen/deterministic_biomethane_smr_npv.ipynb`,
+  `notebooks/hydrogen/plot_biomethane_smr_npv.ipynb`,
+  `notebooks/scenario_analysis.ipynb`, and
+  `notebooks/plot_fuel_elec_price_distributions.ipynb` — clarified source
+  limitations, proxy assumptions, and notebook purpose.
+- `CHANGELOG.md` — recorded the audit, notebook cleanup, and verification.
+
+### What was implemented
+
+- Audited comments, docstrings, markdown, and code comments across all 43 Python
+  modules and all 100 notebooks.
+- Replaced outdated references to “future” or “later” sectors, removed
+  “placeholder” terminology for a deliberate zero input, and standardized the
+  five sector financial-summary module descriptions.
+- Kept emissions explanations only where they define a model boundary, carbon
+  cash-flow treatment, MACC calculation, or material source limitation.
+- Removed every notebook-side file-writing path. Notebook calculations now
+  display tables and figures inline only, consistently across sectors. The
+  separate source and regeneration workflows remain responsible for deliberate
+  thesis output generation.
+
+### Verification
+
+- Commands and checks run:
+  - Parsed and compiled all 43 Python modules.
+  - Validated all 100 notebooks with `nbformat`.
+  - Scanned notebook source cells for CSV, image, directory, and generic file
+    writes.
+  - Compared all 16 modified Python modules with `HEAD` after excluding
+    docstrings and `description=` text.
+  - Executed all 100 notebooks into an isolated temporary directory with a
+    600-second per-notebook timeout.
+  - Ran `git diff --check`.
+- Result:
+  - Passed: no calculation-bearing Python AST differences were found.
+  - Passed: notebook source contains no file-writing calls or `SAVE_OUTPUTS`
+    controls.
+  - Passed: all 100 notebooks executed successfully; zero failed.
+  - Passed: no whitespace errors were found.
+
+### Reproducibility notes
+
+- No tracked CSV, figure, or `Run_3_CEPCI` output was overwritten during the
+  verification. Executed notebook copies were created only in a temporary
+  directory and removed after the audit.
+- The notebook cleanup changes presentation-side behaviour only; model formulas,
+  numerical assumptions, simulation settings, and generated thesis results are
+  unchanged.
+
+### Next suggested step
+
+Commit the combined CEPCI documentation and notebook-consistency cleanup before
+the final hand-in.
+
+## 2026-09-29 16:48 CEST — Present final assumptions without caveat labels
+
+### User request
+
+Remove comments that describe the adopted biomass, biomethane, emissions, or
+price values as proxies, placeholders, unresolved items, provisional values, or
+source limitations. These values are the final model assumptions.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — states the biomass-gasification
+  emissions value directly and removes caveat language from the SOEC block.
+- `src/electricity/electricity_npv_model.py` — describes the common electricity
+  sales price directly.
+- `notebooks/ammonia/deterministic_biomass_gasification_hb_npv.ipynb` and
+  `notebooks/ammonia/plot_biomass_gasification_hb_npv.ipynb` — state the final
+  biomass price distribution and emissions assumption directly.
+- `notebooks/hydrogen/deterministic_biomethane_smr_npv.ipynb` and
+  `notebooks/hydrogen/plot_biomethane_smr_npv.ipynb` — state the final fixed
+  biomethane price directly.
+- `notebooks/scenario_analysis.ipynb` — states the electricity, biomass, and
+  biomethane assumptions directly in the scenario explanations.
+- `README.md` and `docs/HANDOVER.md` — align the model documentation with the
+  final-assumption wording.
+- `CHANGELOG.md` — records this correction without rewriting earlier historical
+  entries.
+
+### What was implemented
+
+- Removed all active uses of the requested caveat terminology from Python
+  source, notebook source cells, the README, and the handover document.
+- Preserved the values, distributions, units, formulas, and model boundaries.
+
+### Verification
+
+- Confirmed by repository-wide source-cell search that none of the requested
+  caveat terms remain in active source or documentation outside historical
+  changelog entries.
+- Executed the five affected notebooks in an isolated temporary directory; all
+  five passed.
+- No tracked output files were written or overwritten.
+
+### Reproducibility notes
+
+- This correction changes wording only. Numerical results and `Run_3_CEPCI`
+  remain unchanged.
+
+## 2026-09-29 16:59 CEST — Generate complete Run_4_DACC at 400 EUR/tCO2
+
+### User request
+
+Create a complete named run called `Run_4_DACC` with a carbon price of
+400 EUR/tCO2, including the full notebook and optional-analysis workflow.
+
+### Files changed
+
+- `src/general_parameters.py` — changed the active shared carbon price from
+  80 to 400 EUR/tCO2.
+- `results/runs/Run_4_DACC/` — generated the requested isolated full result set.
+  This standard generated-results directory is intentionally Git-ignored.
+- `CHANGELOG.md` — recorded the run configuration, verification, and principal
+  effects relative to `Run_3_CEPCI`.
+
+### What was implemented
+
+- Ran all five sectors for NPV, levelized profit margin, and LCOX with 100,000
+  Monte Carlo draws, random seed 42, and sampled retrofit-parent inputs.
+- Generated deterministic and simulated MACCs for cement, steel, ammonia, and
+  hydrogen; standardized 20% sensitivity heatmaps for all three financial
+  metrics; and executed copies of all 100 notebooks.
+- Retained every other active assumption and run setting from `Run_3_CEPCI` so
+  the two runs differ intentionally in carbon price only.
+
+### Verification
+
+- Command run:
+  - `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name Run_4_DACC
+    --full`.
+- Result:
+  - Passed: the manifest reports `complete`, 126/126 completed steps, zero failed
+    commands, and an active carbon price of 400 EUR/tCO2.
+  - Passed: the run contains 395 inventoried artifacts—101 CSV files, 68 PNG
+    figures, 100 executed notebooks, and 126 command logs—and occupies about
+    7.9 GB.
+  - Passed: all 395 manifest file sizes and SHA-256 hashes were independently
+    verified.
+  - Passed: the carbon-price column is exactly 400 in the Monte Carlo and
+    deterministic NPV raw-input exports for every sector, covering 3.4 million
+    Monte Carlo rows and 44 deterministic rows.
+  - MACC figures are byte-identical to `Run_3_CEPCI`, as carbon payments are
+    excluded from the MACC cost numerator. CSV differences are only
+    floating-point reconstruction noise; the maximum relative difference is
+    approximately 8e-13.
+
+### Principal comparison findings
+
+- Zero-direct-emissions routes retain the same mean NPV. BECCS mean NPV rises
+  by about 4.00 billion EUR because its negative net-emissions value produces a
+  larger carbon credit.
+- Emitting incumbents lose the most value: hard coal electricity changes by
+  -3.15 billion EUR, cement BAU by -2.16 billion EUR, BF-BOF steel by
+  -5.72 billion EUR, NG-SMR ammonia by -5.91 billion EUR, coal-gasification
+  ammonia by -10.93 billion EUR, and NG-SMR hydrogen by -3.07 billion EUR.
+- CCS routes still pay for residual emissions, so their absolute NPV can fall,
+  but they improve strongly relative to their unabated parent. The highest mean
+  NPV technologies at 400 EUR/tCO2 are BECCS in electricity, CCS in cement,
+  NG-DRI-EAF+CCS in steel, NG-SMR+HB+CCS in ammonia, and SOEC in hydrogen.
+
+### Reproducibility notes
+
+- `Run_3_CEPCI` remains preserved as the 80 EUR/tCO2 comparison run.
+- Source notebooks were not overwritten. Their executed 400 EUR/tCO2 copies are
+  stored in `results/runs/Run_4_DACC/notebook_verification/`.
+- The active shared source assumption is now 400 EUR/tCO2, matching
+  `Run_4_DACC`.
+
+## 2026-09-29 17:00 CEST — Correct Run_4_DACC validation row count
+
+### Correction
+
+The carbon-price validation covered 4.4 million Monte Carlo rows, not
+3.4 million. The stated 44 deterministic rows and all validation conclusions
+remain unchanged.

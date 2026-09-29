@@ -123,6 +123,8 @@ def calculate_result(
     )
 
     def carrier_costs(inputs: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
+        """Calculate annual cost arrays for each hydrogen energy carrier."""
+
         costs: dict[str, np.ndarray] = {}
         for carrier in ENERGY_CARRIERS:
             amount = inputs.get(f"{carrier}_consumption_mwh_per_th2", zeros)

@@ -1,8 +1,9 @@
 """Configure hydrogen-sector financial summaries and exports.
 
-This module mirrors the electricity NPV summary workflow for the hydrogen sector:
-it runs deterministic and Monte Carlo hydrogen NPV calculations, writes raw and
-processed CSV files, and saves comparison and ranking figures.
+This module binds hydrogen-specific labels, export columns, and calculation
+entry points to the shared summary workflow. It runs deterministic and Monte
+Carlo calculations and can write raw inputs, processed outputs, comparison
+figures, and ranking artefacts.
 
 The output split is intentional:
 - raw CSVs contain sampled or deterministic expected model inputs;
@@ -190,14 +191,20 @@ save_hydrogen_npv_figures = _WORKFLOW.save_figures
 
 
 def _project_root() -> Path:
+    """Return the repository root for compatibility with existing callers."""
+
     return _WORKFLOW.project_root()
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse hydrogen financial-summary command-line options."""
+
     return _WORKFLOW.parse_args()
 
 
 def main() -> None:
+    """Run the hydrogen financial-summary command-line workflow."""
+
     _WORKFLOW.main()
 
 

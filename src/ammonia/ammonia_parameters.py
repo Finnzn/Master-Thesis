@@ -1,6 +1,14 @@
-"""Ammonia-sector assumptions for future technology comparisons.
+"""Ammonia-sector assumptions used by the deterministic and Monte Carlo models.
 
-Technology CAPEX and OPEX assumptions use the supplied 2024 values.
+Technology CAPEX and OPEX use the supplied 2024 values. Absolute technologies
+define complete ammonia-production routes; CCS technologies define incremental
+changes relative to their registered parent routes. Feedstock and process-fuel
+components are documented separately where useful, but only their total enters
+energy cost calculations.
+
+Emissions parameters represent direct operational CO2, not upstream or
+life-cycle emissions. Source values reported in kgCO2/tNH3 were divided by
+1,000 and stored as tCO2/tNH3 for use with the EUR/tCO2 carbon price.
 """
 
 from __future__ import annotations
@@ -23,19 +31,16 @@ LIFETIME_AMMONIA_YEARS = FixedParameter(
     description="Economic lifetime of ammonia-sector assets.",
 )
 
-# Ammonia revenue will be calculated from this fixed price and annual output.
+# Fixed ammonia sales price used to calculate annual revenue.
 RETAIL_PRICE_AMMONIA_EUR_PER_T = FixedParameter(
     value=890.0,
     unit="EUR/t",
-    description="Retail price of ammonia used in the ammonia-sector setup.",
+    description="Fixed ammonia sales price used by the financial model.",
 )
 
 
-# Greenfield European natural-gas steam-methane reforming plus Haber-Bosch
-# (NG-SMR + HB), without carbon capture. CAPEX is per unit of annual NH3
-# production capacity. Supplied direct emissions of 1,620/1,770/1,800
-# kgCO2/tNH3 are stored as 1.620/1.770/1.800 tCO2/tNH3 to match the
-# project's carbon-price unit of EUR/tCO2.
+# NG-SMR+HB is the greenfield European natural-gas reference route without
+# capture. CAPEX is expressed per unit of annual ammonia-production capacity.
 NG_SMR_HB_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_006.0,
     upper_bound=2_187.0,
@@ -68,7 +73,7 @@ NG_SMR_HB_NATURAL_GAS_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
 NG_SMR_HB_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="Purchased-electricity consumption for NG-SMR + HB.",
+    description="Assumed zero purchased-electricity consumption for NG-SMR + HB.",
 )
 
 NG_SMR_HB_EMISSIONS_DISTRIBUTION = TriangularDistribution(
@@ -76,13 +81,13 @@ NG_SMR_HB_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=1.770,
     maximum=1.800,
     unit="tCO2/tNH3",
-    description="Triangular distribution for NG-SMR + HB direct emissions.",
+    description="Triangular distribution for NG-SMR + HB direct operational CO2 emissions.",
 )
 
 
-# Greenfield coal gasification plus Haber-Bosch, without carbon capture. Coal
-# consumption includes both feedstock and process fuel; only the total enters
-# the technology registry so future energy costs do not count either twice.
+# Coal gasification+HB is a greenfield route without capture. Coal feedstock and
+# process-fuel components are recorded for traceability, while their total is
+# registered once to avoid double counting energy costs.
 COAL_GASIFICATION_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=3_274.0,
     mode=4_093.0,
@@ -134,12 +139,13 @@ COAL_GASIFICATION_HB_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
 COAL_GASIFICATION_HB_EMISSIONS = FixedParameter(
     value=3.200,
     unit="tCO2/tNH3",
-    description="Direct emissions for coal gasification + HB; supplied as 3,200 kgCO2/tNH3.",
+    description="Modelled direct operational CO2 emissions for coal gasification + HB.",
 )
 
 
-# Greenfield European AEL/PEM electrolysis plus Haber-Bosch. The supplied
-# fuel/reductant and direct-emissions intensities are both zero.
+# AEL/PEM electrolysis+HB is a greenfield European electricity-based route.
+# Direct fuel/reductant use and operational CO2 emissions are modelled as zero;
+# purchased electricity is represented explicitly.
 AEL_PEM_ELECTROLYSIS_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=1_785.0,
     mode=2_549.0,
@@ -167,7 +173,7 @@ AEL_PEM_ELECTROLYSIS_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 AEL_PEM_ELECTROLYSIS_HB_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="Fuel and reductant consumption for AEL/PEM electrolysis + HB.",
+    description="Assumed zero direct fuel and reductant consumption for AEL/PEM + HB.",
 )
 
 AEL_PEM_ELECTROLYSIS_HB_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution(
@@ -181,14 +187,13 @@ AEL_PEM_ELECTROLYSIS_HB_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribut
 AEL_PEM_ELECTROLYSIS_HB_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tNH3",
-    description="Direct emissions for AEL/PEM electrolysis + HB.",
+    description="Assumed zero direct operational CO2 emissions for AEL/PEM + HB.",
 )
 
 
-# Greenfield Europe-oriented biomass gasification plus Haber-Bosch. Biomass
-# consumption includes feedstock and process fuel; only the total enters the
-# technology registry to avoid double counting. The supplied direct-emissions
-# zero has an asterisk whose footnote was not provided.
+# Biomass gasification+HB is a greenfield bioenergy route. Feedstock and
+# process-fuel components are recorded separately, while their total is
+# registered once. Direct operational CO2 emissions are modelled as zero.
 BIOMASS_GASIFICATION_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=3_729.0,
     mode=5_327.0,
@@ -240,13 +245,13 @@ BIOMASS_GASIFICATION_HB_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
 BIOMASS_GASIFICATION_HB_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tNH3",
-    description="Supplied direct emissions for biomass gasification + HB; source value was asterisked without its footnote.",
+    description="Fixed zero direct operational CO2 emissions for biomass gasification + HB.",
 )
 
 
-# Greenfield Europe-oriented methane pyrolysis plus Haber-Bosch with an
-# electrically heated molten-metal reactor. Natural gas is feedstock only;
-# the zero process-fuel component is recorded separately for traceability.
+# Methane pyrolysis+HB is a greenfield route with an electrically heated
+# molten-metal reactor. Natural gas is used as feedstock; the model records no
+# additional natural-gas process fuel or direct operational CO2 emissions.
 METHANE_PYROLYSIS_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=815.0,
     mode=1_165.0,
@@ -280,7 +285,7 @@ METHANE_PYROLYSIS_HB_NATURAL_GAS_FEEDSTOCK_CONSUMPTION = FixedParameter(
 METHANE_PYROLYSIS_HB_NATURAL_GAS_PROCESS_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="Natural-gas process-fuel consumption for electrically heated methane pyrolysis + HB.",
+    description="Assumed zero natural-gas process-fuel use for methane pyrolysis + HB.",
 )
 
 METHANE_PYROLYSIS_HB_NATURAL_GAS_CONSUMPTION = FixedParameter(
@@ -300,18 +305,18 @@ METHANE_PYROLYSIS_HB_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution
 METHANE_PYROLYSIS_HB_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tNH3",
-    description="Direct emissions for methane pyrolysis + HB.",
+    description="Assumed zero direct operational CO2 emissions for methane pyrolysis + HB.",
 )
 
 
-# Greenfield Europe-oriented solid-oxide electrolysis cell (SOEC) plus
-# Haber-Bosch. Fuel/reductant use and direct emissions are supplied as zero.
+# SOEC+HB is a greenfield electricity-based route. Direct fuel/reductant use and
+# operational CO2 emissions are modelled as zero.
 SOEC_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=2_024.0,
     mode=2_892.0,
     maximum=4_338.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield SOEC + HB CAPEX in 2024 EUR; the mode is the supplied provisional base, not annualized.",
+    description="Triangular distribution for greenfield SOEC + HB CAPEX in 2024 EUR, not annualized.",
 )
 
 SOEC_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
@@ -333,7 +338,7 @@ SOEC_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 SOEC_HB_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="Fuel and reductant consumption for SOEC + HB.",
+    description="Assumed zero direct fuel and reductant consumption for SOEC + HB.",
 )
 
 SOEC_HB_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution(
@@ -347,18 +352,20 @@ SOEC_HB_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution(
 SOEC_HB_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tNH3",
-    description="Direct emissions for SOEC + HB.",
+    description="Assumed zero direct operational CO2 emissions for SOEC + HB.",
 )
 
 
-# Greenfield Europe-oriented aqueous direct nitrogen reduction reaction (NRR)
-# at ambient conditions. Fuel/reductant use and direct emissions are zero.
+# Aqueous direct NRR is a greenfield electricity-based route operating at
+# ambient conditions. The source identifies the lower-bound CAPEX and fixed-OPEX
+# values as the purge-case base; those values are retained as triangular modes.
+# Direct fuel/reductant use and operational CO2 emissions are modelled as zero.
 AQUEOUS_DIRECT_NRR_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=4_767.0,
     mode=4_767.0,
     maximum=5_367.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield aqueous direct NRR CAPEX in 2024 EUR; the mode is the supplied purge base, not annualized.",
+    description="Triangular distribution for greenfield aqueous direct NRR CAPEX in 2024 EUR, not annualized.",
 )
 
 AQUEOUS_DIRECT_NRR_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
@@ -366,7 +373,7 @@ AQUEOUS_DIRECT_NRR_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
     mode=222.1,
     maximum=244.5,
     unit="EUR/tNH3",
-    description="Triangular distribution for aqueous direct NRR fixed OPEX in 2024 EUR; the mode is the supplied purge base.",
+    description="Triangular distribution for aqueous direct NRR fixed OPEX in 2024 EUR.",
 )
 
 AQUEOUS_DIRECT_NRR_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
@@ -380,7 +387,7 @@ AQUEOUS_DIRECT_NRR_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 AQUEOUS_DIRECT_NRR_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="Fuel and reductant consumption for aqueous direct NRR.",
+    description="Assumed zero direct fuel and reductant consumption for aqueous direct NRR.",
 )
 
 AQUEOUS_DIRECT_NRR_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution(
@@ -394,14 +401,15 @@ AQUEOUS_DIRECT_NRR_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution(
 AQUEOUS_DIRECT_NRR_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tNH3",
-    description="Direct emissions for aqueous direct NRR.",
+    description="Assumed zero direct operational CO2 emissions for aqueous direct NRR.",
 )
 
 
-# Greenfield European CCS add-on relative to NG-SMR + HB. Costs and energy
-# changes are additive; direct emissions are multiplied by (1 - reduction).
-# Electricity must use an absolute increment because the parent consumes zero
-# purchased electricity, so a percentage change cannot represent +0.194 MWh.
+# NG-SMR+HB+CCS is an incremental capture retrofit of NG-SMR+HB. Cost and energy
+# changes are added to the parent, and the capture fraction reduces parent
+# direct operational emissions. Electricity is an absolute increment because
+# the parent has zero purchased electricity, making a percentage change
+# undefined.
 NG_SMR_HB_CCS_CAPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
     minimum=93.9,
     mode=100.6,
@@ -419,13 +427,13 @@ NG_SMR_HB_CCS_FIXED_OPEX_CHANGE = FixedParameter(
 NG_SMR_HB_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/tNH3",
-    description="Variable OPEX change for NG-SMR + HB CCS.",
+    description="Assumed zero non-energy variable-OPEX change for NG-SMR + HB + CCS.",
 )
 
 NG_SMR_HB_CCS_NATURAL_GAS_CONSUMPTION_CHANGE = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="Working-base natural-gas consumption change for NG-SMR + HB CCS.",
+    description="Assumed zero natural-gas consumption change relative to NG-SMR + HB.",
 )
 
 NG_SMR_HB_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
@@ -439,13 +447,14 @@ NG_SMR_HB_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = TriangularDistribution(
     mode=0.90,
     maximum=0.90,
     unit="fraction",
-    description="Triangular distribution for direct-emissions reduction relative to NG-SMR + HB.",
+    description="Triangular distribution for direct operational CO2 reduction relative to NG-SMR + HB.",
 )
 
 
-# Greenfield Europe-oriented CCS add-on relative to coal gasification + HB.
-# These are supplied point increments; coal and electricity changes are
-# additive, while direct emissions are reduced relative to the parent.
+# Coal gasification+HB+CCS is an incremental capture retrofit of coal
+# gasification+HB. The source provides best-available-technology point estimates
+# for energy changes; these are added to the parent, while the capture fraction
+# reduces parent direct operational emissions.
 COAL_GASIFICATION_HB_CCS_CAPEX_CHANGE = FixedParameter(
     value=288.5,
     unit="EUR/(tNH3/y)",
@@ -461,25 +470,25 @@ COAL_GASIFICATION_HB_CCS_FIXED_OPEX_CHANGE = FixedParameter(
 COAL_GASIFICATION_HB_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/tNH3",
-    description="Variable OPEX change for coal gasification + HB CCS.",
+    description="Assumed zero non-energy variable-OPEX change for coal gasification + HB + CCS.",
 )
 
 COAL_GASIFICATION_HB_CCS_COAL_CONSUMPTION_CHANGE = FixedParameter(
     value=0.0,
     unit="MWh/tNH3",
-    description="IEA BAT point for coal-consumption change with coal gasification + HB CCS.",
+    description="Assumed zero coal-consumption change relative to coal gasification + HB.",
 )
 
 COAL_GASIFICATION_HB_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
     value=0.333,
     unit="MWh/tNH3",
-    description="IEA BAT point for purchased-electricity increase with coal gasification + HB CCS.",
+    description="Point estimate for purchased-electricity increase relative to coal gasification + HB.",
 )
 
 COAL_GASIFICATION_HB_CCS_EMISSIONS_REDUCTION = FixedParameter(
     value=0.90,
     unit="fraction",
-    description="Point direct-emissions reduction for coal gasification + HB CCS relative to the parent.",
+    description="Point estimate for direct operational CO2 reduction relative to the parent route.",
 )
 
 

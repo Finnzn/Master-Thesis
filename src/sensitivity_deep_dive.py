@@ -459,6 +459,8 @@ def _variation_filename_suffix(variation_fraction: float) -> str:
 
 
 def main() -> None:
+    """Generate sensitivity tables and figures from command-line options."""
+
     parser = argparse.ArgumentParser(
         description="Generate standardized technology-input financial sensitivity outputs."
     )

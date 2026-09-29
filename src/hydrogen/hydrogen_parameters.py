@@ -1,7 +1,14 @@
-"""Hydrogen-sector assumptions for future technology comparisons.
+"""Hydrogen-sector assumptions used by the deterministic and Monte Carlo models.
 
-Technology CAPEX and OPEX assumptions use the supplied 2024 values; TCD costs
-remain unchanged as specified.
+Technology CAPEX and OPEX use the supplied 2024 values; methane-pyrolysis TCD
+costs remain at their supplied values as specified. The 2030 labels on the
+electrolysis routes describe the technology case, while 2024 EUR describes the
+monetary basis.
+
+Absolute technologies define complete hydrogen-production routes. Biomethane
+SMR and NG-SMR+CCS define changes relative to NG-SMR. Emissions parameters use
+the model's direct operational accounting boundary; zero values do not imply
+zero upstream, life-cycle, or necessarily physical biogenic stack emissions.
 """
 
 from __future__ import annotations
@@ -26,23 +33,22 @@ LIFETIME_HYDROGEN_YEARS = FixedParameter(
 ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T = FixedParameter(
     value=7_500.0,
     unit="EUR/tH2",
-    description="Retail price of hydrogen from AEL, PEM, and SOEC electrolysis.",
+    description="Fixed hydrogen sales price for AEL, PEM, and SOEC routes.",
 )
 
 NON_ELECTROLYSIS_HYDROGEN_RETAIL_PRICE_EUR_PER_T = FixedParameter(
     value=2_800.0,
     unit="EUR/tH2",
-    description="Retail price of hydrogen from all non-electrolysis routes.",
+    description="Fixed hydrogen sales price for non-electrolysis routes.",
 )
 
 ELECTROLYSIS_HYDROGEN_TECHNOLOGIES = frozenset({"ael", "pem", "soec"})
 
 
-# Greenfield European natural-gas steam-methane reforming (NG-SMR), without
-# carbon capture. Supplied base values are used as triangular modes. Natural
-# gas includes feedstock and process fuel; only the total enters the technology
-# registry to avoid double counting. Approximate emissions of 9,000 kgCO2/tH2
-# are stored as 9 tCO2/tH2 to match the carbon-price unit of EUR/tCO2.
+# NG-SMR is the greenfield European natural-gas reference route without capture.
+# Feedstock and process-fuel components are documented separately, while their
+# total is registered once to avoid double counting energy costs. Source
+# emissions reported in kgCO2/tH2 are stored as tCO2/tH2 for carbon pricing.
 NG_SMR_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=2_555.0,
     mode=3_006.0,
@@ -88,18 +94,19 @@ NG_SMR_NATURAL_GAS_CONSUMPTION = FixedParameter(
 NG_SMR_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tH2",
-    description="Approximate net purchased electricity for NG-SMR at 200 bar.",
+    description="Assumed zero net purchased electricity for NG-SMR at 200 bar.",
 )
 
 NG_SMR_EMISSIONS = FixedParameter(
     value=9.0,
     unit="tCO2/tH2",
-    description="Approximate direct NG-SMR emissions; supplied as 9,000 kgCO2/tH2.",
+    description="Approximate NG-SMR direct operational CO2 emissions.",
 )
 
 
-# Greenfield European alkaline electrolysis (AEL) for 2030. Supplied base
-# values are used as triangular modes; electricity use is specified at 200 bar.
+# AEL is a greenfield European 2030 electrolysis case. Direct fuel use and
+# operational CO2 emissions are modelled as zero; purchased electricity is
+# specified for hydrogen delivered at 200 bar.
 AEL_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=7_506.0,
     mode=10_723.0,
@@ -127,7 +134,7 @@ AEL_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 AEL_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tH2",
-    description="Fuel and reductant consumption for AEL.",
+    description="Assumed zero direct fuel and reductant consumption for AEL.",
 )
 
 AEL_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
@@ -139,12 +146,13 @@ AEL_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
 AEL_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tH2",
-    description="Direct emissions for AEL hydrogen production.",
+    description="Assumed zero direct operational CO2 emissions for AEL.",
 )
 
 
-# Greenfield European proton-exchange-membrane electrolysis (PEM) for 2030.
-# Supplied base values are triangular modes; electricity use is at 200 bar.
+# PEM is a greenfield European 2030 electrolysis case. Direct fuel use and
+# operational CO2 emissions are modelled as zero; purchased electricity is
+# specified for hydrogen delivered at 200 bar.
 PEM_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=9_650.0,
     mode=13_786.0,
@@ -172,7 +180,7 @@ PEM_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 PEM_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tH2",
-    description="Fuel and reductant consumption for PEM.",
+    description="Assumed zero direct fuel and reductant consumption for PEM.",
 )
 
 PEM_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
@@ -184,12 +192,13 @@ PEM_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
 PEM_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tH2",
-    description="Direct emissions for PEM hydrogen production.",
+    description="Assumed zero direct operational CO2 emissions for PEM.",
 )
 
 
-# Greenfield European solid-oxide electrolysis cell (SOEC) for 2030, with
-# electric process heat. Supplied base values are used as triangular modes.
+# SOEC is a greenfield European 2030 electrolysis case with electric process
+# heat. Direct fuel use and operational CO2 emissions are modelled as zero;
+# purchased electricity includes the electric-heat requirement.
 SOEC_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=3_768.0,
     mode=5_382.0,
@@ -217,7 +226,7 @@ SOEC_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 SOEC_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh/tH2",
-    description="Fuel and reductant consumption for SOEC with electric heat.",
+    description="Assumed zero direct fuel and reductant consumption for SOEC.",
 )
 
 SOEC_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
@@ -229,19 +238,19 @@ SOEC_PURCHASED_ELECTRICITY_CONSUMPTION = FixedParameter(
 SOEC_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tH2",
-    description="Direct emissions for SOEC hydrogen production.",
+    description="Assumed zero direct operational CO2 emissions for SOEC.",
 )
 
 
-# Greenfield European methane pyrolysis (TCD). The supplied 61.1 MWh/tH2
-# natural-gas consumption is feedstock; only that amount enters the technology
-# registry. Supplied base values are used as triangular modes.
+# TCD is a greenfield European methane-pyrolysis route. Natural gas is modelled
+# as feedstock rather than process fuel. Its monetary inputs remain unchanged
+# from the supplied values, while purchased-electricity uncertainty is explicit.
 METHANE_PYROLYSIS_TCD_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=3_690.0,
     mode=5_270.0,
     maximum=7_910.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for greenfield European methane pyrolysis (TCD) CAPEX, not annualized.",
+    description="Triangular distribution for TCD CAPEX retained at supplied values, not annualized.",
 )
 
 METHANE_PYROLYSIS_TCD_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
@@ -249,7 +258,7 @@ METHANE_PYROLYSIS_TCD_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
     mode=89.0,
     maximum=134.0,
     unit="EUR/tH2",
-    description="Triangular distribution for methane pyrolysis (TCD) fixed OPEX.",
+    description="Triangular distribution for TCD fixed OPEX retained at supplied values.",
 )
 
 METHANE_PYROLYSIS_TCD_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
@@ -257,7 +266,7 @@ METHANE_PYROLYSIS_TCD_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
     mode=7.0,
     maximum=10.5,
     unit="EUR/tH2",
-    description="Triangular distribution for methane pyrolysis (TCD) variable OPEX.",
+    description="Triangular distribution for TCD variable OPEX retained at supplied values.",
 )
 
 METHANE_PYROLYSIS_TCD_NATURAL_GAS_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -277,12 +286,13 @@ METHANE_PYROLYSIS_TCD_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistributio
 METHANE_PYROLYSIS_TCD_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tH2",
-    description="Direct emissions for methane pyrolysis (TCD).",
+    description="Assumed zero direct operational CO2 emissions for TCD.",
 )
 
 
-# Greenfield conceptual biomass gasification without carbon capture. Supplied
-# base values are used as triangular modes, including those at lower bounds.
+# Biomass gasification is a conceptual greenfield route without capture. Base
+# values at lower bounds are retained as triangular modes. Its zero direct-
+# emissions input follows the model's biogenic-carbon accounting boundary.
 BIOMASS_GASIFICATION_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=949.0,
     mode=949.0,
@@ -326,30 +336,30 @@ BIOMASS_GASIFICATION_PURCHASED_ELECTRICITY_DISTRIBUTION = TriangularDistribution
 BIOMASS_GASIFICATION_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tH2",
-    description="Direct emissions for biomass gasification without CCS.",
+    description="Assumed zero fossil direct CO2 emissions for biomass gasification.",
 )
 
 
-# Biomethane SMR is a fuel-switch retrofit of NG-SMR without CCS. CAPEX and
-# OPEX changes are zero; the parent natural-gas input is replaced by the same
-# total quantity of biomethane. Direct emissions are the supplied absolute zero
-# rather than an additive change to the parent emissions.
+# Biomethane SMR is a fuel-switch retrofit of NG-SMR. It inherits parent CAPEX
+# and OPEX, replaces the full natural-gas input with biomethane, and uses the
+# source-provided zero fossil-emissions value. That value reflects the model's
+# accounting boundary and does not imply zero physical biogenic stack CO2.
 BIOMETHANE_SMR_CAPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/(tH2/y)",
-    description="CAPEX increase for biomethane SMR relative to NG-SMR.",
+    description="Assumed zero incremental CAPEX for biomethane SMR relative to NG-SMR.",
 )
 
 BIOMETHANE_SMR_FIXED_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/tH2",
-    description="Fixed OPEX increase for biomethane SMR relative to NG-SMR.",
+    description="Assumed zero incremental fixed OPEX for biomethane SMR.",
 )
 
 BIOMETHANE_SMR_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/tH2",
-    description="Variable OPEX increase for biomethane SMR relative to NG-SMR.",
+    description="Assumed zero incremental variable OPEX for biomethane SMR.",
 )
 
 BIOMETHANE_SMR_NATURAL_GAS_CONSUMPTION_CHANGE = FixedParameter(
@@ -379,19 +389,21 @@ BIOMETHANE_SMR_BIOMETHANE_CONSUMPTION = FixedParameter(
 BIOMETHANE_SMR_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
     value=0.0,
     unit="MWh/tH2",
-    description="No change to approximately zero net NG-SMR purchased electricity at 200 bar.",
+    description="Assumed zero purchased-electricity change relative to NG-SMR.",
 )
 
 BIOMETHANE_SMR_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tH2",
-    description="Supplied absolute direct emissions for biomethane SMR without CCS.",
+    description="Assumed zero fossil direct CO2 emissions for biomethane SMR.",
 )
 
 
-# European NG-SMR + CCS retrofit relative to NG-SMR. Cost and energy changes
-# are additive; supplied 90% capture reduces the parent's direct emissions.
-# Only the natural-gas increment enters the retrofit registry, not the total.
+# NG-SMR+CCS is an incremental capture retrofit of NG-SMR. Cost and energy
+# changes are added to the parent, and the capture fraction reduces parent
+# direct operational emissions. Only the natural-gas increment is registered
+# for the retrofit; documented feedstock, process-fuel, and total values are
+# traceability aids rather than additional cost inputs.
 NG_SMR_CCS_CAPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
     minimum=2_310.0,
     mode=2_369.0,
@@ -411,7 +423,7 @@ NG_SMR_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
 NG_SMR_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/tH2",
-    description="Variable OPEX increase for NG-SMR + CCS.",
+    description="Assumed zero non-energy variable-OPEX change for NG-SMR + CCS.",
 )
 
 NG_SMR_CCS_NATURAL_GAS_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -447,7 +459,7 @@ NG_SMR_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
 NG_SMR_CCS_CAPTURE_FRACTION = FixedParameter(
     value=0.90,
     unit="fraction",
-    description="CO2 capture fraction for NG-SMR + CCS, applied to parent direct emissions.",
+    description="Direct operational CO2 capture fraction applied to parent NG-SMR emissions.",
 )
 
 

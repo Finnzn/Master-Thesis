@@ -1,4 +1,4 @@
-"""Electricity-sector parameters for the Monte Carlo simulation.
+"""Electricity-sector assumptions used by the deterministic and Monte Carlo models.
 
 This file is the electricity assumptions catalogue. It does not perform NPV
 calculations; it only records input values and uncertainty ranges for each
@@ -9,10 +9,14 @@ The technologies are compared on a normalized annual output of 1,000,000 MWh.
 Full-load hours then determine how much installed capacity each technology needs
 to produce that same annual output.
 
-The BECCS and CCS retrofit cost assumptions identified below are expressed in
-2024 EUR after CEPCI normalization. Where the supplied normalized table gives
-only a triangular distribution's bounds, its mode retains the same relative
-position within the normalized range as in the original distribution.
+The BECCS and CCS cost assumptions identified below are expressed in 2024 EUR
+after CEPCI normalization. Where the normalized table supplies only new bounds,
+the triangular mode retains its original relative position within the range.
+
+Emissions parameters represent direct operational fossil CO2 unless explicitly
+identified as a net-emissions accounting value. Zero direct emissions do not
+imply zero life-cycle emissions. For CCS retrofit reduction fractions, positive
+values reduce the parent intensity and negative values increase it.
 """
 
 from __future__ import annotations
@@ -22,12 +26,11 @@ from typing import Mapping
 from distributions import FixedParameter, TriangularDistribution, UniformDistribution
 
 
-# Electricity revenue is calculated from this fixed retail price and the
-# normalized annual output.
+# Fixed electricity sales price used to calculate annual revenue.
 RETAIL_PRICE_ELECTRICITY_EUR_PER_MWH = FixedParameter(
     value=94.07,
     unit="EUR/MWh",
-    description="Retail price of electricity used in the electricity-sector setup.",
+    description="Fixed electricity sales price used by the financial model.",
 )
 
 # Renewable value factors scale the common electricity price to the average
@@ -66,8 +69,8 @@ ANNUAL_ELECTRICITY_OUTPUT_MWH = FixedParameter(
     description="Annual electricity output target used to normalize electricity technologies.",
 )
 
-# Hard coal technology parameters. Fuel cost and carbon cost are both relevant
-# because hard coal has non-zero fuel consumption and direct emissions.
+# Hard coal is an absolute generation route with fossil-fuel use and direct
+# operational CO2 emissions; both fuel and carbon costs enter its cash flow.
 HARD_COAL_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_700.0,
     upper_bound=2_300.0,
@@ -104,7 +107,7 @@ HARD_COAL_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=0.87,
     maximum=0.92,
     unit="tCO2/MWh_e",
-    description="Triangular distribution for hard coal direct emissions.",
+    description="Triangular distribution for hard-coal direct operational CO2 emissions.",
 )
 
 HARD_COAL_FULL_LOAD_HOURS = FixedParameter(
@@ -120,10 +123,9 @@ HARD_COAL_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# Hard coal with CCS is a retrofit measure. Cost changes are added to the hard
-# coal BAU values. Positive reduction fractions lower a BAU physical intensity,
-# while negative reduction fractions represent consumption increases in the
-# later retrofit calculations.
+# Hard coal with CCS is represented as a retrofit of the hard-coal parent.
+# Incremental costs are added to the parent, the fuel penalty increases parent
+# fuel use, and the capture fraction reduces parent direct operational emissions.
 HARD_COAL_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=1_752.0,
     upper_bound=3_755.0,
@@ -158,12 +160,12 @@ HARD_COAL_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=0.87,
     upper_bound=0.99,
     unit="fraction",
-    description="Uniform distribution for hard coal CCS emissions reduction relative to BAU.",
+    description="Uniform distribution for direct operational CO2 reduction relative to hard coal.",
 )
 
 
-# CCGT technology parameters. Gas-price uncertainty is added in the calculation
-# module through the shared gas-price distribution.
+# CCGT is an absolute natural-gas generation route. Natural-gas price
+# uncertainty is applied separately by the financial model.
 CCGT_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=900.0,
     upper_bound=1_300.0,
@@ -200,7 +202,7 @@ CCGT_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=0.337,
     maximum=0.348,
     unit="tCO2/MWh_e",
-    description="Triangular distribution for CCGT direct emissions.",
+    description="Triangular distribution for CCGT direct operational CO2 emissions.",
 )
 
 CCGT_FULL_LOAD_HOURS = FixedParameter(
@@ -216,9 +218,9 @@ CCGT_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# CCGT with CCS follows the same BAU-relative retrofit convention as hard coal
-# CCS: cost changes are added, fuel increases are negative reductions, and the
-# emissions reduction fraction is applied multiplicatively to CCGT emissions.
+# CCGT with CCS is represented as a retrofit of the CCGT parent. Incremental
+# costs and the fuel penalty are added to the parent, while the capture fraction
+# reduces parent direct operational emissions.
 CCGT_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=778.0,
     upper_bound=1_667.0,
@@ -253,12 +255,12 @@ CCGT_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=0.88,
     upper_bound=0.98,
     unit="fraction",
-    description="Uniform distribution for CCGT CCS emissions reduction relative to BAU.",
+    description="Uniform distribution for direct operational CO2 reduction relative to CCGT.",
 )
 
 
-# Nuclear technology parameters. Direct emissions are modelled as zero here, so
-# carbon cost does not affect the nuclear annual cash flow.
+# Nuclear has zero direct operational CO2 emissions within the model boundary;
+# upstream fuel-cycle and construction emissions are excluded.
 NUCLEAR_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=6_000.0,
     upper_bound=16_000.0,
@@ -293,7 +295,7 @@ NUCLEAR_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
 NUCLEAR_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/MWh_e",
-    description="Direct stack emissions for nuclear electricity generation.",
+    description="Assumed zero direct operational CO2 emissions for nuclear generation.",
 )
 
 NUCLEAR_FULL_LOAD_HOURS = FixedParameter(
@@ -309,8 +311,9 @@ NUCLEAR_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# Offshore wind technology parameters. Fuel consumption and direct emissions are
-# fixed at zero, so its uncertainty comes mainly from CAPEX/OPEX and full-load hours.
+# Offshore wind has zero direct fuel use and operational CO2 emissions within
+# the model boundary. Its uncertainty is concentrated in CAPEX, OPEX, and
+# full-load hours.
 WIND_OFFSHORE_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=2_200.0,
     upper_bound=3_400.0,
@@ -337,13 +340,13 @@ WIND_OFFSHORE_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 WIND_OFFSHORE_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh_th/MWh_e",
-    description="Fuel consumption for offshore wind electricity generation.",
+    description="Assumed zero direct fuel consumption for offshore-wind generation.",
 )
 
 WIND_OFFSHORE_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/MWh_e",
-    description="Direct stack emissions for offshore wind electricity generation.",
+    description="Assumed zero direct operational CO2 emissions for offshore wind.",
 )
 
 WIND_OFFSHORE_FULL_LOAD_HOURS = FixedParameter(
@@ -359,8 +362,8 @@ WIND_OFFSHORE_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# Onshore wind technology parameters. The structure mirrors offshore wind, but
-# different CAPEX/OPEX and full-load hours capture the technology-specific case.
+# Onshore wind has the same accounting boundary as offshore wind, with
+# technology-specific CAPEX, OPEX, and full-load hours.
 WIND_ONSHORE_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=1_300.0,
     upper_bound=1_900.0,
@@ -387,13 +390,13 @@ WIND_ONSHORE_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 WIND_ONSHORE_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh_th/MWh_e",
-    description="Fuel consumption for onshore wind electricity generation.",
+    description="Assumed zero direct fuel consumption for onshore-wind generation.",
 )
 
 WIND_ONSHORE_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/MWh_e",
-    description="Direct stack emissions for onshore wind electricity generation.",
+    description="Assumed zero direct operational CO2 emissions for onshore wind.",
 )
 
 WIND_ONSHORE_FULL_LOAD_HOURS = FixedParameter(
@@ -409,8 +412,9 @@ WIND_ONSHORE_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# PV technology parameters. PV has zero modelled fuel cost, variable OPEX, and
-# direct emissions in this setup; the low full-load hours drive required capacity.
+# PV has zero direct fuel use, variable OPEX, and operational CO2 emissions in
+# the model. Its full-load hours determine the capacity required for the common
+# annual output.
 PV_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=700.0,
     upper_bound=900.0,
@@ -429,19 +433,19 @@ PV_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
 PV_VARIABLE_OPEX = FixedParameter(
     value=0.0,
     unit="EUR/MWh_e",
-    description="Variable OPEX excluding fuel and electricity for PV.",
+    description="Assumed zero non-energy variable OPEX for PV.",
 )
 
 PV_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh_th/MWh_e",
-    description="Fuel consumption for PV electricity generation.",
+    description="Assumed zero direct fuel consumption for PV generation.",
 )
 
 PV_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/MWh_e",
-    description="Direct stack emissions for PV electricity generation.",
+    description="Assumed zero direct operational CO2 emissions for PV.",
 )
 
 PV_FULL_LOAD_HOURS = FixedParameter(
@@ -457,8 +461,9 @@ PV_LIFETIME_YEARS = FixedParameter(
 )
 
 
-# Biogas technology parameters. Biogas has fuel consumption and fuel cost, but
-# fossil direct emissions are treated as zero in the current model setup.
+# Biogas consumes a priced biomass-derived fuel. Fossil direct CO2 emissions
+# are modelled as zero; biogenic and life-cycle emissions are outside the carbon
+# cost applied here.
 BIOGAS_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=2_894.0,
     upper_bound=5_788.0,
@@ -492,7 +497,7 @@ BIOGAS_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
 BIOGAS_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/MWh_e",
-    description="Fossil direct emissions for biogas electricity generation.",
+    description="Assumed zero fossil direct CO2 emissions for biogas generation.",
 )
 
 BIOGAS_FULL_LOAD_HOURS = FixedParameter(
@@ -507,10 +512,10 @@ BIOGAS_LIFETIME_YEARS = FixedParameter(
     description="Economic lifetime for the biogas technology.",
 )
 
-# Bioenergy with carbon capture and storage (BECCS). The supplied source values
-# provide bounded ranges but no central estimate, so the techno-economic inputs
-# use uniform distributions. Negative direct emissions represent net carbon
-# removal and therefore produce a carbon credit in the shared cash-flow formula.
+# BECCS is an absolute generation route. Source ranges have no central estimate,
+# so its uncertain inputs are uniform. Its negative emissions parameter is a
+# net accounting value after capture and biogenic-carbon treatment—not a
+# physically negative stack flow—and therefore creates a modelled carbon credit.
 BECCS_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=3_255.0,
     upper_bound=5_976.0,
@@ -550,7 +555,7 @@ BECCS_EMISSIONS_DISTRIBUTION = UniformDistribution(
     lower_bound=-1.33,
     upper_bound=-1.01,
     unit="tCO2/MWh_e",
-    description="Uniform distribution for BECCS net-negative direct emissions.",
+    description="Uniform distribution for the modelled net CO2 balance of BECCS.",
 )
 
 BECCS_FULL_LOAD_HOURS = FixedParameter(
@@ -559,8 +564,8 @@ BECCS_FULL_LOAD_HOURS = FixedParameter(
     description="Average of the supplied 7,446-7,884 h/year BECCS range.",
 )
 
-# No BECCS lifetime was supplied. The model therefore uses the existing
-# 25-year bioenergy lifetime assumption applied to biogas.
+# No BECCS lifetime was supplied; the model adopts the 25-year lifetime used for
+# the other bioenergy route.
 BECCS_LIFETIME_YEARS = FixedParameter(
     value=25.0,
     unit="years",

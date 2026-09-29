@@ -291,12 +291,12 @@ distribution mode, while deterministic calculations use the triangular mean:
 | Offshore wind | 0.85 | 0.95 | 1.00 | 0.933 |
 | Solar PV | 0.80 | 0.90 | 1.00 | 0.90 |
 
-The value factor scales the model's existing electricity sales-price proxy to a
-captured price. The parameter names remain `VF_PV`, `VF_Wind_onshore`, and
+The value factor scales the model's common electricity sales price to a captured
+price. The parameter names remain `VF_PV`, `VF_Wind_onshore`, and
 `VF_windoffshore`:
 
 ```text
-captured electricity price = electricity sales-price proxy * value factor
+captured electricity price = electricity sales price * value factor
 annual electricity revenue = annual generation * captured electricity price
 ```
 
@@ -502,11 +502,10 @@ emissions abatement and resource cost against NG-SMR + Haber-Bosch.
 Use `--retrofit-bau-mode deterministic` to hold each CCS parent at its
 expected inputs. The default `sampled` mode shares parent draws with its CCS
 add-on. Coal and biomass feedstock plus process fuel are each costed once via
-their supplied total MWh/tNH3. The supplied biomass direct-emissions value is
-zero with an unresolved source asterisk. Until an ammonia-specific biomass
-price is provided, the model reuses the shared biomass-energy price from the
-electricity sector. It does not add upstream emissions or a solid-carbon
-coproduct credit for methane pyrolysis.
+their supplied total MWh/tNH3. Biomass gasification uses zero direct operational
+emissions and the shared biomass-energy price distribution. The model does not
+add upstream emissions or a solid-carbon coproduct credit for methane
+pyrolysis.
 
 ## Hydrogen financial model
 

@@ -3,7 +3,7 @@
 Simulation modules return dictionaries of arrays because that format is compact
 and easy to calculate with NumPy. This module turns those arrays into the tables
 used for figures, CSV exports, and technology rankings. The helpers are
-sector-agnostic so electricity and later sectors can share one output workflow.
+sector-agnostic so all five modelled sectors share one output workflow.
 """
 
 from __future__ import annotations

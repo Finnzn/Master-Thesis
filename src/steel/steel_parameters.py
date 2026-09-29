@@ -1,11 +1,16 @@
-"""Steel-sector parameters for the Monte Carlo simulation.
+"""Steel-sector assumptions used by the deterministic and Monte Carlo models.
 
-This file is the steel assumptions catalogue. It records technology input
-values and uncertainty ranges without performing financial calculations, in
-the same way as the electricity and cement parameter modules.
+This module records technology inputs and uncertainty ranges without performing
+financial calculations.
 
-Technology cost assumptions use the supplied updated 2024 values. Values that
-did not require a numerical update remain part of the distributions as supplied.
+Technology cost assumptions use the supplied 2024 values. Absolute technologies
+define complete production routes; CCS technologies define changes relative to
+their registered parent routes. Reduction fractions are positive for reductions
+and negative for increases.
+
+Emissions parameters represent direct operational CO2, not upstream or
+life-cycle emissions. Source values reported in kgCO2/tCS were divided by 1,000
+and are stored consistently as tCO2/tCS for use with the EUR/tCO2 carbon price.
 """
 
 from __future__ import annotations
@@ -22,12 +27,11 @@ LIFETIME_STEEL_YEARS = FixedParameter(
     description="Economic lifetime of steel-sector assets.",
 )
 
-# Steel revenue is calculated from this fixed crude-steel retail price and the
-# normalized annual output.
+# Fixed crude-steel sales price used to calculate annual revenue.
 RETAIL_PRICE_STEEL_EUR_PER_TCS = FixedParameter(
     value=750.0,
     unit="EUR/tCS",
-    description="Retail price of crude steel used in the steel-sector setup.",
+    description="Fixed crude-steel sales price used by the financial model.",
 )
 
 # Normalized annual output: every steel technology is compared at this annual
@@ -39,10 +43,9 @@ ANNUAL_STEEL_OUTPUT_TCS = FixedParameter(
 )
 
 
-# Greenfield European blast-furnace/basic-oxygen-furnace (BF-BOF) business-as-
-# usual technology. The supplied direct-emissions values of 1,770/1,820/1,870
-# kgCO2/tCS are stored as 1.770/1.820/1.870 tCO2/tCS so they are compatible with
-# the project's carbon-price unit of EUR/tCO2.
+# BF-BOF is the greenfield European reference route. Its combined fuel and
+# reductant demand, purchased electricity, and direct operational emissions are
+# absolute production intensities.
 BF_BOF_BAU_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=570.0,
     mode=581.0,
@@ -86,14 +89,13 @@ BF_BOF_BAU_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=1.820,
     maximum=1.870,
     unit="tCO2/tCS",
-    description="Triangular distribution for BF-BOF BAU direct emissions.",
+    description="Triangular distribution for BF-BOF direct operational CO2 emissions.",
 )
 
 
-# Greenfield European scrap-based electric-arc-furnace (Scrap-EAF) technology.
-# Charcoal is its supplied fuel/reductant. The direct-emissions values of
-# 10/40/40 kgCO2/tCS are stored as 0.010/0.040/0.040 tCO2/tCS to match the
-# project's carbon-price unit of EUR/tCO2.
+# Scrap-EAF is a greenfield European scrap-based route using charcoal as its
+# modelled fuel and reductant. Its normalized variable-OPEX range no longer
+# contains the former base value, so that input is represented as uniform.
 SCRAP_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=242.0,
     mode=242.0,
@@ -114,7 +116,7 @@ SCRAP_EAF_VARIABLE_OPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=602.5,
     upper_bound=802.4,
     unit="EUR/tCS",
-    description="Uniform distribution for Scrap-EAF variable OPEX in 2024 EUR; no valid base lies within the normalized range.",
+    description="Uniform distribution for Scrap-EAF variable OPEX in 2024 EUR.",
 )
 
 SCRAP_EAF_CHARCOAL_CONSUMPTION = FixedParameter(
@@ -136,14 +138,12 @@ SCRAP_EAF_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=0.040,
     maximum=0.040,
     unit="tCO2/tCS",
-    description="Triangular distribution for Scrap-EAF direct emissions.",
+    description="Triangular distribution for Scrap-EAF direct operational CO2 emissions.",
 )
 
 
-# Greenfield European natural-gas direct-reduced-iron electric-arc-furnace
-# (NG-DRI-EAF) business-as-usual technology. Natural gas is its supplied
-# fuel/reductant. The direct-emissions values of 550/590/1,000 kgCO2/tCS are
-# stored as 0.550/0.590/1.000 tCO2/tCS to match the project's carbon-price unit.
+# NG-DRI-EAF is the greenfield European natural-gas DRI reference route.
+# Natural gas provides the modelled fuel and reductant demand.
 NG_DRI_EAF_BAU_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=647.0,
     mode=647.0,
@@ -183,15 +183,13 @@ NG_DRI_EAF_BAU_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=0.590,
     maximum=1.000,
     unit="tCO2/tCS",
-    description="Triangular distribution for NG-DRI-EAF BAU direct emissions.",
+    description="Triangular distribution for NG-DRI-EAF direct operational CO2 emissions.",
 )
 
 
-# Greenfield European hydrogen direct-reduced-iron electric-arc-furnace
-# (H2-DRI-EAF) technology. Hydrogen and charcoal are stored separately because
-# their supplied consumption values use different physical units. The direct-
-# emissions values of 5/5/10 kgCO2/tCS are stored as 0.005/0.005/0.010
-# tCO2/tCS to match the project's carbon-price unit.
+# H2-DRI-EAF is a greenfield European hydrogen-based DRI route. Hydrogen and
+# charcoal inputs remain separate because they use different physical units and
+# are priced through different model inputs.
 H2_DRI_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=381.0,
     mode=544.0,
@@ -243,12 +241,12 @@ H2_DRI_EAF_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=0.005,
     maximum=0.010,
     unit="tCO2/tCS",
-    description="Triangular distribution for H2-DRI-EAF direct emissions.",
+    description="Triangular distribution for H2-DRI-EAF direct operational CO2 emissions.",
 )
 
 
-# Greenfield European molten oxide electrolysis (MOE) technology. It has no
-# fuel/reductant consumption or direct process emissions in the supplied setup.
+# MOE is a greenfield European electrolysis route. Direct fuel/reductant use and
+# operational CO2 emissions are modelled as zero; electricity use is explicit.
 MOE_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=564.0,
     mode=1_129.0,
@@ -276,7 +274,7 @@ MOE_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 MOE_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh_th/tCS",
-    description="Fuel and reductant consumption for MOE.",
+    description="Assumed zero direct fuel and reductant consumption for MOE.",
 )
 
 MOE_ELECTRICITY_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -290,13 +288,13 @@ MOE_ELECTRICITY_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
 MOE_EMISSIONS = FixedParameter(
     value=0.0,
     unit="tCO2/tCS",
-    description="Direct emissions for MOE.",
+    description="Assumed zero direct operational CO2 emissions for MOE.",
 )
 
 
-# Greenfield European alkaline-electrolysis electric-arc-furnace (AEL-EAF)
-# technology. Its OPEX ranges have no supplied base values and are therefore
-# represented as uniform distributions. Charcoal is its supplied reductant.
+# AEL-EAF is a greenfield European alkaline-electrolysis route using charcoal as
+# its modelled reductant. Fixed and variable OPEX are uniform because their
+# source ranges provide no central estimates.
 AEL_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=451.0,
     mode=490.0,
@@ -334,14 +332,13 @@ AEL_EAF_ELECTRICITY_CONSUMPTION = FixedParameter(
 AEL_EAF_EMISSIONS = FixedParameter(
     value=0.010,
     unit="tCO2/tCS",
-    description="Direct emissions for AEL-EAF, converted from 10 kgCO2/tCS.",
+    description="Modelled direct operational CO2 emissions for AEL-EAF.",
 )
 
 
-# BF + BOF + CCS is an incremental retrofit relative to BF-BOF BAU.
-# Cost changes are added to the BAU values. Positive reduction fractions lower
-# a BAU physical intensity, while negative values represent the supplied fuel
-# and electricity consumption increases.
+# BF-BOF+CCS is an incremental retrofit of BF-BOF. Cost changes are added to the
+# parent route; energy-penalty ranges increase parent fuel and electricity use;
+# the capture fraction reduces parent direct operational emissions.
 BF_BOF_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=256.5,
     upper_bound=335.8,
@@ -387,14 +384,14 @@ BF_BOF_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = (
         mode=0.73,
         maximum=0.73,
         unit="fraction",
-        description="Triangular distribution for BF + BOF + CCS direct-emissions reduction relative to BAU.",
+        description="Triangular distribution for direct operational CO2 reduction relative to BF-BOF.",
     )
 )
 
 
-# NG-DRI-EAF CCS is an incremental retrofit relative to NG-DRI-EAF BAU. The
-# exact +0.30 MWh/tCS electricity increment is converted to the common negative-
-# reduction convention using the fixed 1.06 MWh/tCS BAU electricity intensity.
+# NG-DRI-EAF+CCS is an incremental retrofit of NG-DRI-EAF. The exact electricity
+# increment is stored both as an absolute change and as the equivalent negative
+# reduction fraction required by the shared retrofit model.
 NG_DRI_EAF_CCS_CAPEX_CHANGE = FixedParameter(
     value=225.7,
     unit="EUR/(tCS/year)",
@@ -418,7 +415,7 @@ NG_DRI_EAF_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
 NG_DRI_EAF_CCS_FUEL_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Natural-gas consumption reduction for NG-DRI-EAF CCS relative to BAU.",
+    description="Assumed zero natural-gas consumption change relative to NG-DRI-EAF.",
 )
 
 NG_DRI_EAF_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
@@ -439,7 +436,7 @@ NG_DRI_EAF_CCS_ELECTRICITY_REDUCTION = FixedParameter(
 NG_DRI_EAF_CCS_EMISSIONS_REDUCTION = FixedParameter(
     value=0.64,
     unit="fraction",
-    description="Approximate direct-emissions reduction for NG-DRI-EAF CCS relative to BAU.",
+    description="Approximate direct operational CO2 reduction relative to NG-DRI-EAF.",
 )
 
 

@@ -2,11 +2,10 @@
 
 This module contains global assumptions that are not specific to one sector.
 Sector modules can import these constants and combine them with their own
-technology or sector-specific parameter distributions.
+technology- or sector-specific parameter distributions.
 
-Values in this file affect several technologies at once. For that reason, they
-are kept separate from sector files such as `electricity_parameters.py`, where a
-future reader should expect only sector-specific assumptions.
+Values in this file affect several technologies at once. They are kept separate
+from sector parameter files, which contain only sector-specific assumptions.
 """
 
 from __future__ import annotations
@@ -91,7 +90,7 @@ BIOMASS_PRICE_DISTRIBUTION = TriangularDistribution(
 NO_FUEL_PRICE_EUR_PER_MWH_TH = FixedParameter(
     value=0.0,
     unit="EUR/MWh_th",
-    description="Fuel price placeholder for non-fuel electricity technologies.",
+    description="Zero fuel-price input for electricity technologies without fuel use.",
 )
 
 # Market-price distributions preserve source-table minimum, maximum, and mean.

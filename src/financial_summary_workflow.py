@@ -67,6 +67,8 @@ class SectorSummaryWorkflow:
         self.config = config
 
     def metric_config(self, financial_metric: str) -> Mapping[str, object]:
+        """Return validated display and ranking metadata for one metric."""
+
         if financial_metric not in self.config.financial_metrics:
             valid_metrics = ", ".join(self.config.financial_metrics)
             raise ValueError(
@@ -76,6 +78,8 @@ class SectorSummaryWorkflow:
         return self.config.financial_metrics[financial_metric]
 
     def with_display_labels(self, ranking_summary):
+        """Add publication labels to a technology-ranking summary."""
+
         return ranking_summary.assign(
             display_label=ranking_summary["technology"]
             .map(self.config.technology_labels)
@@ -123,6 +127,8 @@ class SectorSummaryWorkflow:
         labels: Mapping[str, str] | None = None,
         financial_metric: str = "NPV",
     ) -> dict[str, dict[str, float]]:
+        """Summarize the mean, quantiles, and sign counts of one metric."""
+
         config = self.metric_config(financial_metric)
         metric_column = str(config["metric_column"])
         scale = float(config["scale"])
@@ -149,6 +155,8 @@ class SectorSummaryWorkflow:
         summary: Mapping[str, Mapping[str, float]],
         statistic: str,
     ) -> dict[str, float]:
+        """Extract one named statistic from a distribution summary."""
+
         return {label: values[statistic] for label, values in summary.items()}
 
     def _simulate(
@@ -158,6 +166,8 @@ class SectorSummaryWorkflow:
         technologies: tuple[str, ...] | None = None,
         retrofit_bau_mode: str | None = None,
     ) -> Results:
+        """Run the configured simulation with workflow defaults as fallbacks."""
+
         return self.config.simulate_results(
             sample_size=(
                 self.config.default_sample_size
@@ -184,6 +194,8 @@ class SectorSummaryWorkflow:
         technologies: tuple[str, ...] | None = None,
         retrofit_bau_mode: str | None = None,
     ) -> dict[str, float]:
+        """Return Monte Carlo mean NPV by technology in million EUR."""
+
         return mean_npv_million_eur(
             results_by_item=self._simulate(
                 sample_size,
@@ -202,6 +214,8 @@ class SectorSummaryWorkflow:
         retrofit_bau_mode: str | None = None,
         financial_metric: str = "NPV",
     ) -> dict[str, float]:
+        """Return Monte Carlo means for the selected financial metric."""
+
         config = self.metric_config(financial_metric)
         return mean_metric(
             results_by_item=self._simulate(
@@ -219,6 +233,8 @@ class SectorSummaryWorkflow:
         self,
         technologies: tuple[str, ...] | None = None,
     ) -> dict[str, float]:
+        """Return expected-input NPV by technology in million EUR."""
+
         return deterministic_npv_million_eur(
             results_by_item=self.config.deterministic_results(
                 technologies=technologies
@@ -231,6 +247,8 @@ class SectorSummaryWorkflow:
         technologies: tuple[str, ...] | None = None,
         financial_metric: str = "NPV",
     ) -> dict[str, float]:
+        """Return expected-input values for the selected financial metric."""
+
         config = self.metric_config(financial_metric)
         return deterministic_metric(
             results_by_item=self.config.deterministic_results(
@@ -251,6 +269,8 @@ class SectorSummaryWorkflow:
         retrofit_bau_mode: str | None = None,
         financial_metric: str = "NPV",
     ) -> Path:
+        """Save the Monte Carlo comparison figure for one financial metric."""
+
         sample_size = sample_size or self.config.default_sample_size
         random_seed = (
             self.config.default_random_seed
@@ -297,6 +317,8 @@ class SectorSummaryWorkflow:
         sector_name: str | None = None,
         financial_metric: str = "NPV",
     ) -> Path:
+        """Save the deterministic comparison figure for one financial metric."""
+
         sector_name = sector_name or self.config.sector_name
         config = self.metric_config(financial_metric)
         return plot_financial_metric_technology_bars(
@@ -333,6 +355,8 @@ class SectorSummaryWorkflow:
         save_ranking_plots: bool = True,
         financial_metric: str = "NPV",
     ) -> tuple[Path, ...]:
+        """Save Monte Carlo figures, data tables, and optional rankings."""
+
         output_date = run_date or date.today()
         sample_size = sample_size or self.config.default_sample_size
         random_seed = (
@@ -417,6 +441,8 @@ class SectorSummaryWorkflow:
         sector_name: str | None = None,
         financial_metric: str = "NPV",
     ):
+        """Build detailed and summarized rankings from existing results."""
+
         sector_name = sector_name or self.config.sector_name
         config = self.metric_config(financial_metric)
         ranking = financial_metric_ranking_dataframe(
@@ -437,6 +463,8 @@ class SectorSummaryWorkflow:
         retrofit_bau_mode: str | None = None,
         financial_metric: str = "NPV",
     ):
+        """Simulate the sector and rank technologies within aligned draws."""
+
         return self.calculate_rankings_from_results(
             self._simulate(
                 sample_size,
@@ -462,6 +490,8 @@ class SectorSummaryWorkflow:
         save_ranking_plots: bool = True,
         financial_metric: str = "NPV",
     ) -> tuple[Path, ...]:
+        """Save requested ranking tables and figures."""
+
         output_date = run_date or date.today()
         sector_name = sector_name or self.config.sector_name
         config = self.metric_config(financial_metric)
@@ -520,6 +550,8 @@ class SectorSummaryWorkflow:
         save_ranking_plots: bool = True,
         financial_metric: str = "NPV",
     ):
+        """Calculate rankings and optionally save their tables and figures."""
+
         sector_name = sector_name or self.config.sector_name
         random_seed = (
             self.config.default_random_seed
@@ -561,6 +593,8 @@ class SectorSummaryWorkflow:
         sector_name: str | None = None,
         financial_metric: str = "NPV",
     ) -> tuple[Path, Path, Path]:
+        """Save the deterministic figure plus raw and processed tables."""
+
         output_date = run_date or date.today()
         sector_name = sector_name or self.config.sector_name
         config = self.metric_config(financial_metric)
@@ -621,6 +655,8 @@ class SectorSummaryWorkflow:
         save_ranking_plots: bool = True,
         financial_metric: str = "NPV",
     ) -> tuple[Path, ...]:
+        """Save the complete Monte Carlo and deterministic output set."""
+
         return (
             *self.save_mean_outputs(
                 figure_dir=figure_dir,
@@ -656,6 +692,8 @@ class SectorSummaryWorkflow:
         retrofit_bau_mode: str | None = None,
         financial_metric: str = "NPV",
     ) -> tuple[Path, Path]:
+        """Save matched-scale Monte Carlo and deterministic figures."""
+
         output_date = run_date or date.today()
         sample_size = sample_size or self.config.default_sample_size
         random_seed = (
@@ -727,9 +765,13 @@ class SectorSummaryWorkflow:
 
     @staticmethod
     def project_root() -> Path:
+        """Return the repository root resolved from this module."""
+
         return Path(__file__).resolve().parents[1]
 
     def parse_args(self) -> argparse.Namespace:
+        """Parse command-line options for the configured sector workflow."""
+
         parser = argparse.ArgumentParser(
             description=(
                 f"Generate {self.config.sector_key}-sector "
@@ -762,6 +804,8 @@ class SectorSummaryWorkflow:
         return parser.parse_args()
 
     def main(self) -> None:
+        """Generate the output set requested on the command line."""
+
         args = self.parse_args()
         if args.sample_size <= 0:
             raise ValueError("--sample-size must be positive.")

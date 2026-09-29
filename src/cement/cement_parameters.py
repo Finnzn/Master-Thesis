@@ -1,12 +1,14 @@
-"""Cement-sector parameters for the Monte Carlo simulation.
+"""Cement-sector assumptions used by the deterministic and Monte Carlo models.
 
-This is currently a small placeholder-style parameter module for the cement
-sector. It follows the same structure as the electricity assumptions so future
-cement calculations can import fixed sector parameters from one traceable place.
+Technology CAPEX and OPEX are expressed in 2024 EUR after CEPCI normalization
+where a monetary basis year is available. The alternative-fuels CAPEX allowance
+is the one exception because its thesis-selected range has no monetary basis
+year. Emissions parameters represent direct operational CO2 only; upstream and
+life-cycle emissions are outside the model boundary.
 
-Technology CAPEX and OPEX assumptions are expressed in 2024 EUR after CEPCI
-normalization where a monetary basis year exists. The alternative-fuels CAPEX
-allowance is explicitly retained on its original, unspecified monetary basis.
+Absolute technologies define complete plant inputs. Retrofit technologies
+define changes relative to BAU. For reduction fractions, positive values reduce
+the BAU intensity and negative values increase it.
 """
 
 from __future__ import annotations
@@ -23,11 +25,11 @@ LIFETIME_CEMENT_YEARS = FixedParameter(
     description="Economic lifetime of cement-sector assets.",
 )
 
-# Cement revenue placeholder for the current model setup.
+# Fixed cement sales price used to calculate annual revenue.
 RETAIL_PRICE_CEMENT_EUR_PER_T = FixedParameter(
     value=150.0,
     unit="EUR/t",
-    description="Retail price of cement used in the cement-sector setup.",
+    description="Fixed cement sales price used by the financial model.",
 )
 
 # Normalized annual output: every cement technology is compared at this annual
@@ -38,8 +40,8 @@ ANNUAL_CEMENT_OUTPUT_T = FixedParameter(
     description="Annual cement output target used to normalize cement technologies.",
 )
 
-# BAU cement technology parameters. Fuel consumption, electricity consumption,
-# and emissions are absolute intensities, not percentage reductions.
+# BAU is the reference cement-production route. Its energy use and direct
+# operational emissions are absolute intensities.
 BAU_CEMENT_CAPEX_DISTRIBUTION = UniformDistribution(
     lower_bound=208.30,
     upper_bound=225.50,
@@ -84,13 +86,13 @@ BAU_CEMENT_EMISSIONS_DISTRIBUTION = TriangularDistribution(
     mode=0.600,
     maximum=0.700,
     unit="tCO2/t",
-    description="Triangular distribution for BAU cement direct emissions.",
+    description="Triangular distribution for BAU direct operational CO2 emissions.",
 )
 
 
-# Electrification is an alternative cement technology. Fuel consumption is fixed
-# at zero, while electricity consumption is an absolute intensity, not a
-# percentage reduction.
+# Electrification is a complete alternative route rather than a BAU retrofit.
+# Direct fuel use is modelled as zero; electricity use and residual direct
+# process emissions are absolute intensities.
 ELECTRIFICATION_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=185.71,
     mode=270.60,
@@ -118,7 +120,7 @@ ELECTRIFICATION_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 ELECTRIFICATION_CEMENT_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh_th/t",
-    description="Fuel consumption for electrification cement production.",
+    description="Assumed zero direct fuel consumption for electrified cement production.",
 )
 
 ELECTRIFICATION_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = UniformDistribution(
@@ -132,12 +134,13 @@ ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
     lower_bound=0.350,
     upper_bound=0.450,
     unit="tCO2/t",
-    description="Uniform distribution for electrification cement direct emissions.",
+    description="Uniform distribution for electrification direct operational CO2 emissions.",
 )
 
 
-# Electrolysis is an alternative cement technology. Fuel consumption is fixed at
-# zero, while electricity consumption and emissions are absolute intensities.
+# Electrolysis is a complete alternative route. Direct fuel use is modelled as
+# zero; electricity use and residual direct process emissions are absolute
+# intensities.
 ELECTROLYSIS_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
     minimum=255.67,
     mode=362.95,
@@ -165,7 +168,7 @@ ELECTROLYSIS_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
 ELECTROLYSIS_CEMENT_FUEL_CONSUMPTION = FixedParameter(
     value=0.0,
     unit="MWh_th/t",
-    description="Fuel consumption for electrolysis cement production.",
+    description="Assumed zero direct fuel consumption for electrolysis cement production.",
 )
 
 ELECTROLYSIS_CEMENT_ELECTRICITY_CONSUMPTION_DISTRIBUTION = UniformDistribution(
@@ -179,23 +182,23 @@ ELECTROLYSIS_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
     lower_bound=0.060,
     upper_bound=0.140,
     unit="tCO2/t",
-    description="Uniform distribution for electrolysis cement direct emissions.",
+    description="Uniform distribution for electrolysis direct operational CO2 emissions.",
 )
 
 
-# Clinker substitution is a retrofit measure. Retrofit parameters are changes
-# relative to BAU: positive reduction fractions lower the BAU value, while
-# negative reduction fractions would represent an increase.
+# Clinker substitution is represented as a BAU-relative retrofit. It has no
+# incremental CAPEX or fixed OPEX in the model; its cost effect is an increase
+# in variable OPEX.
 CLINKER_SUBSTITUTION_CEMENT_CAPEX = FixedParameter(
     value=0.0,
     unit="EUR/(t/year)",
-    description="CAPEX for clinker substitution retrofit, not annualized.",
+    description="Assumed zero incremental CAPEX for clinker substitution, not annualized.",
 )
 
 CLINKER_SUBSTITUTION_CEMENT_FIXED_OPEX = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Fixed OPEX for clinker substitution retrofit.",
+    description="Assumed zero incremental fixed OPEX for clinker substitution.",
 )
 
 CLINKER_SUBSTITUTION_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
@@ -215,20 +218,20 @@ CLINKER_SUBSTITUTION_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
 CLINKER_SUBSTITUTION_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Electricity-consumption reduction for clinker substitution relative to BAU.",
+    description="Assumed zero electricity-consumption change relative to BAU.",
 )
 
 CLINKER_SUBSTITUTION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=0.05,
     upper_bound=0.20,
     unit="fraction",
-    description="Uniform distribution for clinker substitution emissions reduction relative to BAU.",
+    description="Uniform distribution for the direct operational CO2 reduction relative to BAU.",
 )
 
 
-# Alternative fuels are a retrofit measure. CAPEX is represented as an increase
-# relative to BAU, fuel/electricity reductions are fixed at zero, and the fuel
-# price is blended from fossil and alternative fuel shares in the NPV model.
+# Alternative fuels are represented as a BAU-relative fuel-switch retrofit.
+# Thermal-energy demand is unchanged; the NPV model instead blends fossil and
+# alternative fuel prices according to the sampled alternative-fuel share.
 ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
     upper_bound=2.0,
@@ -239,25 +242,25 @@ ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
 ALTERNATIVE_FUELS_CEMENT_FIXED_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Fixed OPEX change for alternative fuels retrofit.",
+    description="Assumed zero incremental fixed OPEX for the alternative-fuels retrofit.",
 )
 
 ALTERNATIVE_FUELS_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Variable OPEX change excluding fuel and electricity for alternative fuels retrofit.",
+    description="Assumed zero non-energy variable-OPEX change for the alternative-fuels retrofit.",
 )
 
 ALTERNATIVE_FUELS_CEMENT_FUEL_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Fuel-consumption reduction for alternative fuels retrofit relative to BAU.",
+    description="Assumed zero change in thermal-energy demand relative to BAU.",
 )
 
 ALTERNATIVE_FUELS_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Electricity-consumption reduction for alternative fuels retrofit relative to BAU.",
+    description="Assumed zero change in electricity consumption relative to BAU.",
 )
 
 ALTERNATIVE_FUELS_CEMENT_SHARE_DISTRIBUTION = UniformDistribution(
@@ -271,12 +274,13 @@ ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=0.03,
     upper_bound=0.17,
     unit="fraction",
-    description="Uniform distribution for alternative fuels emissions reduction relative to BAU.",
+    description="Uniform distribution for the direct operational CO2 reduction relative to BAU.",
 )
 
 
-# Efficiency improvement is a retrofit measure. CAPEX is represented as an
-# increase relative to BAU, while fuel, electricity, and emissions are reductions.
+# Efficiency improvement is a BAU-relative retrofit. Its CAPEX is incremental;
+# sampled reductions are applied to BAU energy use and direct operational
+# emissions.
 EFFICIENCY_IMPROVEMENT_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
     upper_bound=27.45,
@@ -287,13 +291,13 @@ EFFICIENCY_IMPROVEMENT_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
 EFFICIENCY_IMPROVEMENT_CEMENT_FIXED_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Fixed OPEX change for efficiency improvement retrofit.",
+    description="Assumed zero incremental fixed OPEX for efficiency improvement.",
 )
 
 EFFICIENCY_IMPROVEMENT_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Variable OPEX change excluding fuel and electricity for efficiency improvement retrofit.",
+    description="Assumed zero non-energy variable-OPEX change for efficiency improvement.",
 )
 
 EFFICIENCY_IMPROVEMENT_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -314,12 +318,12 @@ EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribu
     lower_bound=0.0,
     upper_bound=0.02,
     unit="fraction",
-    description="Uniform distribution for efficiency improvement emissions reduction relative to BAU.",
+    description="Uniform distribution for the direct operational CO2 reduction relative to BAU.",
 )
 
 
-# Waste heat recovery is a retrofit measure. It increases CAPEX and fixed OPEX,
-# and reduces electricity consumption relative to BAU.
+# Waste heat recovery is a BAU-relative retrofit with incremental CAPEX and
+# fixed OPEX. Its modelled operating benefit is lower electricity consumption.
 WASTE_HEAT_RECOVERY_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=2.78,
     upper_bound=25.00,
@@ -337,13 +341,13 @@ WASTE_HEAT_RECOVERY_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
 WASTE_HEAT_RECOVERY_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Variable OPEX change excluding fuel and electricity for waste heat recovery retrofit.",
+    description="Assumed zero non-energy variable-OPEX change for waste heat recovery.",
 )
 
 WASTE_HEAT_RECOVERY_CEMENT_FUEL_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Fuel-consumption reduction for waste heat recovery retrofit relative to BAU.",
+    description="Assumed zero fuel-consumption change relative to BAU.",
 )
 
 WASTE_HEAT_RECOVERY_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -356,13 +360,13 @@ WASTE_HEAT_RECOVERY_CEMENT_ELECTRICITY_REDUCTION_DISTRIBUTION = UniformDistribut
 WASTE_HEAT_RECOVERY_CEMENT_EMISSIONS_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Emissions reduction for waste heat recovery retrofit relative to BAU.",
+    description="Assumed zero direct operational CO2 reduction relative to BAU.",
 )
 
 
-# CCS is a retrofit measure. Positive reduction fractions lower the BAU value,
-# while negative reduction fractions represent consumption increases in later
-# retrofit calculations.
+# CCS is a BAU-relative capture retrofit. Incremental cost and energy-penalty
+# assumptions are combined with the parent route; the emissions-reduction
+# fraction is applied to BAU direct operational emissions.
 CCS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=76.38,
     upper_bound=256.90,
@@ -402,12 +406,13 @@ CCS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=0.88,
     upper_bound=0.94,
     unit="fraction",
-    description="Uniform distribution for CCS emissions reduction relative to BAU.",
+    description="Uniform distribution for the direct operational CO2 reduction relative to BAU.",
 )
 
 
-# Process heat integration is a retrofit measure. It increases CAPEX and fixed
-# OPEX, and reduces fuel consumption and emissions relative to BAU.
+# Process heat integration is a BAU-relative retrofit with incremental CAPEX
+# and fixed OPEX. Its benefits are lower fuel use and direct operational
+# emissions.
 PROCESS_HEAT_INTEGRATION_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=1.48,
     upper_bound=19.93,
@@ -425,7 +430,7 @@ PROCESS_HEAT_INTEGRATION_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribu
 PROCESS_HEAT_INTEGRATION_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
     value=0.0,
     unit="EUR/t",
-    description="Variable OPEX change excluding fuel and electricity for process heat integration retrofit.",
+    description="Assumed zero non-energy variable-OPEX change for process heat integration.",
 )
 
 PROCESS_HEAT_INTEGRATION_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -438,14 +443,14 @@ PROCESS_HEAT_INTEGRATION_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistributio
 PROCESS_HEAT_INTEGRATION_CEMENT_ELECTRICITY_REDUCTION = FixedParameter(
     value=0.0,
     unit="fraction",
-    description="Electricity-consumption reduction for process heat integration retrofit relative to BAU.",
+    description="Assumed zero electricity-consumption change relative to BAU.",
 )
 
 PROCESS_HEAT_INTEGRATION_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=0.01,
     upper_bound=0.12,
     unit="fraction",
-    description="Uniform distribution for process heat integration emissions reduction relative to BAU.",
+    description="Uniform distribution for the direct operational CO2 reduction relative to BAU.",
 )
 
 CEMENT_FIXED_PARAMETERS: Mapping[str, FixedParameter] = {

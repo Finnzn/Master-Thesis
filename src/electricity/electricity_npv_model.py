@@ -105,9 +105,9 @@ def calculate_result(
         electricity_price_eur_per_mwh * value_factor
     )
 
-    # Renewable value factors scale the common sales-price proxy to the captured
-    # price. Annual cash flow is revenue minus operating, fuel, and carbon-cost
-    # terms; CAPEX is handled separately in the NPV formula.
+    # Renewable value factors scale the common electricity sales price to the
+    # captured price. Annual cash flow is revenue minus operating, fuel, and
+    # carbon-cost terms; CAPEX is handled separately in the NPV formula.
     initial_capex_eur = capacity_kw * capex_eur_per_kw
     annual_revenue_eur = (
         annual_output_mwh * captured_electricity_price_eur_per_mwh

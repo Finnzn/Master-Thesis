@@ -147,7 +147,7 @@ needed for analysis or archive them outside the working repository.
 - PV and onshore wind sample triangular value factors of 0.80/0.90/1.00, while
   offshore wind samples 0.85/0.95/1.00. Deterministic runs use the analytical
   triangular means: 0.90, 0.933, and 0.90, respectively.
-  Captured electricity price is the model sales-price proxy multiplied by the
+  Captured electricity price is the common electricity sales price multiplied by the
   technology value factor; only electricity revenue, NPV, and LPM change. VF is
   included for these three technologies in the electricity sensitivity heatmap.
 - Under the current constant-price and constant-output models, captured
