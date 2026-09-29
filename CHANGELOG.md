@@ -9057,3 +9057,739 @@ technology.
 
 Regenerate the hydrogen financial outputs and notebooks so all derived
 artifacts reflect the new route-specific retail prices.
+
+## 2026-09-29 12:05 CEST — Normalize cement technology costs to 2024 CEPCI
+
+### User request
+
+Replace the cement-sector CAPEX, fixed-OPEX, and variable-OPEX assumptions with
+the supplied CEPCI-normalized 2024 values, then assess whether the technology
+results change substantially and flag important or unusual effects.
+
+### Files changed
+
+- `src/cement/cement_parameters.py` — replaced the applicable cement cost
+  distributions with the supplied 2024 values and documented the one
+  non-normalizable alternative-fuels allowance.
+- `CHANGELOG.md` — recorded the assumption change, verification, and result
+  implications.
+
+### What was implemented
+
+- Applied the supplied 2024 cost values to BAU, electrolysis,
+  electrification, clinker substitution, waste heat recovery, process heat
+  integration, efficiency improvement, and CCS.
+- Left zero-valued modeling assumptions at zero.
+- Retained the alternative-fuels CAPEX increase at 0-2 EUR/(t/year), because
+  its thesis-selected allowance has no monetary basis year and therefore
+  cannot be defensibly CEPCI-normalized. This exception is now explicit in the
+  module documentation and parameter description.
+- Preserved every distribution type and all non-cost assumptions; only the
+  supplied monetary values and their descriptions changed.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m py_compile` over the five cement
+    parameter, model, deterministic, Monte Carlo, and MACC modules.
+  - Focused assertions for all 19 changed or deliberately retained
+    distribution bounds and modes.
+  - Deterministic calculations for all nine cement technologies and the full
+    deterministic MACC.
+  - Paired 20,000-draw Monte Carlo calculations with seed 42 before and after
+    the parameter change.
+  - Temporary-directory end-to-end cement financial-summary CLI smoke test
+    with 1,000 draws, seed 42, NPV outputs, deterministic outputs, and both
+    ranking CSV and figure generation.
+  - `git diff --check`.
+- Result:
+  - Passed. The deterministic and Monte Carlo workflows remained finite and
+    produced the expected files.
+  - The 20,000-draw mean changes closely matched the deterministic changes.
+    CCS had the largest deterioration: deterministic NPV changed from 552.050
+    to 326.034 million EUR and LCOC from 98.285 to 119.458 EUR/t. Its NPV rank
+    moved from first to seventh, below BAU.
+  - Process heat integration's deterministic abatement cost changed sign from
+    -10.357 to +1.354 EUR/tCO2. Other notable deterministic MACC changes were
+    CCS from 71.239 to 87.044 EUR/tCO2 and electrolysis from 588.677 to 566.505
+    EUR/tCO2.
+
+### Reproducibility notes
+
+- These are scientific/model-assumption changes. All existing cement CSVs,
+  figures, rankings, sensitivity outputs, MACCs, and executed notebook outputs
+  predate the normalization and are now outdated.
+- No generated artifact or source notebook was overwritten. Regenerate the
+  cement outputs with a new named run, for example:
+  `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name cement_2024_cepci --sectors cement --macc-mode both --include-heatmaps --verify-notebooks`.
+
+### Next suggested step
+
+Review the cement result shifts, then apply the same basis-year normalization
+workflow to the next sector.
+
+## 2026-09-29 12:11 CEST — Generate pre/post-normalization cement NPV plots
+
+### User request
+
+Provide the old and new cement-sector Monte Carlo mean bar plots after the
+2024 CEPCI cost normalization.
+
+### Files changed
+
+- `figures/2026-09-29-Mean_NPV_Cement.png` — generated the post-normalization
+  Monte Carlo mean NPV plot without replacing the existing pre-normalization
+  figure.
+- `CHANGELOG.md` — recorded the plot generation and verification.
+
+### What was implemented
+
+- Preserved `figures/2026-09-21-Mean_NPV_Cement.png` as the old plot.
+- Generated the new plot through the existing cement financial-summary
+  workflow using 100,000 draws, random seed 42, and sampled retrofit BAU mode,
+  matching the old plot's settings and format.
+- Used `--no-data` so the requested figure was produced without overwriting or
+  duplicating the ignored raw and processed result files.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python src/cement/cement_financial_summary.py
+    --output-dir figures --sample-size 100000 --random-seed 42
+    --retrofit-bau-mode sampled --kind mean --metric NPV --no-data
+    --ranking-output none`
+  - Loaded the old processed output and reran the new 100,000-draw simulation
+    to compare technology-level mean NPV values.
+  - Visually inspected both PNG files and checked their dimensions.
+  - `git diff --check`.
+- Result:
+  - Passed. Both plots are 1,491 x 1,002 pixels and use the same visual format.
+  - The old plot ranks CCS first at 552.092 million EUR mean NPV. The new plot
+    ranks clinker substitution first at 404.174 million EUR, while CCS falls
+    below BAU to 325.996 million EUR.
+
+### Reproducibility notes
+
+- The pre-normalization figure remains at
+  `figures/2026-09-21-Mean_NPV_Cement.png`; its underlying ignored processed
+  output contains the original 100,000-draw results.
+- The post-normalization figure is
+  `figures/2026-09-29-Mean_NPV_Cement.png` and can be regenerated with the
+  command listed above.
+
+### Next suggested step
+
+Use the two plots side by side when documenting the effect of the CEPCI
+normalization on cement technology rankings.
+
+## 2026-09-29 12:20 CEST — Normalize selected electricity costs to 2024 CEPCI
+
+### User request
+
+Replace the supplied BECCS, hard-coal CCS, and CCGT CCS cost assumptions with
+their CEPCI-normalized 2024 values, then assess each electricity technology for
+substantial or unusual result changes.
+
+### Files changed
+
+- `src/electricity/electricity_parameters.py` — updated the nine supplied cost
+  distributions and documented how omitted triangular modes were normalized.
+- `CHANGELOG.md` — recorded the assumption change, verification, and result
+  implications.
+
+### What was implemented
+
+- Updated BECCS CAPEX to 3,255-5,976 EUR/kW, fixed OPEX to 170.4-322.9
+  EUR/kW/year, and variable OPEX to 1.53-3.26 EUR/MWh.
+- Updated the hard-coal CCS increments to 1,752-3,755 EUR/kW CAPEX,
+  42.0/60.0/90.0 EUR/kW/year fixed OPEX, and 5.32/7.61/11.40 EUR/MWh variable
+  OPEX.
+- Updated the CCGT CCS increments to 778-1,667 EUR/kW CAPEX,
+  21.16/30.20/45.35 EUR/kW/year fixed OPEX, and
+  0.677/0.965/1.450 EUR/MWh variable OPEX.
+- The supplied table included only minimum and maximum values for the four CCS
+  triangular OPEX distributions. Their modes retain the original relative
+  position within each normalized range, rounded consistently with the supplied
+  values; distribution types were not changed.
+- Preserved all technical assumptions and costs outside the supplied table.
+  In particular, the separate BECCS transport-and-storage input remains 22-29
+  EUR/MWh because no source year or normalized replacement was supplied.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m py_compile` over the electricity
+    parameter, model, deterministic, Monte Carlo, and financial-summary
+    modules.
+  - Focused assertions for all nine normalized distributions, including the
+    four retained triangular modes.
+  - Deterministic calculations for all ten electricity technologies.
+  - Paired 20,000-draw Monte Carlo calculations with seed 42 before and after
+    normalization.
+  - A 100,000-draw seed-42 comparison against the existing pre-normalization
+    processed output for mean NPV, mean LCOE, and positive-NPV probability.
+  - Temporary-directory end-to-end electricity financial-summary CLI smoke
+    test with 1,000 draws, deterministic and Monte Carlo NPV outputs, ranking
+    CSVs, and figures.
+  - `git diff --check`.
+- Result:
+  - Passed. Unchanged technologies reproduced their prior deterministic and
+    paired Monte Carlo results.
+  - BECCS deterministic NPV changed from +89.965 to -177.200 million EUR and
+    LCOE from 85.642 to 110.670 EUR/MWh. Across 100,000 draws, its positive-NPV
+    probability fell from 66.095% to 24.489%.
+  - Hard-coal CCS deterministic NPV changed from -934.287 to -1,208.654 million
+    EUR and LCOE from 177.060 to 201.432 EUR/MWh; positive-NPV probability
+    remained zero in the 100,000-draw comparison.
+  - CCGT CCS deterministic NPV changed from -489.633 to -592.403 million EUR
+    and LCOE from 137.563 to 146.692 EUR/MWh; positive-NPV probability fell
+    from 3.663% to 0.740%.
+
+### Reproducibility notes
+
+- These scientific/model-assumption changes make existing electricity CSVs,
+  figures, rankings, sensitivity outputs, and executed notebook outputs
+  outdated. No generated project artifact or source notebook was overwritten.
+- Regenerate the electricity financial and sensitivity outputs with a new named
+  run, for example:
+  `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name electricity_2024_cepci --sectors electricity --include-heatmaps`.
+- The CCS transport-and-storage charge is calculated as 18.7% of incremental
+  capture cost, so it increases endogenously when CCS CAPEX/OPEX increases.
+  BECCS instead retains its separate 22-29 EUR/MWh T&S input.
+
+### Next suggested step
+
+Review the BECCS profitability reversal and the unnormalized BECCS T&S input,
+then apply the normalization workflow to the next sector.
+
+## 2026-09-29 12:22 CEST — Generate pre/post-normalization electricity NPV plots
+
+### User request
+
+Provide the old and new electricity-sector Monte Carlo mean bar plots after the
+2024 CEPCI cost normalization.
+
+### Files changed
+
+- `figures/2026-09-29-Mean_NPV_Electricity.png` — generated the
+  post-normalization Monte Carlo mean NPV plot without replacing the existing
+  pre-normalization figure.
+- `CHANGELOG.md` — recorded the plot generation and verification.
+
+### What was implemented
+
+- Preserved `figures/2026-09-21-Mean_NPV_Electricity.png` as the old plot.
+- Generated the new plot through the existing electricity financial-summary
+  workflow using 100,000 draws, random seed 42, and sampled retrofit BAU mode,
+  matching the old plot's settings and format.
+- Used `--no-data` so the requested figure was produced without overwriting or
+  duplicating the ignored raw and processed result files.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python src/electricity/electricity_financial_summary.py
+    --output-dir figures --sample-size 100000 --random-seed 42
+    --retrofit-bau-mode sampled --kind mean --metric NPV --no-data
+    --ranking-output none`
+  - Loaded the old processed output and reran the new 100,000-draw simulation
+    to compare technology-level mean NPV values.
+  - Visually inspected both PNG files and checked their dimensions.
+  - `git diff --check`.
+- Result:
+  - Passed. Both plots are 1,493 x 1,088 pixels and use the same visual format.
+  - BECCS mean NPV changes from +89.499 to -177.766 million EUR, hard-coal CCS
+    from -934.782 to -1,209.336 million EUR, and CCGT CCS from -489.614 to
+    -592.342 million EUR. Every unaffected technology has an identical mean.
+
+### Reproducibility notes
+
+- The pre-normalization figure remains at
+  `figures/2026-09-21-Mean_NPV_Electricity.png`; its underlying ignored
+  processed output contains the original 100,000-draw results.
+- The post-normalization figure is
+  `figures/2026-09-29-Mean_NPV_Electricity.png` and can be regenerated with the
+  command listed above.
+
+### Next suggested step
+
+Use the two electricity plots side by side when documenting the ranking and
+profitability effects of the CEPCI normalization.
+
+## 2026-09-29 13:54 CEST — Normalize steel technology costs to 2024 CEPCI
+
+### User request
+
+Replace the steel-sector cost assumptions with the supplied CEPCI-normalized
+2024 bounds and base cases, retain explicitly unresolved values, then assess
+each technology for substantial or unusual result changes.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — updated the supplied steel CAPEX and OPEX
+  assumptions and labelled every retained unresolved monetary input.
+- `CHANGELOG.md` — recorded the assumption changes, verification, and result
+  implications.
+
+### What was implemented
+
+- Applied the supplied 2024 minimum/base/maximum values to BF-BOF, Scrap-EAF,
+  NG-DRI-EAF, H2-DRI-EAF, MOE, and AEL-EAF, preserving every existing
+  distribution type.
+- Applied the supplied 2024 incremental CAPEX and OPEX values to the
+  NG-DRI-EAF+CCS and BF-BOF+CCS retrofits.
+- Retained unresolved values exactly as requested: the BF-BOF variable-OPEX
+  lower bound; both Scrap-EAF variable-OPEX bounds; the H2-DRI-EAF
+  variable-OPEX upper bound; and the complete MOE and AEL-EAF fixed- and
+  variable-OPEX distributions.
+- Added parameter descriptions that distinguish fully normalized assumptions
+  from distributions that still combine 2024 base values with unresolved
+  bounds.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m py_compile` over the steel parameter,
+    model, deterministic, Monte Carlo, financial-summary, and MACC modules.
+  - Focused assertions for all 24 supplied changed or deliberately retained
+    cost specifications, including every base/mode.
+  - Deterministic calculations for all eight steel technologies and the full
+    deterministic steel MACC.
+  - Paired 20,000-draw Monte Carlo calculations with seed 42 before and after
+    normalization.
+  - A 100,000-draw seed-42 comparison against the existing pre-normalization
+    output for mean NPV, mean LCOS, and positive-NPV probability.
+  - Temporary-directory end-to-end steel financial-summary and simulated-MACC
+    CLI smoke tests with 1,000 draws, seed 42, and sampled retrofit BAU mode.
+  - `git diff --check`.
+- Result:
+  - Passed. The technology NPV ordering is unchanged.
+  - BF-BOF+CCS changes most: deterministic NPV falls from 402.726 to 116.589
+    million EUR, LCOS rises from 708.981 to 738.125 EUR/tCS, and its
+    100,000-draw positive-NPV probability falls from 86.130% to 63.725%.
+  - BF-BOF BAU NPV falls by 114.988 million EUR; MOE by 150.000 million EUR;
+    AEL-EAF by 70.000 million EUR; and Scrap-EAF by 27.430 million EUR.
+  - NG-DRI-EAF BAU improves by 46.448 million EUR deterministic NPV and
+    H2-DRI-EAF improves by 58.460 million EUR because their normalized base
+    operating costs decline. NG-DRI-EAF+CCS declines by only 8.920 million EUR
+    because its cheaper normalized BAU parent offsets most of the larger CCS
+    increment.
+  - The deterministic MACC ordering changes: NG-DRI-EAF+CCS falls from 102.448
+    to 95.537 EUR/tCO2 and becomes cheaper than BF-BOF+CCS, which rises from
+    83.726 to 98.238 EUR/tCO2.
+
+### Reproducibility notes
+
+- These scientific/model-assumption changes make existing steel CSVs, figures,
+  rankings, sensitivity outputs, MACCs, and executed notebook outputs outdated.
+  No generated project artifact or source notebook was overwritten.
+- Regenerate the steel financial, MACC, and sensitivity outputs with a new
+  named run, for example:
+  `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name steel_2024_cepci --sectors steel --macc-mode both --include-heatmaps`.
+- The sector is not yet on a completely uniform 2024 monetary basis because
+  the user-identified unresolved OPEX values remain embedded in several
+  distributions. CCS transport-and-storage charges also rise endogenously as
+  18.7% of the recalculated incremental capture cost.
+
+### Next suggested step
+
+Review the mixed-basis unresolved OPEX assumptions and the BF-BOF+CCS MACC
+reordering, then generate matched pre/post-normalization steel plots.
+
+## 2026-09-29 13:56 CEST — Confirm steel base cases and simplify cost labels
+
+### User request
+
+Confirm that no steel base value was lost and remove the special labeling for
+values that could not be normalized, treating those supplied values as valid.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — simplified the cost-assumption
+  documentation while preserving every numerical input.
+- `CHANGELOG.md` — recorded the base-case audit and documentation-only change.
+
+### What was implemented
+
+- Removed the special labels from the steel module documentation and seven
+  parameter descriptions. Values that did not receive a numerical update are
+  now presented simply as part of the supplied distributions.
+- Confirmed all 19 explicitly specified base cases are represented exactly:
+  BF-BOF 581/42.4/328; Scrap-EAF 242/17.2/466; NG-DRI-EAF
+  647/31.9/305.9; NG-DRI-EAF+CCS 225.7/13.3/2.2; H2-DRI-EAF
+  544/29.4/306.9; MOE 1,129/59/211; and AEL-EAF CAPEX 490.
+- Preserved range-only modeling for AEL-EAF fixed and variable OPEX and all
+  BF-BOF+CCS cost increments because no base was specified for those inputs.
+- Made no numerical or scientific-model change.
+
+### Verification
+
+- Commands run:
+  - Focused assertions against all 19 supplied base values in the active
+    technology and retrofit registries.
+  - Search confirming the removed label no longer appears anywhere under
+    `src/steel`.
+  - `PYTHONPATH=src .venv/bin/python -m py_compile
+    src/steel/steel_parameters.py`.
+  - Deterministic NPV regression assertions for all eight steel technologies.
+  - `git diff --check`.
+- Result:
+  - Passed. Every specified base is present, range-only inputs remain
+    range-only, and all deterministic results are byte-for-byte numerically
+    unchanged from the preceding steel normalization.
+
+### Reproducibility notes
+
+- This is a documentation and assumption-presentation change only. No result,
+  figure, CSV, ranking, MACC, or notebook output needs regeneration because of
+  this follow-up itself.
+
+### Next suggested step
+
+Generate the matched pre/post-normalization steel Monte Carlo mean plots.
+
+## 2026-09-29 14:05 CEST — Complete steel cost updates and generate NPV plots
+
+### User request
+
+Apply the remaining corrected 2024 steel OPEX values and provide matched old
+and new Monte Carlo mean NPV bar plots.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — applied the seven remaining corrected OPEX
+  assumptions and resolved two invalid base/range combinations.
+- `figures/2026-09-29-Mean_NPV_Steel.png` — generated the completed
+  post-normalization Monte Carlo mean NPV plot without replacing the existing
+  pre-normalization figure.
+- `CHANGELOG.md` — recorded the parameter completion, plot generation, and
+  verification.
+
+### What was implemented
+
+- Set BF-BOF variable OPEX to a 328/328/362.3 EUR/tCS triangular distribution.
+  The previously supplied 328 base becomes the minimum and mode because the
+  separately normalized 362.3 value crosses above it.
+- Set Scrap-EAF variable OPEX to a 602.5-802.4 EUR/tCS uniform distribution.
+  The prior 466 base cannot be a valid triangular mode outside that normalized
+  range, so the confirmed resolution removes the invalid mode.
+- Updated H2-DRI-EAF variable OPEX to 306.9/306.9/507.2 EUR/tCS; MOE fixed OPEX
+  to 40.3/79.2/158.3 EUR/tCS and variable OPEX to
+  142.3/283.1/566.2 EUR/tCS; and AEL-EAF fixed and variable OPEX to uniform
+  57.7-118.1 and 330.1-335.5 EUR/tCS ranges.
+- Preserved `figures/2026-09-21-Mean_NPV_Steel.png` as the old plot and
+  generated the new plot with 100,000 draws, random seed 42, and sampled
+  retrofit BAU mode.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m py_compile` over the steel parameter,
+    model, deterministic, Monte Carlo, and financial-summary modules.
+  - Focused type and value assertions for all seven corrected cost inputs.
+  - `PYTHONPATH=src .venv/bin/python src/steel/steel_financial_summary.py
+    --output-dir figures --sample-size 100000 --random-seed 42
+    --retrofit-bau-mode sampled --kind mean --metric NPV --no-data
+    --ranking-output none`.
+  - Compared all new 100,000-draw mean NPVs with the original processed output;
+    recalculated all deterministic results and the deterministic steel MACC.
+  - Visually inspected both PNG files and checked their dimensions.
+  - `git diff --check`.
+- Result:
+  - Passed. Both plots are 1,494 x 918 pixels and use the same format.
+  - Mean NPV changes from original to fully normalized values are: NG-DRI-EAF
+    544.180 to 590.563 million EUR; NG-DRI-EAF+CCS 104.214 to 95.228 million
+    EUR; BF-BOF 447.004 to 29.923 million EUR; BF-BOF+CCS 404.099 to -184.117
+    million EUR; Scrap-EAF 991.892 to -980.338 million EUR; AEL-EAF -709.063
+    to -1,831.341 million EUR; H2-DRI-EAF -1,844.644 to -2,208.871 million EUR;
+    and MOE -1,341.307 to -2,548.844 million EUR.
+
+### Reproducibility notes
+
+- The old figure remains at `figures/2026-09-21-Mean_NPV_Steel.png` with its
+  original ignored processed output. The new figure is
+  `figures/2026-09-29-Mean_NPV_Steel.png`.
+- The post-normalization plot can be regenerated with the financial-summary
+  command listed above. No raw or processed project data was overwritten.
+
+### Next suggested step
+
+Use the matched plots to review the major Scrap-EAF and BF-BOF+CCS ranking
+changes caused by the completed OPEX normalization.
+
+## 2026-09-29 14:17 CEST — Normalize ammonia technology costs to 2024 values
+
+### User request
+
+Apply the supplied 2024 CAPEX, fixed-OPEX, and variable-OPEX values to the
+ammonia sector, with NG-SMR CCS and coal CCS treated as retrofit add-ons, then
+review whether the sector results change substantially and flag important or
+strange outcomes.
+
+### Files changed
+
+- `src/ammonia/ammonia_parameters.py` — replaced the ammonia technology and
+  CCS retrofit cost assumptions with the supplied 2024 values.
+- `CHANGELOG.md` — recorded the implementation, verification, and result
+  comparison.
+
+### What was implemented
+
+- Updated all seven absolute ammonia routes: NG-SMR, coal gasification,
+  AEL/PEM electrolysis, biomass gasification, methane pyrolysis, SOEC, and
+  direct aqueous NRR.
+- Preserved every supplied base as the distribution mode. NG-SMR CAPEX remains
+  uniform because the source table specifies only a range; fixed NG-SMR
+  variable OPEX remains a point value.
+- Applied the NG-SMR CCS and coal CCS values as incremental CAPEX and fixed
+  OPEX on top of their respective parent technologies. Their supplied zero
+  variable-OPEX increments remain zero.
+- Left all energy consumption, emissions, market-price, capture-rate, and
+  transport/storage assumptions unchanged.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m py_compile
+    src/ammonia/ammonia_parameters.py`.
+  - Focused assertions against every supplied absolute and retrofit cost
+    value, including all minima, bases/modes, maxima, and point values.
+  - Recalculated deterministic results and a matched 20,000-draw Monte Carlo
+    comparison with random seed 42 and sampled retrofit parents.
+  - Recalculated the deterministic ammonia MACC.
+  - Smoke-tested the complete financial-summary and simulated-MACC CLIs with
+    2,000 draws into an isolated temporary directory.
+  - `git diff --check`.
+- Result:
+  - Passed. All supplied values are represented exactly, retrofit composition
+    remains correct, and all summary/MACC artifacts generate successfully.
+
+### Result and interpretation
+
+- Mean Monte Carlo NPV falls materially for most routes. The largest declines
+  are coal+CCS (-1,794.1 million EUR), biomass (-1,749.7 million EUR), coal
+  without CCS (-1,559.8 million EUR), and SOEC (-1,076.8 million EUR).
+- Biomass changes from a positive deterministic NPV to -742.7 million EUR;
+  coal+CCS changes from +976.0 to -818.9 million EUR. At 20,000 draws their
+  positive-NPV probabilities are 26.5% and 10.1%, respectively.
+- NG-SMR and NG-SMR+CCS remain strongly profitable, with mean NPVs of 2,323.0
+  and 2,860.8 million EUR. Methane pyrolysis remains positive at 771.0 million
+  EUR, though with only a 69.2% positive-NPV probability.
+- Direct aqueous NRR improves slightly (+144.8 million EUR mean NPV) because
+  its supplied 2024 cost values are lower than the previous inputs, but it
+  remains by far the least economic route at about -20,483.2 million EUR mean
+  NPV. Its electricity demand, not the modest cost normalization, dominates.
+- The deterministic abatement ranking changes: methane pyrolysis moves ahead
+  of biomass. Updated abatement costs are approximately 47 EUR/tCO2 for
+  NG-SMR+CCS, 164 for methane pyrolysis, 246 for biomass, 288 for coal+CCS,
+  506 for AEL/PEM, 545 for SOEC, and 1,315 for direct NRR.
+
+### Reproducibility notes
+
+- No tracked result data or figures were overwritten. Verification artifacts
+  were written only to a temporary directory.
+- Recreate current ammonia outputs with
+  `PYTHONPATH=src .venv/bin/python -m ammonia.ammonia_financial_summary
+  --sample-size 100000 --random-seed 42 --retrofit-bau-mode sampled` and
+  `PYTHONPATH=src .venv/bin/python -m ammonia.ammonia_macc --simulated
+  --sample-size 100000 --random-seed 42 --retrofit-bau-mode sampled`.
+
+### Next suggested step
+
+Generate matched pre/post-normalization ammonia Monte Carlo mean NPV plots.
+
+## 2026-09-29 14:20 CEST — Audit ammonia inputs and generate normalized NPV plot
+
+### User request
+
+Check whether anything was missing from the ammonia normalization and provide
+the old and new Monte Carlo mean NPV bar plots.
+
+### Files changed
+
+- `figures/2026-09-29-Mean_NPV_Ammonia.png` — generated the normalized-cost
+  Monte Carlo mean NPV plot while preserving the old plot.
+- `CHANGELOG.md` — recorded the completeness audit, plot generation, and
+  matched numerical comparison.
+
+### What was implemented
+
+- Audited every supplied CAPEX, fixed-OPEX, variable-OPEX, range, base/mode,
+  and CCS add-on against the active ammonia registries; nothing was missing.
+- Confirmed that NG-SMR CAPEX correctly remains uniform because no base was
+  supplied and that all stated bases, including the SOEC provisional base and
+  direct-NRR purge bases, are represented as distribution modes.
+- Preserved `figures/2026-09-21-Mean_NPV_Ammonia.png` as the pre-normalization
+  plot and generated the new plot with 100,000 draws, random seed 42, and
+  sampled retrofit parents.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python -m ammonia.ammonia_financial_summary
+    --output-dir figures --sample-size 100000 --random-seed 42
+    --retrofit-bau-mode sampled --kind mean --metric NPV --no-data
+    --ranking-output none`.
+  - Compared new 100,000-draw mean NPVs with the preserved original processed
+    output.
+  - Visually inspected both PNG files and checked their dimensions.
+- Result:
+  - Passed. Both figures are 1,492 x 1,002 pixels and use matching axes,
+    labels, percentile whiskers, and mean/median conventions.
+  - Mean NPV changes in million EUR are: NG-SMR 2,870.329 to 2,323.580;
+    NG-SMR+CCS 3,533.614 to 2,861.445; coal -304.729 to -1,865.088;
+    coal+CCS 976.715 to -817.872; AEL/PEM -4,692.470 to -5,544.238;
+    biomass 1,003.477 to -745.992; methane pyrolysis 1,008.811 to 774.207;
+    SOEC -5,193.081 to -6,268.790; and direct NRR -20,637.888 to
+    -20,493.108.
+
+### Reproducibility notes
+
+- The old figure and processed output remain dated 2026-09-21. The normalized
+  figure is dated 2026-09-29; no raw or processed project data was overwritten.
+
+### Next suggested step
+
+Continue the 2024 cost normalization with the next sector.
+
+## 2026-09-29 14:31 CEST — Normalize hydrogen technology costs to 2024 values
+
+### User request
+
+Apply the supplied 2024 CAPEX, fixed-OPEX, and variable-OPEX values to the
+hydrogen sector, retaining unchanged TCD costs and treating biomethane SMR and
+NG-SMR+CCS as inherited/add-on technologies, then analyze material changes.
+
+### Files changed
+
+- `src/hydrogen/hydrogen_parameters.py` — replaced the relevant absolute and
+  retrofit hydrogen cost assumptions with the supplied 2024 values.
+- `CHANGELOG.md` — recorded the implementation, verification, and result
+  comparison.
+
+### What was implemented
+
+- Updated NG-SMR, AEL, PEM, SOEC, and biomass-gasification CAPEX, fixed OPEX,
+  and variable OPEX, preserving every supplied base as the triangular mode.
+- Left all methane-pyrolysis TCD cost values unchanged as specified.
+- Kept biomethane SMR's cost increments at zero, so it continues to inherit the
+  normalized NG-SMR capital and operating costs while changing feedstock and
+  emissions assumptions.
+- Updated NG-SMR+CCS incremental CAPEX and fixed OPEX while retaining its zero
+  variable-OPEX increment; these costs continue to be added to normalized
+  NG-SMR parent draws.
+- Left energy consumption, emissions, capture, market-price, output, and
+  lifetime assumptions unchanged.
+
+### Verification
+
+- Commands run:
+  - Focused assertions against all supplied absolute costs, unchanged TCD
+    costs, biomethane zero increments, and NG-SMR+CCS increments.
+  - `PYTHONPATH=src .venv/bin/python -m py_compile` over all hydrogen parameter,
+    model, deterministic, Monte Carlo, financial-summary, and MACC modules.
+  - Recalculated deterministic results and a matched 20,000-draw Monte Carlo
+    comparison with random seed 42 and sampled retrofit parents.
+  - Recalculated the deterministic hydrogen MACC.
+  - Smoke-tested the complete financial-summary and simulated-MACC CLIs with
+    2,000 draws into an isolated temporary directory.
+  - `git diff --check`.
+- Result:
+  - Passed. Every supplied value is represented exactly, parent/add-on
+    composition remains correct, and all summary and MACC outputs generate.
+
+### Result and interpretation
+
+- Mean Monte Carlo NPV changes in million EUR are: NG-SMR 33.7 to -101.7;
+  AEL 437.6 to 43.0; PEM 122.7 to -407.6; SOEC 1,787.5 to 1,805.3; TCD
+  unchanged at -1,661.0; biomass 530.7 to 530.9; biomethane SMR -1,457.8 to
+  -1,593.2; and NG-SMR+CCS 85.1 to -158.8.
+- NG-SMR, PEM, and NG-SMR+CCS cross from positive to negative deterministic
+  NPV. AEL remains barely positive, with only a 51.0% positive-NPV probability;
+  PEM falls to 39.9% and NG-SMR+CCS to 45.6%.
+- SOEC improves modestly because its normalized CAPEX and fixed OPEX are lower,
+  and biomass is effectively unchanged. TCD is exactly unchanged.
+- Biomethane SMR loses the same approximately 135.4 million EUR mean NPV as
+  NG-SMR because it inherits the same normalized cost increase. Its abatement
+  cost relative to NG-SMR remains unchanged because the shared parent-cost
+  increase cancels in that comparison.
+- The deterministic MACC changes partly because NG-SMR, the reference route,
+  becomes more expensive. Biomass therefore falls from about 28 to 14 EUR/tCO2
+  even though its own costs barely change. Updated values are approximately
+  14 EUR/tCO2 for biomass, 87 for NG-SMR+CCS, 235 for biomethane SMR, 243 for
+  TCD, 404 for SOEC, 587 for AEL, and 634 for PEM.
+
+### Reproducibility notes
+
+- No tracked data or figure outputs were overwritten. Verification artifacts
+  were written only to a temporary directory.
+- Recreate current hydrogen outputs with
+  `PYTHONPATH=src .venv/bin/python -m hydrogen.hydrogen_financial_summary
+  --sample-size 100000 --random-seed 42 --retrofit-bau-mode sampled` and
+  `PYTHONPATH=src .venv/bin/python -m hydrogen.hydrogen_macc --simulated
+  --sample-size 100000 --random-seed 42 --retrofit-bau-mode sampled`.
+
+### Next suggested step
+
+Generate matched pre/post-normalization hydrogen Monte Carlo mean NPV plots.
+
+## 2026-09-29 14:36 CEST — Generate controlled hydrogen NPV comparison plots
+
+### User request
+
+Provide the old and new hydrogen Monte Carlo mean NPV bar plots after applying
+the 2024 cost normalization.
+
+### Files changed
+
+- `figures/2026-09-29-Mean_NPV_Hydrogen_Pre_Normalization.png` — generated a
+  controlled old-cost plot using the current model and pre-normalization costs.
+- `figures/2026-09-29-Mean_NPV_Hydrogen.png` — generated the normalized-cost
+  hydrogen Monte Carlo mean NPV plot.
+- `CHANGELOG.md` — documented the plots and the historical-output
+  comparability issue discovered during visual verification.
+
+### What was implemented
+
+- Generated both controlled plots with 100,000 draws, random seed 42, sampled
+  retrofit parent values, and otherwise identical current-model assumptions.
+- Generated the old-cost plot through an isolated in-process parameter override;
+  the normalized source assumptions remained unchanged on disk.
+- Did not use the preserved 2026-09-21 plot as the headline old-cost comparison.
+  Its non-electrolysis results were generated under an earlier common hydrogen
+  price of 7,500 EUR/t, while the current model assigns 2,800 EUR/t to
+  non-electrolysis routes. Using it would conflate revenue-model and CEPCI cost
+  changes.
+
+### Verification
+
+- Commands run:
+  - Generated the normalized figure through
+    `hydrogen.hydrogen_financial_summary` with 100,000 draws and no data export.
+  - Generated the controlled pre-normalization figure from the same workflow
+    after replacing only the targeted costs in memory with their original
+    values.
+  - Recomputed both sets of 100,000-draw mean NPVs and visually inspected both
+    figures.
+  - Checked PNG dimensions and ran `git diff --check`.
+- Result:
+  - Passed. Both controlled figures are 1,491 x 918 pixels and contain matching
+    labels, percentile whiskers, mean bars, and median markers.
+  - Controlled old-to-new mean NPVs in million EUR are: NG-SMR 35.296 to
+    -100.038; AEL 436.357 to 41.366; PEM 122.610 to -407.707; SOEC 1,787.055
+    to 1,804.946; TCD unchanged at -1,660.126; biomass 533.560 to 533.672;
+    biomethane SMR -1,457.795 to -1,593.130; and NG-SMR+CCS 86.920 to
+    -156.985.
+
+### Reproducibility notes
+
+- The two 2026-09-29 plots are the valid cost-normalization-only comparison.
+  The 2026-09-21 historical plot and processed output remain preserved but
+  should not be used for that attribution because of the hydrogen-price change.
+- No raw or processed project data was overwritten.
+
+### Next suggested step
+
+Use the controlled plots in the final cross-sector review and clearly label the
+pre-normalization hydrogen scenario to prevent confusion with the historical
+2026-09-21 output.

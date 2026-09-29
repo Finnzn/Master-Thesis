@@ -3,6 +3,10 @@
 This is currently a small placeholder-style parameter module for the cement
 sector. It follows the same structure as the electricity assumptions so future
 cement calculations can import fixed sector parameters from one traceable place.
+
+Technology CAPEX and OPEX assumptions are expressed in 2024 EUR after CEPCI
+normalization where a monetary basis year exists. The alternative-fuels CAPEX
+allowance is explicitly retained on its original, unspecified monetary basis.
 """
 
 from __future__ import annotations
@@ -37,26 +41,26 @@ ANNUAL_CEMENT_OUTPUT_T = FixedParameter(
 # BAU cement technology parameters. Fuel consumption, electricity consumption,
 # and emissions are absolute intensities, not percentage reductions.
 BAU_CEMENT_CAPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=150.0,
-    upper_bound=170.0,
+    lower_bound=208.30,
+    upper_bound=225.50,
     unit="EUR/(t/year)",
-    description="Uniform distribution for BAU cement CAPEX, not annualized.",
+    description="Uniform distribution for BAU cement CAPEX in 2024 EUR, not annualized.",
 )
 
 BAU_CEMENT_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=13.0,
-    mode=15.0,
-    maximum=15.0,
+    minimum=18.05,
+    mode=19.90,
+    maximum=19.90,
     unit="EUR/t",
-    description="Triangular distribution for BAU cement fixed OPEX.",
+    description="Triangular distribution for BAU cement fixed OPEX in 2024 EUR.",
 )
 
 BAU_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=4.5,
-    mode=5.5,
-    maximum=5.5,
+    minimum=6.25,
+    mode=7.30,
+    maximum=7.30,
     unit="EUR/t",
-    description="Triangular distribution for BAU cement variable OPEX excluding fuel and electricity.",
+    description="Triangular distribution for BAU cement variable OPEX in 2024 EUR excluding fuel and electricity.",
 )
 
 BAU_CEMENT_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -88,27 +92,27 @@ BAU_CEMENT_EMISSIONS_DISTRIBUTION = TriangularDistribution(
 # at zero, while electricity consumption is an absolute intensity, not a
 # percentage reduction.
 ELECTRIFICATION_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=140.0,
-    mode=204.0,
-    maximum=300.0,
+    minimum=185.71,
+    mode=270.60,
+    maximum=397.94,
     unit="EUR/(t/year)",
-    description="Triangular distribution for electrification cement CAPEX, not annualized.",
+    description="Triangular distribution for electrification cement CAPEX in 2024 EUR, not annualized.",
 )
 
 ELECTRIFICATION_CEMENT_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=13.0,
-    mode=19.0,
-    maximum=28.0,
+    minimum=17.24,
+    mode=25.20,
+    maximum=37.14,
     unit="EUR/t",
-    description="Triangular distribution for electrification cement fixed OPEX.",
+    description="Triangular distribution for electrification cement fixed OPEX in 2024 EUR.",
 )
 
 ELECTRIFICATION_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=5.1,
-    mode=7.3,
-    maximum=11.0,
+    minimum=6.76,
+    mode=9.68,
+    maximum=14.59,
     unit="EUR/t",
-    description="Triangular distribution for electrification cement variable OPEX excluding fuel and electricity.",
+    description="Triangular distribution for electrification cement variable OPEX in 2024 EUR excluding fuel and electricity.",
 )
 
 ELECTRIFICATION_CEMENT_FUEL_CONSUMPTION = FixedParameter(
@@ -135,27 +139,27 @@ ELECTRIFICATION_CEMENT_EMISSIONS_DISTRIBUTION = UniformDistribution(
 # Electrolysis is an alternative cement technology. Fuel consumption is fixed at
 # zero, while electricity consumption and emissions are absolute intensities.
 ELECTROLYSIS_CEMENT_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=255.0,
-    mode=362.0,
-    maximum=545.0,
+    minimum=255.67,
+    mode=362.95,
+    maximum=546.43,
     unit="EUR/(t/year)",
-    description="Triangular distribution for electrolysis cement CAPEX, not annualized.",
+    description="Triangular distribution for electrolysis cement CAPEX in 2024 EUR, not annualized.",
 )
 
 ELECTROLYSIS_CEMENT_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=24.0,
-    mode=34.0,
-    maximum=51.0,
+    minimum=24.06,
+    mode=34.09,
+    maximum=51.13,
     unit="EUR/t",
-    description="Triangular distribution for electrolysis cement fixed OPEX.",
+    description="Triangular distribution for electrolysis cement fixed OPEX in 2024 EUR.",
 )
 
 ELECTROLYSIS_CEMENT_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=13.0,
-    mode=19.0,
-    maximum=28.0,
+    minimum=13.03,
+    mode=19.05,
+    maximum=28.07,
     unit="EUR/t",
-    description="Triangular distribution for electrolysis cement variable OPEX excluding fuel and electricity.",
+    description="Triangular distribution for electrolysis cement variable OPEX in 2024 EUR excluding fuel and electricity.",
 )
 
 ELECTROLYSIS_CEMENT_FUEL_CONSUMPTION = FixedParameter(
@@ -195,10 +199,10 @@ CLINKER_SUBSTITUTION_CEMENT_FIXED_OPEX = FixedParameter(
 )
 
 CLINKER_SUBSTITUTION_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=3.00,
-    upper_bound=6.56,
+    lower_bound=2.94,
+    upper_bound=6.43,
     unit="EUR/t",
-    description="Uniform distribution for clinker substitution variable OPEX increase.",
+    description="Uniform distribution for clinker substitution variable OPEX increase in 2024 EUR.",
 )
 
 CLINKER_SUBSTITUTION_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -229,7 +233,7 @@ ALTERNATIVE_FUELS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
     upper_bound=2.0,
     unit="EUR/(t/year)",
-    description="Uniform distribution for alternative fuels retrofit CAPEX increase.",
+    description="Uniform distribution for alternative fuels retrofit CAPEX increase; retained without CEPCI normalization because the thesis-selected allowance has no monetary basis year.",
 )
 
 ALTERNATIVE_FUELS_CEMENT_FIXED_OPEX_CHANGE = FixedParameter(
@@ -275,9 +279,9 @@ ALTERNATIVE_FUELS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
 # increase relative to BAU, while fuel, electricity, and emissions are reductions.
 EFFICIENCY_IMPROVEMENT_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
-    upper_bound=28.0,
+    upper_bound=27.45,
     unit="EUR/(t/year)",
-    description="Uniform distribution for efficiency improvement retrofit CAPEX increase.",
+    description="Uniform distribution for efficiency improvement retrofit CAPEX increase in 2024 EUR.",
 )
 
 EFFICIENCY_IMPROVEMENT_CEMENT_FIXED_OPEX_CHANGE = FixedParameter(
@@ -317,17 +321,17 @@ EFFICIENCY_IMPROVEMENT_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribu
 # Waste heat recovery is a retrofit measure. It increases CAPEX and fixed OPEX,
 # and reduces electricity consumption relative to BAU.
 WASTE_HEAT_RECOVERY_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=2.0,
-    upper_bound=18.0,
+    lower_bound=2.78,
+    upper_bound=25.00,
     unit="EUR/(t/year)",
-    description="Uniform distribution for waste heat recovery retrofit CAPEX increase.",
+    description="Uniform distribution for waste heat recovery retrofit CAPEX increase in 2024 EUR.",
 )
 
 WASTE_HEAT_RECOVERY_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=0.1,
-    upper_bound=0.5,
+    lower_bound=0.14,
+    upper_bound=0.69,
     unit="EUR/t",
-    description="Uniform distribution for waste heat recovery fixed OPEX increase.",
+    description="Uniform distribution for waste heat recovery fixed OPEX increase in 2024 EUR.",
 )
 
 WASTE_HEAT_RECOVERY_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(
@@ -360,24 +364,24 @@ WASTE_HEAT_RECOVERY_CEMENT_EMISSIONS_REDUCTION = FixedParameter(
 # while negative reduction fractions represent consumption increases in later
 # retrofit calculations.
 CCS_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=55.0,
-    upper_bound=185.0,
+    lower_bound=76.38,
+    upper_bound=256.90,
     unit="EUR/(t/year)",
-    description="Uniform distribution for CCS retrofit CAPEX increase.",
+    description="Uniform distribution for CCS retrofit CAPEX increase in 2024 EUR.",
 )
 
 CCS_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=4.0,
-    upper_bound=10.0,
+    lower_bound=5.55,
+    upper_bound=13.89,
     unit="EUR/t",
-    description="Uniform distribution for CCS fixed OPEX increase.",
+    description="Uniform distribution for CCS fixed OPEX increase in 2024 EUR.",
 )
 
 CCS_CEMENT_VARIABLE_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
-    upper_bound=3.0,
+    upper_bound=4.17,
     unit="EUR/t",
-    description="Uniform distribution for CCS variable OPEX increase excluding fuel and electricity.",
+    description="Uniform distribution for CCS variable OPEX increase in 2024 EUR excluding fuel and electricity.",
 )
 
 CCS_CEMENT_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -405,17 +409,17 @@ CCS_CEMENT_EMISSIONS_REDUCTION_DISTRIBUTION = UniformDistribution(
 # Process heat integration is a retrofit measure. It increases CAPEX and fixed
 # OPEX, and reduces fuel consumption and emissions relative to BAU.
 PROCESS_HEAT_INTEGRATION_CEMENT_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=1.0,
-    upper_bound=13.0,
+    lower_bound=1.48,
+    upper_bound=19.93,
     unit="EUR/(t/year)",
-    description="Uniform distribution for process heat integration retrofit CAPEX increase.",
+    description="Uniform distribution for process heat integration retrofit CAPEX increase in 2024 EUR.",
 )
 
 PROCESS_HEAT_INTEGRATION_CEMENT_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
     lower_bound=0.0,
-    upper_bound=0.5,
+    upper_bound=0.77,
     unit="EUR/t",
-    description="Uniform distribution for process heat integration fixed OPEX increase.",
+    description="Uniform distribution for process heat integration fixed OPEX increase in 2024 EUR.",
 )
 
 PROCESS_HEAT_INTEGRATION_CEMENT_VARIABLE_OPEX_CHANGE = FixedParameter(

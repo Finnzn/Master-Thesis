@@ -8,6 +8,11 @@ stays separate from the numerical assumptions.
 The technologies are compared on a normalized annual output of 1,000,000 MWh.
 Full-load hours then determine how much installed capacity each technology needs
 to produce that same annual output.
+
+The BECCS and CCS retrofit cost assumptions identified below are expressed in
+2024 EUR after CEPCI normalization. Where the supplied normalized table gives
+only a triangular distribution's bounds, its mode retains the same relative
+position within the normalized range as in the original distribution.
 """
 
 from __future__ import annotations
@@ -120,26 +125,26 @@ HARD_COAL_LIFETIME_YEARS = FixedParameter(
 # while negative reduction fractions represent consumption increases in the
 # later retrofit calculations.
 HARD_COAL_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=1_321.0,
-    upper_bound=2_831.0,
+    lower_bound=1_752.0,
+    upper_bound=3_755.0,
     unit="EUR/kW",
-    description="Uniform distribution for hard coal CCS retrofit CAPEX increase, not annualized.",
+    description="Uniform distribution for hard coal CCS retrofit CAPEX increase in 2024 EUR, not annualized.",
 )
 
 HARD_COAL_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=31.6,
-    mode=45.2,
-    maximum=67.8,
+    minimum=42.0,
+    mode=60.0,
+    maximum=90.0,
     unit="EUR/kW/year",
-    description="Triangular distribution for hard coal CCS retrofit fixed OPEX increase.",
+    description="Triangular distribution for hard coal CCS retrofit fixed OPEX increase in 2024 EUR.",
 )
 
 HARD_COAL_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=4.0,
-    mode=5.73,
-    maximum=8.6,
+    minimum=5.32,
+    mode=7.61,
+    maximum=11.40,
     unit="EUR/MWh_e",
-    description="Triangular distribution for hard coal CCS retrofit variable OPEX increase excluding fuel and electricity.",
+    description="Triangular distribution for hard coal CCS retrofit variable OPEX increase in 2024 EUR excluding fuel and electricity.",
 )
 
 HARD_COAL_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -215,26 +220,26 @@ CCGT_LIFETIME_YEARS = FixedParameter(
 # CCS: cost changes are added, fuel increases are negative reductions, and the
 # emissions reduction fraction is applied multiplicatively to CCGT emissions.
 CCGT_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=587.0,
-    upper_bound=1_257.0,
+    lower_bound=778.0,
+    upper_bound=1_667.0,
     unit="EUR/kW",
-    description="Uniform distribution for CCGT CCS retrofit CAPEX increase, not annualized.",
+    description="Uniform distribution for CCGT CCS retrofit CAPEX increase in 2024 EUR, not annualized.",
 )
 
 CCGT_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=16.0,
-    mode=22.8,
-    maximum=34.2,
+    minimum=21.16,
+    mode=30.20,
+    maximum=45.35,
     unit="EUR/kW/year",
-    description="Triangular distribution for CCGT CCS retrofit fixed OPEX increase.",
+    description="Triangular distribution for CCGT CCS retrofit fixed OPEX increase in 2024 EUR.",
 )
 
 CCGT_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=0.51,
-    mode=0.73,
-    maximum=1.10,
+    minimum=0.677,
+    mode=0.965,
+    maximum=1.450,
     unit="EUR/MWh_e",
-    description="Triangular distribution for CCGT CCS retrofit variable OPEX increase excluding fuel and electricity.",
+    description="Triangular distribution for CCGT CCS retrofit variable OPEX increase in 2024 EUR excluding fuel and electricity.",
 )
 
 CCGT_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
@@ -507,24 +512,24 @@ BIOGAS_LIFETIME_YEARS = FixedParameter(
 # use uniform distributions. Negative direct emissions represent net carbon
 # removal and therefore produce a carbon credit in the shared cash-flow formula.
 BECCS_CAPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=2_454.0,
-    upper_bound=4_239.0,
+    lower_bound=3_255.0,
+    upper_bound=5_976.0,
     unit="EUR/kW",
-    description="Uniform distribution for BECCS CAPEX, not annualized.",
+    description="Uniform distribution for BECCS CAPEX in 2024 EUR, not annualized.",
 )
 
 BECCS_FIXED_OPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=128.4,
-    upper_bound=229.1,
+    lower_bound=170.4,
+    upper_bound=322.9,
     unit="EUR/kW/year",
-    description="Uniform distribution for BECCS fixed OPEX.",
+    description="Uniform distribution for BECCS fixed OPEX in 2024 EUR.",
 )
 
 BECCS_VARIABLE_OPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=1.16,
-    upper_bound=2.31,
+    lower_bound=1.53,
+    upper_bound=3.26,
     unit="EUR/MWh_e",
-    description="Uniform distribution for BECCS variable OPEX excluding fuel and electricity.",
+    description="Uniform distribution for BECCS variable OPEX in 2024 EUR excluding fuel and electricity.",
 )
 
 BECCS_TRANSPORT_STORAGE_COST_DISTRIBUTION = UniformDistribution(

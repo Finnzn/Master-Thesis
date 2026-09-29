@@ -3,6 +3,9 @@
 This file is the steel assumptions catalogue. It records technology input
 values and uncertainty ranges without performing financial calculations, in
 the same way as the electricity and cement parameter modules.
+
+Technology cost assumptions use the supplied updated 2024 values. Values that
+did not require a numerical update remain part of the distributions as supplied.
 """
 
 from __future__ import annotations
@@ -41,27 +44,27 @@ ANNUAL_STEEL_OUTPUT_TCS = FixedParameter(
 # kgCO2/tCS are stored as 1.770/1.820/1.870 tCO2/tCS so they are compatible with
 # the project's carbon-price unit of EUR/tCO2.
 BF_BOF_BAU_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=425.0,
-    mode=592.0,
-    maximum=770.0,
+    minimum=570.0,
+    mode=581.0,
+    maximum=1_033.0,
     unit="EUR/(tCS/year)",
-    description="Triangular distribution for greenfield European BF-BOF BAU CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European BF-BOF BAU CAPEX in 2024 EUR, not annualized.",
 )
 
 BF_BOF_BAU_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=39.0,
-    mode=43.0,
-    maximum=47.0,
+    minimum=42.2,
+    mode=42.4,
+    maximum=53.1,
     unit="EUR/tCS",
-    description="Triangular distribution for BF-BOF BAU fixed OPEX.",
+    description="Triangular distribution for BF-BOF BAU fixed OPEX in 2024 EUR.",
 )
 
 BF_BOF_BAU_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=270.0,
-    mode=335.0,
-    maximum=335.0,
+    minimum=328.0,
+    mode=328.0,
+    maximum=362.3,
     unit="EUR/tCS",
-    description="Triangular distribution for BF-BOF BAU variable OPEX excluding fuel and electricity.",
+    description="Triangular distribution for BF-BOF BAU variable OPEX in 2024 EUR excluding fuel and electricity.",
 )
 
 BF_BOF_BAU_FUEL_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -92,27 +95,26 @@ BF_BOF_BAU_EMISSIONS_DISTRIBUTION = TriangularDistribution(
 # 10/40/40 kgCO2/tCS are stored as 0.010/0.040/0.040 tCO2/tCS to match the
 # project's carbon-price unit of EUR/tCO2.
 SCRAP_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=247.0,
-    mode=247.0,
-    maximum=474.0,
+    minimum=242.0,
+    mode=242.0,
+    maximum=636.0,
     unit="EUR/(tCS/year)",
-    description="Triangular distribution for greenfield European Scrap-EAF CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European Scrap-EAF CAPEX in 2024 EUR, not annualized.",
 )
 
 SCRAP_EAF_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=18.0,
-    mode=18.0,
-    maximum=23.0,
+    minimum=17.2,
+    mode=17.2,
+    maximum=26.5,
     unit="EUR/tCS",
-    description="Triangular distribution for Scrap-EAF fixed OPEX.",
+    description="Triangular distribution for Scrap-EAF fixed OPEX in 2024 EUR.",
 )
 
-SCRAP_EAF_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=449.0,
-    mode=475.0,
-    maximum=598.0,
+SCRAP_EAF_VARIABLE_OPEX_DISTRIBUTION = UniformDistribution(
+    lower_bound=602.5,
+    upper_bound=802.4,
     unit="EUR/tCS",
-    description="Triangular distribution for Scrap-EAF variable OPEX.",
+    description="Uniform distribution for Scrap-EAF variable OPEX in 2024 EUR; no valid base lies within the normalized range.",
 )
 
 SCRAP_EAF_CHARCOAL_CONSUMPTION = FixedParameter(
@@ -143,23 +145,23 @@ SCRAP_EAF_EMISSIONS_DISTRIBUTION = TriangularDistribution(
 # fuel/reductant. The direct-emissions values of 550/590/1,000 kgCO2/tCS are
 # stored as 0.550/0.590/1.000 tCO2/tCS to match the project's carbon-price unit.
 NG_DRI_EAF_BAU_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=650.0,
-    mode=660.0,
-    maximum=660.0,
+    minimum=647.0,
+    mode=647.0,
+    maximum=734.0,
     unit="EUR/(tCS/year)",
-    description="Triangular distribution for greenfield European NG-DRI-EAF BAU CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European NG-DRI-EAF BAU CAPEX in 2024 EUR, not annualized.",
 )
 
 NG_DRI_EAF_BAU_FIXED_OPEX = FixedParameter(
-    value=32.5,
+    value=31.9,
     unit="EUR/tCS",
-    description="Fixed OPEX for NG-DRI-EAF BAU.",
+    description="Fixed OPEX for NG-DRI-EAF BAU in 2024 EUR.",
 )
 
 NG_DRI_EAF_BAU_VARIABLE_OPEX = FixedParameter(
-    value=312.0,
+    value=305.9,
     unit="EUR/tCS",
-    description="Approximate variable OPEX for NG-DRI-EAF BAU.",
+    description="Approximate variable OPEX for NG-DRI-EAF BAU in 2024 EUR.",
 )
 
 NG_DRI_EAF_BAU_NATURAL_GAS_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -191,27 +193,27 @@ NG_DRI_EAF_BAU_EMISSIONS_DISTRIBUTION = TriangularDistribution(
 # emissions values of 5/5/10 kgCO2/tCS are stored as 0.005/0.005/0.010
 # tCO2/tCS to match the project's carbon-price unit.
 H2_DRI_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=390.0,
-    mode=555.0,
-    maximum=830.0,
+    minimum=381.0,
+    mode=544.0,
+    maximum=816.0,
     unit="EUR/(tCS/year)",
-    description="Triangular distribution for greenfield European H2-DRI-EAF CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European H2-DRI-EAF CAPEX in 2024 EUR, not annualized.",
 )
 
 H2_DRI_EAF_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=26.0,
-    mode=30.0,
-    maximum=37.0,
+    minimum=25.6,
+    mode=29.4,
+    maximum=35.8,
     unit="EUR/tCS",
-    description="Triangular distribution for H2-DRI-EAF fixed OPEX.",
+    description="Triangular distribution for H2-DRI-EAF fixed OPEX in 2024 EUR.",
 )
 
 H2_DRI_EAF_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=313.0,
-    mode=313.0,
-    maximum=378.0,
+    minimum=306.9,
+    mode=306.9,
+    maximum=507.2,
     unit="EUR/tCS",
-    description="Triangular distribution for H2-DRI-EAF variable OPEX.",
+    description="Triangular distribution for H2-DRI-EAF variable OPEX in 2024 EUR.",
 )
 
 H2_DRI_EAF_HYDROGEN_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -248,27 +250,27 @@ H2_DRI_EAF_EMISSIONS_DISTRIBUTION = TriangularDistribution(
 # Greenfield European molten oxide electrolysis (MOE) technology. It has no
 # fuel/reductant consumption or direct process emissions in the supplied setup.
 MOE_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=500.0,
-    mode=1_000.0,
-    maximum=2_000.0,
+    minimum=564.0,
+    mode=1_129.0,
+    maximum=2_257.0,
     unit="EUR/(tCS/year)",
-    description="Triangular distribution for greenfield European MOE CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European MOE CAPEX in 2024 EUR, not annualized.",
 )
 
 MOE_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=30.0,
-    mode=59.0,
-    maximum=118.0,
+    minimum=40.3,
+    mode=79.2,
+    maximum=158.3,
     unit="EUR/tCS",
-    description="Triangular distribution for MOE fixed OPEX.",
+    description="Triangular distribution for MOE fixed OPEX in 2024 EUR.",
 )
 
 MOE_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=106.0,
-    mode=211.0,
-    maximum=422.0,
+    minimum=142.3,
+    mode=283.1,
+    maximum=566.2,
     unit="EUR/tCS",
-    description="Triangular distribution for MOE variable OPEX.",
+    description="Triangular distribution for MOE variable OPEX in 2024 EUR.",
 )
 
 MOE_FUEL_CONSUMPTION = FixedParameter(
@@ -296,25 +298,25 @@ MOE_EMISSIONS = FixedParameter(
 # technology. Its OPEX ranges have no supplied base values and are therefore
 # represented as uniform distributions. Charcoal is its supplied reductant.
 AEL_EAF_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=400.0,
-    mode=434.0,
-    maximum=800.0,
+    minimum=451.0,
+    mode=490.0,
+    maximum=903.0,
     unit="EUR/(tCS/year)",
-    description="Triangular distribution for greenfield European AEL-EAF CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European AEL-EAF CAPEX in 2024 EUR, not annualized.",
 )
 
 AEL_EAF_FIXED_OPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=43.0,
-    upper_bound=88.0,
+    lower_bound=57.7,
+    upper_bound=118.1,
     unit="EUR/tCS",
-    description="Uniform distribution for AEL-EAF fixed OPEX.",
+    description="Uniform distribution for AEL-EAF fixed OPEX in 2024 EUR.",
 )
 
 AEL_EAF_VARIABLE_OPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=246.0,
-    upper_bound=250.0,
+    lower_bound=330.1,
+    upper_bound=335.5,
     unit="EUR/tCS",
-    description="Uniform distribution for AEL-EAF variable OPEX.",
+    description="Uniform distribution for AEL-EAF variable OPEX in 2024 EUR.",
 )
 
 AEL_EAF_CHARCOAL_CONSUMPTION = FixedParameter(
@@ -341,25 +343,25 @@ AEL_EAF_EMISSIONS = FixedParameter(
 # a BAU physical intensity, while negative values represent the supplied fuel
 # and electricity consumption increases.
 BF_BOF_CCS_CAPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=177.0,
-    upper_bound=231.0,
+    lower_bound=256.5,
+    upper_bound=335.8,
     unit="EUR/(tCS/year)",
-    description="Uniform distribution for BF + BOF + CCS CAPEX increase.",
+    description="Uniform distribution for BF + BOF + CCS CAPEX increase in 2024 EUR.",
 )
 
 BF_BOF_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = UniformDistribution(
-    lower_bound=6.1,
-    upper_bound=8.1,
+    lower_bound=8.9,
+    upper_bound=11.8,
     unit="EUR/tCS",
-    description="Uniform distribution for BF + BOF + CCS fixed OPEX increase.",
+    description="Uniform distribution for BF + BOF + CCS fixed OPEX increase in 2024 EUR.",
 )
 
 BF_BOF_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = (
     UniformDistribution(
-        lower_bound=4.1,
-        upper_bound=4.9,
+        lower_bound=6.0,
+        upper_bound=7.1,
         unit="EUR/tCS",
-        description="Uniform distribution for BF + BOF + CCS variable OPEX increase.",
+        description="Uniform distribution for BF + BOF + CCS variable OPEX increase in 2024 EUR.",
     )
 )
 
@@ -394,23 +396,23 @@ BF_BOF_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = (
 # exact +0.30 MWh/tCS electricity increment is converted to the common negative-
 # reduction convention using the fixed 1.06 MWh/tCS BAU electricity intensity.
 NG_DRI_EAF_CCS_CAPEX_CHANGE = FixedParameter(
-    value=200.0,
+    value=225.7,
     unit="EUR/(tCS/year)",
-    description="CAPEX increase for the NG-DRI-EAF CCS retrofit.",
+    description="CAPEX increase for the NG-DRI-EAF CCS retrofit in 2024 EUR.",
 )
 
 NG_DRI_EAF_CCS_FIXED_OPEX_CHANGE = FixedParameter(
-    value=11.8,
+    value=13.3,
     unit="EUR/tCS",
-    description="Fixed OPEX increase for the NG-DRI-EAF CCS retrofit.",
+    description="Fixed OPEX increase for the NG-DRI-EAF CCS retrofit in 2024 EUR.",
 )
 
 NG_DRI_EAF_CCS_VARIABLE_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=1.2,
-    mode=1.5,
-    maximum=1.5,
+    minimum=1.7,
+    mode=2.2,
+    maximum=2.2,
     unit="EUR/tCS",
-    description="Triangular distribution for the NG-DRI-EAF CCS variable OPEX increase.",
+    description="Triangular distribution for the NG-DRI-EAF CCS variable OPEX increase in 2024 EUR.",
 )
 
 NG_DRI_EAF_CCS_FUEL_REDUCTION = FixedParameter(

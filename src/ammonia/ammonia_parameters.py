@@ -1,4 +1,7 @@
-"""Ammonia-sector assumptions for future technology comparisons."""
+"""Ammonia-sector assumptions for future technology comparisons.
+
+Technology CAPEX and OPEX assumptions use the supplied 2024 values.
+"""
 
 from __future__ import annotations
 
@@ -34,24 +37,24 @@ RETAIL_PRICE_AMMONIA_EUR_PER_T = FixedParameter(
 # kgCO2/tNH3 are stored as 1.620/1.770/1.800 tCO2/tNH3 to match the
 # project's carbon-price unit of EUR/tCO2.
 NG_SMR_HB_CAPEX_DISTRIBUTION = UniformDistribution(
-    lower_bound=750.0,
-    upper_bound=1_630.0,
+    lower_bound=1_006.0,
+    upper_bound=2_187.0,
     unit="EUR/(tNH3/y)",
-    description="Uniform distribution for greenfield European NG-SMR + HB CAPEX, not annualized.",
+    description="Uniform distribution for greenfield European NG-SMR + HB CAPEX in 2024 EUR, not annualized.",
 )
 
 NG_SMR_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=29.1,
-    mode=29.4,
-    maximum=29.7,
+    minimum=39.0,
+    mode=39.4,
+    maximum=39.9,
     unit="EUR/tNH3",
-    description="Triangular distribution for NG-SMR + HB fixed OPEX.",
+    description="Triangular distribution for NG-SMR + HB fixed OPEX in 2024 EUR.",
 )
 
 NG_SMR_HB_VARIABLE_OPEX = FixedParameter(
-    value=8.95,
+    value=12.01,
     unit="EUR/tNH3",
-    description="Variable OPEX for NG-SMR + HB.",
+    description="Variable OPEX for NG-SMR + HB in 2024 EUR.",
 )
 
 NG_SMR_HB_NATURAL_GAS_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -81,27 +84,27 @@ NG_SMR_HB_EMISSIONS_DISTRIBUTION = TriangularDistribution(
 # consumption includes both feedstock and process fuel; only the total enters
 # the technology registry so future energy costs do not count either twice.
 COAL_GASIFICATION_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=2_440.0,
-    mode=3_050.0,
-    maximum=3_970.0,
+    minimum=3_274.0,
+    mode=4_093.0,
+    maximum=5_320.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield coal gasification + HB CAPEX, not annualized.",
+    description="Triangular distribution for greenfield coal gasification + HB CAPEX in 2024 EUR, not annualized.",
 )
 
 COAL_GASIFICATION_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=91.0,
-    mode=113.0,
-    maximum=147.0,
+    minimum=121.7,
+    mode=152.1,
+    maximum=197.7,
     unit="EUR/tNH3",
-    description="Triangular distribution for coal gasification + HB fixed OPEX.",
+    description="Triangular distribution for coal gasification + HB fixed OPEX in 2024 EUR.",
 )
 
 COAL_GASIFICATION_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=13.0,
-    mode=16.2,
-    maximum=21.1,
+    minimum=17.1,
+    mode=21.3,
+    maximum=27.7,
     unit="EUR/tNH3",
-    description="Triangular distribution for coal gasification + HB variable OPEX.",
+    description="Triangular distribution for coal gasification + HB variable OPEX in 2024 EUR.",
 )
 
 COAL_GASIFICATION_HB_COAL_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -138,27 +141,27 @@ COAL_GASIFICATION_HB_EMISSIONS = FixedParameter(
 # Greenfield European AEL/PEM electrolysis plus Haber-Bosch. The supplied
 # fuel/reductant and direct-emissions intensities are both zero.
 AEL_PEM_ELECTROLYSIS_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=1_330.0,
-    mode=1_900.0,
-    maximum=2_850.0,
+    minimum=1_785.0,
+    mode=2_549.0,
+    maximum=3_824.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield European AEL/PEM electrolysis + HB CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European AEL/PEM electrolysis + HB CAPEX in 2024 EUR, not annualized.",
 )
 
 AEL_PEM_ELECTROLYSIS_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=26.1,
-    mode=37.31,
-    maximum=56.0,
+    minimum=35.0,
+    mode=50.1,
+    maximum=75.1,
     unit="EUR/tNH3",
-    description="Triangular distribution for AEL/PEM electrolysis + HB fixed OPEX.",
+    description="Triangular distribution for AEL/PEM electrolysis + HB fixed OPEX in 2024 EUR.",
 )
 
 AEL_PEM_ELECTROLYSIS_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=2.43,
-    mode=3.47,
-    maximum=5.21,
+    minimum=3.26,
+    mode=4.66,
+    maximum=6.98,
     unit="EUR/tNH3",
-    description="Triangular distribution for AEL/PEM electrolysis + HB variable OPEX.",
+    description="Triangular distribution for AEL/PEM electrolysis + HB variable OPEX in 2024 EUR.",
 )
 
 AEL_PEM_ELECTROLYSIS_HB_FUEL_CONSUMPTION = FixedParameter(
@@ -187,27 +190,27 @@ AEL_PEM_ELECTROLYSIS_HB_EMISSIONS = FixedParameter(
 # technology registry to avoid double counting. The supplied direct-emissions
 # zero has an asterisk whose footnote was not provided.
 BIOMASS_GASIFICATION_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=2_780.0,
-    mode=3_970.0,
-    maximum=5_950.0,
+    minimum=3_729.0,
+    mode=5_327.0,
+    maximum=7_991.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield biomass gasification + HB CAPEX, not annualized.",
+    description="Triangular distribution for greenfield biomass gasification + HB CAPEX in 2024 EUR, not annualized.",
 )
 
 BIOMASS_GASIFICATION_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=23.4,
-    mode=33.4,
-    maximum=50.1,
+    minimum=35.8,
+    mode=51.2,
+    maximum=76.8,
     unit="EUR/tNH3",
-    description="Triangular distribution for biomass gasification + HB fixed OPEX.",
+    description="Triangular distribution for biomass gasification + HB fixed OPEX in 2024 EUR.",
 )
 
 BIOMASS_GASIFICATION_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=11.3,
-    mode=16.1,
-    maximum=24.2,
+    minimum=17.3,
+    mode=24.7,
+    maximum=37.0,
     unit="EUR/tNH3",
-    description="Triangular distribution for biomass gasification + HB variable OPEX.",
+    description="Triangular distribution for biomass gasification + HB variable OPEX in 2024 EUR.",
 )
 
 BIOMASS_GASIFICATION_HB_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -245,27 +248,27 @@ BIOMASS_GASIFICATION_HB_EMISSIONS = FixedParameter(
 # electrically heated molten-metal reactor. Natural gas is feedstock only;
 # the zero process-fuel component is recorded separately for traceability.
 METHANE_PYROLYSIS_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=720.0,
-    mode=1_030.0,
-    maximum=1_550.0,
+    minimum=815.0,
+    mode=1_165.0,
+    maximum=1_747.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield methane pyrolysis + HB CAPEX, not annualized.",
+    description="Triangular distribution for greenfield methane pyrolysis + HB CAPEX in 2024 EUR, not annualized.",
 )
 
 METHANE_PYROLYSIS_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=32.4,
-    mode=46.3,
-    maximum=69.5,
+    minimum=37.2,
+    mode=53.1,
+    maximum=79.7,
     unit="EUR/tNH3",
-    description="Triangular distribution for methane pyrolysis + HB fixed OPEX.",
+    description="Triangular distribution for methane pyrolysis + HB fixed OPEX in 2024 EUR.",
 )
 
 METHANE_PYROLYSIS_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=2.94,
-    mode=4.20,
-    maximum=6.30,
+    minimum=3.85,
+    mode=5.50,
+    maximum=8.25,
     unit="EUR/tNH3",
-    description="Triangular distribution for methane pyrolysis + HB variable OPEX.",
+    description="Triangular distribution for methane pyrolysis + HB variable OPEX in 2024 EUR.",
 )
 
 METHANE_PYROLYSIS_HB_NATURAL_GAS_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -304,19 +307,19 @@ METHANE_PYROLYSIS_HB_EMISSIONS = FixedParameter(
 # Greenfield Europe-oriented solid-oxide electrolysis cell (SOEC) plus
 # Haber-Bosch. Fuel/reductant use and direct emissions are supplied as zero.
 SOEC_HB_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=1_750.0,
-    mode=2_500.0,
-    maximum=3_750.0,
+    minimum=2_024.0,
+    mode=2_892.0,
+    maximum=4_338.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield SOEC + HB CAPEX, not annualized.",
+    description="Triangular distribution for greenfield SOEC + HB CAPEX in 2024 EUR; the mode is the supplied provisional base, not annualized.",
 )
 
 SOEC_HB_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=120.0,
-    mode=170.0,
-    maximum=255.0,
+    minimum=159.7,
+    mode=228.1,
+    maximum=342.2,
     unit="EUR/tNH3",
-    description="Triangular distribution for SOEC + HB fixed OPEX.",
+    description="Triangular distribution for SOEC + HB fixed OPEX in 2024 EUR.",
 )
 
 SOEC_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
@@ -324,7 +327,7 @@ SOEC_HB_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
     mode=18.4,
     maximum=23.4,
     unit="EUR/tNH3",
-    description="Triangular distribution for SOEC + HB variable OPEX.",
+    description="Triangular distribution for SOEC + HB variable OPEX in 2024 EUR.",
 )
 
 SOEC_HB_FUEL_CONSUMPTION = FixedParameter(
@@ -351,27 +354,27 @@ SOEC_HB_EMISSIONS = FixedParameter(
 # Greenfield Europe-oriented aqueous direct nitrogen reduction reaction (NRR)
 # at ambient conditions. Fuel/reductant use and direct emissions are zero.
 AQUEOUS_DIRECT_NRR_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=4_860.0,
-    mode=4_860.0,
-    maximum=5_470.0,
+    minimum=4_767.0,
+    mode=4_767.0,
+    maximum=5_367.0,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for greenfield aqueous direct NRR CAPEX, not annualized.",
+    description="Triangular distribution for greenfield aqueous direct NRR CAPEX in 2024 EUR; the mode is the supplied purge base, not annualized.",
 )
 
 AQUEOUS_DIRECT_NRR_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=226.0,
-    mode=226.0,
-    maximum=249.0,
+    minimum=222.1,
+    mode=222.1,
+    maximum=244.5,
     unit="EUR/tNH3",
-    description="Triangular distribution for aqueous direct NRR fixed OPEX.",
+    description="Triangular distribution for aqueous direct NRR fixed OPEX in 2024 EUR; the mode is the supplied purge base.",
 )
 
 AQUEOUS_DIRECT_NRR_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=10.8,
-    mode=20.2,
-    maximum=29.6,
+    minimum=10.54,
+    mode=19.76,
+    maximum=28.98,
     unit="EUR/tNH3",
-    description="Triangular distribution for aqueous direct NRR variable OPEX.",
+    description="Triangular distribution for aqueous direct NRR variable OPEX in 2024 EUR.",
 )
 
 AQUEOUS_DIRECT_NRR_FUEL_CONSUMPTION = FixedParameter(
@@ -400,17 +403,17 @@ AQUEOUS_DIRECT_NRR_EMISSIONS = FixedParameter(
 # Electricity must use an absolute increment because the parent consumes zero
 # purchased electricity, so a percentage change cannot represent +0.194 MWh.
 NG_SMR_HB_CCS_CAPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=70.0,
-    mode=75.0,
-    maximum=80.0,
+    minimum=93.9,
+    mode=100.6,
+    maximum=107.3,
     unit="EUR/(tNH3/y)",
-    description="Triangular distribution for NG-SMR + HB CCS incremental CAPEX.",
+    description="Triangular distribution for NG-SMR + HB CCS incremental CAPEX in 2024 EUR.",
 )
 
 NG_SMR_HB_CCS_FIXED_OPEX_CHANGE = FixedParameter(
-    value=21.0,
+    value=28.5,
     unit="EUR/tNH3",
-    description="Fixed OPEX increase for NG-SMR + HB CCS.",
+    description="Fixed OPEX increase for NG-SMR + HB CCS in 2024 EUR.",
 )
 
 NG_SMR_HB_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
@@ -444,15 +447,15 @@ NG_SMR_HB_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = TriangularDistribution(
 # These are supplied point increments; coal and electricity changes are
 # additive, while direct emissions are reduced relative to the parent.
 COAL_GASIFICATION_HB_CCS_CAPEX_CHANGE = FixedParameter(
-    value=215.0,
+    value=288.5,
     unit="EUR/(tNH3/y)",
-    description="CAPEX increase for coal gasification + HB CCS.",
+    description="CAPEX increase for coal gasification + HB CCS in 2024 EUR.",
 )
 
 COAL_GASIFICATION_HB_CCS_FIXED_OPEX_CHANGE = FixedParameter(
-    value=34.0,
+    value=45.6,
     unit="EUR/tNH3",
-    description="Fixed OPEX increase for coal gasification + HB CCS.",
+    description="Fixed OPEX increase for coal gasification + HB CCS in 2024 EUR.",
 )
 
 COAL_GASIFICATION_HB_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(

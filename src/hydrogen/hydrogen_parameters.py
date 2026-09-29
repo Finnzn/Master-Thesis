@@ -1,4 +1,8 @@
-"""Hydrogen-sector assumptions for future technology comparisons."""
+"""Hydrogen-sector assumptions for future technology comparisons.
+
+Technology CAPEX and OPEX assumptions use the supplied 2024 values; TCD costs
+remain unchanged as specified.
+"""
 
 from __future__ import annotations
 
@@ -40,27 +44,27 @@ ELECTROLYSIS_HYDROGEN_TECHNOLOGIES = frozenset({"ael", "pem", "soec"})
 # registry to avoid double counting. Approximate emissions of 9,000 kgCO2/tH2
 # are stored as 9 tCO2/tH2 to match the carbon-price unit of EUR/tCO2.
 NG_SMR_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=1_840.0,
-    mode=2_165.0,
-    maximum=2_920.0,
+    minimum=2_555.0,
+    mode=3_006.0,
+    maximum=4_059.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for greenfield European NG-SMR CAPEX, not annualized.",
+    description="Triangular distribution for greenfield European NG-SMR CAPEX in 2024 EUR, not annualized.",
 )
 
 NG_SMR_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=81.0,
-    mode=96.0,
-    maximum=129.0,
+    minimum=113.1,
+    mode=133.0,
+    maximum=179.6,
     unit="EUR/tH2",
-    description="Triangular distribution for NG-SMR fixed OPEX.",
+    description="Triangular distribution for NG-SMR fixed OPEX in 2024 EUR.",
 )
 
 NG_SMR_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=5.6,
-    mode=6.6,
-    maximum=8.9,
+    minimum=7.78,
+    mode=9.15,
+    maximum=12.35,
     unit="EUR/tH2",
-    description="Triangular distribution for NG-SMR variable OPEX.",
+    description="Triangular distribution for NG-SMR variable OPEX in 2024 EUR.",
 )
 
 NG_SMR_NATURAL_GAS_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -97,27 +101,27 @@ NG_SMR_EMISSIONS = FixedParameter(
 # Greenfield European alkaline electrolysis (AEL) for 2030. Supplied base
 # values are used as triangular modes; electricity use is specified at 200 bar.
 AEL_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=5_590.0,
-    mode=7_991.0,
-    maximum=11_990.0,
+    minimum=7_506.0,
+    mode=10_723.0,
+    maximum=16_084.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for 2030 greenfield European AEL CAPEX, not annualized.",
+    description="Triangular distribution for 2030 greenfield European AEL CAPEX in 2024 EUR, not annualized.",
 )
 
 AEL_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=161.0,
-    mode=230.0,
-    maximum=345.0,
+    minimum=216.0,
+    mode=308.6,
+    maximum=462.9,
     unit="EUR/tH2",
-    description="Triangular distribution for AEL fixed OPEX.",
+    description="Triangular distribution for AEL fixed OPEX in 2024 EUR.",
 )
 
 AEL_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=25.0,
-    mode=36.0,
-    maximum=54.0,
+    minimum=33.81,
+    mode=48.31,
+    maximum=72.46,
     unit="EUR/tH2",
-    description="Triangular distribution for AEL variable OPEX.",
+    description="Triangular distribution for AEL variable OPEX in 2024 EUR.",
 )
 
 AEL_FUEL_CONSUMPTION = FixedParameter(
@@ -142,27 +146,27 @@ AEL_EMISSIONS = FixedParameter(
 # Greenfield European proton-exchange-membrane electrolysis (PEM) for 2030.
 # Supplied base values are triangular modes; electricity use is at 200 bar.
 PEM_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=7_190.0,
-    mode=10_274.0,
-    maximum=15_410.0,
+    minimum=9_650.0,
+    mode=13_786.0,
+    maximum=20_679.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for 2030 greenfield European PEM CAPEX, not annualized.",
+    description="Triangular distribution for 2030 greenfield European PEM CAPEX in 2024 EUR, not annualized.",
 )
 
 PEM_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=255.0,
-    mode=364.0,
-    maximum=546.0,
+    minimum=341.9,
+    mode=488.4,
+    maximum=732.6,
     unit="EUR/tH2",
-    description="Triangular distribution for PEM fixed OPEX.",
+    description="Triangular distribution for PEM fixed OPEX in 2024 EUR.",
 )
 
 PEM_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=25.0,
-    mode=36.0,
-    maximum=54.0,
+    minimum=33.81,
+    mode=48.31,
+    maximum=72.46,
     unit="EUR/tH2",
-    description="Triangular distribution for PEM variable OPEX.",
+    description="Triangular distribution for PEM variable OPEX in 2024 EUR.",
 )
 
 PEM_FUEL_CONSUMPTION = FixedParameter(
@@ -187,27 +191,27 @@ PEM_EMISSIONS = FixedParameter(
 # Greenfield European solid-oxide electrolysis cell (SOEC) for 2030, with
 # electric process heat. Supplied base values are used as triangular modes.
 SOEC_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=3_840.0,
-    mode=5_490.0,
-    maximum=8_240.0,
+    minimum=3_768.0,
+    mode=5_382.0,
+    maximum=8_074.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for 2030 greenfield European SOEC CAPEX with electric heat, not annualized.",
+    description="Triangular distribution for 2030 greenfield European SOEC CAPEX with electric heat in 2024 EUR, not annualized.",
 )
 
 SOEC_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=181.0,
-    mode=258.0,
-    maximum=387.0,
+    minimum=177.1,
+    mode=252.9,
+    maximum=379.4,
     unit="EUR/tH2",
-    description="Triangular distribution for SOEC fixed OPEX.",
+    description="Triangular distribution for SOEC fixed OPEX in 2024 EUR.",
 )
 
 SOEC_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=80.0,
-    mode=80.0,
-    maximum=85.0,
+    minimum=80.21,
+    mode=80.21,
+    maximum=83.33,
     unit="EUR/tH2",
-    description="Triangular distribution for SOEC variable OPEX.",
+    description="Triangular distribution for SOEC variable OPEX in 2024 EUR.",
 )
 
 SOEC_FUEL_CONSUMPTION = FixedParameter(
@@ -280,27 +284,27 @@ METHANE_PYROLYSIS_TCD_EMISSIONS = FixedParameter(
 # Greenfield conceptual biomass gasification without carbon capture. Supplied
 # base values are used as triangular modes, including those at lower bounds.
 BIOMASS_GASIFICATION_CAPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=950.0,
-    mode=950.0,
-    maximum=1_950.0,
+    minimum=949.0,
+    mode=949.0,
+    maximum=1_954.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for greenfield conceptual biomass gasification CAPEX without CCS, not annualized.",
+    description="Triangular distribution for greenfield conceptual biomass gasification CAPEX without CCS in 2024 EUR, not annualized.",
 )
 
 BIOMASS_GASIFICATION_FIXED_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=58.0,
-    mode=58.0,
-    maximum=95.0,
+    minimum=57.8,
+    mode=57.8,
+    maximum=94.9,
     unit="EUR/tH2",
-    description="Triangular distribution for biomass gasification fixed OPEX.",
+    description="Triangular distribution for biomass gasification fixed OPEX in 2024 EUR.",
 )
 
 BIOMASS_GASIFICATION_VARIABLE_OPEX_DISTRIBUTION = TriangularDistribution(
-    minimum=768.0,
-    mode=768.0,
-    maximum=828.0,
+    minimum=767.8,
+    mode=767.8,
+    maximum=828.4,
     unit="EUR/tH2",
-    description="Triangular distribution for biomass gasification variable OPEX.",
+    description="Triangular distribution for biomass gasification variable OPEX in 2024 EUR.",
 )
 
 BIOMASS_GASIFICATION_BIOMASS_CONSUMPTION_DISTRIBUTION = TriangularDistribution(
@@ -389,19 +393,19 @@ BIOMETHANE_SMR_EMISSIONS = FixedParameter(
 # are additive; supplied 90% capture reduces the parent's direct emissions.
 # Only the natural-gas increment enters the retrofit registry, not the total.
 NG_SMR_CCS_CAPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=1_610.0,
-    mode=1_706.0,
-    maximum=1_900.0,
+    minimum=2_310.0,
+    mode=2_369.0,
+    maximum=2_637.0,
     unit="EUR/(tH2/y)",
-    description="Triangular distribution for European NG-SMR + CCS incremental CAPEX.",
+    description="Triangular distribution for European NG-SMR + CCS incremental CAPEX in 2024 EUR.",
 )
 
 NG_SMR_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
-    minimum=27.0,
-    mode=51.0,
-    maximum=72.0,
+    minimum=39.3,
+    mode=70.8,
+    maximum=100.2,
     unit="EUR/tH2",
-    description="Triangular distribution for NG-SMR + CCS fixed OPEX increase.",
+    description="Triangular distribution for NG-SMR + CCS fixed OPEX increase in 2024 EUR.",
 )
 
 NG_SMR_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
