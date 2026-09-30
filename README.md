@@ -1,60 +1,47 @@
-# Master Thesis: Technology Development Uncertainty and Carbon Capture Demand
+# Master Thesis Analysis: CCS and Alternative Decarbonization Technologies
 
-This repository contains the code, data structure, documentation, and analysis for my master thesis project:
+This repository contains the models, assumptions, notebooks, and reproducible
+workflows for an ETH Zurich master thesis on the economic competitiveness of
+carbon capture and storage (CCS) relative to alternative decarbonization
+technologies.
 
-**How uncertainty of technology development shapes carbon capture demand uncertainty**
+The analysis covers five sectors:
 
-The thesis is supervised by Nour Boulos and Prof. Dr. Giovanni Sansavini at ETH Zurich.
+- electricity generation;
+- cement production;
+- steel production;
+- ammonia production; and
+- hydrogen production.
 
-## Project Overview
+For each sector, the project compares deterministic results with Monte Carlo
+results under uncertainty in technology costs, energy use, fuel and electricity
+prices, emissions, and other technical or financial inputs. The main outputs
+are net present value, levelized profit margin, levelized cost, marginal
+abatement cost curves, and sensitivity analyses.
 
-Carbon capture and storage (CCS) is considered an important technology for reaching net-zero emissions in Europe. However, the large-scale deployment of CCS is still below political targets. One possible reason is that carbon capture competes with alternative decarbonization technologies that emitting plants can adopt.
+## Start Here
 
-This thesis investigates under which conditions carbon capture is the most economically viable option for reducing emissions in different industrial sectors. The focus is on applications such as:
+Choose the workflow that matches your purpose:
 
-- Electricity generation
-- Cement production
-- Steel production
-- Ammonia production
-- Hydrogen production
+| Goal | Recommended entry point | Output location |
+| --- | --- | --- |
+| Reproduce a complete, auditable result set | `regenerate_all.py` | `results/runs/<run-name>/` |
+| Quickly test one sector or metric | `python -m <sector>.<sector>_financial_summary` | `figures/`, `data/raw/`, `data/processed/` |
+| Inspect calculations interactively | `notebooks/` | Inline notebook output |
+| Explore one-factor-at-a-time sensitivity | `sensitivity_dashboard.py` | Interactive Streamlit view |
+| Generate standardized sensitivity heatmaps | `python -m sensitivity_deep_dive` | `figures/`, `data/processed/` |
 
-The project compares carbon capture technologies with alternative non-capture decarbonization options under techno-economic uncertainty.
+Use a named run for thesis results or comparisons that must be preserved and
+audited. Use the direct sector commands for quick development checks because
+their outputs are not isolated from other quick runs.
 
-## Research Objective
+All commands below assume that the current working directory is the repository
+root.
 
-The main objective of this thesis is to evaluate how uncertainty in technology development affects the future demand for carbon capture.
+## Installation
 
-The central research question is:
-
-**Which emitting sectors should implement carbon capture, and which should investigate alternative decarbonization technologies?**
-
-## Methodology
-
-The thesis develops a probabilistic, cost-based evaluation framework for comparing decarbonization technology options across different emitting sectors.
-
-The main methodological steps are:
-
-1. Identify decarbonization technology options for each emitting sector.
-2. Compare carbon capture technologies with alternative non-capture decarbonization technologies.
-3. Develop a cost-based metric to assess the economic viability of each option.
-4. Use Monte Carlo analysis to capture uncertainty in techno-economic parameters.
-5. Evaluate how uncertainty in technology development affects carbon capture demand.
-
-The Monte Carlo analysis may include uncertainty in parameters such as:
-
-- Capital costs
-- Operating costs
-- Energy requirements
-- Energy prices
-- Carbon prices
-- Technology learning and cost evolution
-
-## Quick Start
-
-The source code requires Python 3.10 or newer. Python 3.12 is used in the
-current thesis environment.
-
-From the repository root:
+Python 3.10 or newer is required. The thesis environment currently uses Python
+3.12.
 
 ```bash
 python3 -m venv .venv
@@ -63,513 +50,498 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Run a small smoke check before starting a large simulation:
+The examples use `.venv/bin/python` explicitly, so they also work after opening
+a new terminal without activating the environment. `PYTHONPATH=src` makes the
+project modules importable without installing the repository as a package.
+
+Confirm that the main command is available:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_financial_summary \
-  --sample-size 100 --no-data --ranking-output none
-PYTHONPATH=src python -m cement.cement_financial_summary \
-  --sample-size 100 --no-data --ranking-output none
+PYTHONPATH=src .venv/bin/python regenerate_all.py --help
 ```
 
-The default Monte Carlo sample size is 100,000 per technology. Start with a
-smaller value while testing changes.
+## Repository Map
 
-## Reproduce a Complete Result Run
+```text
+MasterThesis/
+├── src/                       Reusable models, assumptions, and workflows
+│   ├── electricity/           Electricity technologies and calculations
+│   ├── cement/                Cement technologies and calculations
+│   ├── steel/                 Steel technologies and calculations
+│   ├── ammonia/               Ammonia technologies and calculations
+│   ├── hydrogen/              Hydrogen technologies and calculations
+│   ├── general_parameters.py  Shared financial, carbon, and energy assumptions
+│   ├── distributions.py       Probability-distribution definitions
+│   ├── npv_finance.py         Shared discounted-finance calculations
+│   └── financial_summary_workflow.py
+│                               Shared summary, export, plotting, and CLI logic
+├── notebooks/                 Interactive sector and technology analyses
+├── figures/                   Tracked reference figures and quick-run plots
+├── data/
+│   ├── raw/                   Generated Monte Carlo input samples
+│   └── processed/             Generated result and ranking tables
+├── results/
+│   ├── runs/                  Isolated, manifest-backed named runs
+│   └── temporary/             Explicitly temporary comparisons
+├── regenerate_all.py          Reproducible multi-sector run entry point
+├── sensitivity_dashboard.py   Interactive sensitivity application
+├── requirements.txt           Python dependencies
+└── CHANGELOG.md               Append-only record of project changes
+```
 
-`regenerate_all.py` is the single entry point for the existing financial-summary,
-MACC, sensitivity-heatmap, and notebook commands. It contains no scientific
-calculation logic of its own. Every invocation receives a descriptive run name
-and stores its outputs together in one isolated, manifest-backed directory.
+`data/raw/`, `data/processed/`, and `results/` are generated and ignored by
+Git. The source assumptions are not stored only in those folders: they live in
+the tracked parameter modules under `src/`.
 
-The standard command generates deterministic, Monte Carlo mean, and ranking
-figures and CSVs for NPV, LPM, and LCOX across all five sectors:
+## Reproduce Results in an Isolated Run
+
+`regenerate_all.py` is the preferred entry point for final thesis results. It
+calls the existing sector workflows, stores every output under one unique run
+name, saves command logs, and creates a reproducibility manifest. It does not
+contain a separate scientific model.
+
+### Standard financial run
+
+This command generates NPV, LPM, and LCOX results for all five sectors using
+the default 100,000 Monte Carlo draws per technology and random seed 42:
 
 ```bash
-PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results
 ```
 
-That default creates 135 core CSV/PNG artifacts under
-`results/runs/thesis_results/financial/`. Add `--full` to run the complete
-workflow—financial summaries, both MACC variants, all selected sensitivity
-heatmaps, and all notebooks—with the same command:
+The standard run includes deterministic and Monte Carlo mean figures, ranking
+outputs, raw sampled inputs, and processed results. It does not generate MACCs,
+sensitivity heatmaps, or executed notebook copies unless those are requested.
+
+### Complete run
+
+Use `--full` for financial summaries, deterministic and simulated MACCs,
+sensitivity heatmaps, and non-destructive execution of all notebooks:
 
 ```bash
 PYTHONPATH=src .venv/bin/python regenerate_all.py \
   --run-name thesis_results_full --full
 ```
 
-Each run also writes command logs and a `manifest.json` containing the active
-global assumptions, sample size, seed, retrofit mode, Git state,
-Python/dependency versions, command results, and SHA-256 hash of every generated
-file. Existing run directories are never overwritten.
+This is resource-intensive: the default simulation size is 100,000 and all
+project notebooks are executed. Use a smaller dry run or focused run first when
+testing changes.
 
-Use `--dry-run` to inspect the commands without creating files. Runs can be
-limited with `--sectors` and `--metrics`, while additional analyses are opt-in:
+### Focused run
+
+Limit the financial and sensitivity work by sector, metric, and sample size:
 
 ```bash
-# Small NPV check for two sectors.
-PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name quick_check \
-  --sectors electricity cement --metrics NPV --sample-size 100
-
-# Financial summaries plus both deterministic and simulated MACCs.
-PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name macc_results \
-  --macc-mode both
-
-# Financial summaries plus sensitivity CSVs and heatmaps.
-PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name heatmap_results \
-  --include-heatmaps
-
-# Financial summaries plus non-destructive execution of all notebooks.
-PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name notebook_results \
-  --verify-notebooks
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name electricity_cement_npv_check \
+  --sectors electricity cement \
+  --metrics NPV \
+  --sample-size 1000
 ```
 
-The standard command does not execute notebooks. `--verify-notebooks` stores
-the executed copies under
-`results/runs/<run-name>/notebook_verification/` without overwriting the source
-notebooks. The `--full` preset includes notebook verification together with
-both MACC variants and the selected heatmaps.
+Valid sectors are `electricity`, `cement`, `steel`, `ammonia`, and `hydrogen`.
+Valid metrics are `NPV`, `LPM`, and `LCOX`.
 
-The main options are:
+### Add optional analyses
 
-- `--run-name NAME`: names the result set and its directory.
-- `--full`: enables both MACC modes, heatmaps, and notebook verification.
-- `--macc-mode deterministic|simulated|both`: selects MACC output independently.
-- `--include-heatmaps`: adds sensitivity CSVs and heatmap figures.
-- `--verify-notebooks`: saves executed notebook copies without overwriting the
-  sources.
-- `--sectors ...` and `--metrics ...`: restrict the generated result scope.
-- `--sample-size`, `--random-seed`, and `--retrofit-bau-mode`: configure the
-  Monte Carlo runs.
-- `--output-root`: changes the parent output directory.
-- `--dry-run`: prints the exact command plan without creating outputs.
+The optional analyses can be selected independently:
 
-Run `.venv/bin/python regenerate_all.py --help` for the full descriptions,
-examples, and exact output layout.
+```bash
+# Add deterministic and Monte Carlo mean MACCs.
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results_macc --macc-mode both
 
-The manifest records all global assumptions imported by the run, including the
-carbon price and discount rate. If those assumptions are intentionally changed,
-use a new descriptive run name so the resulting sets remain distinguishable.
+# Add standardized sensitivity CSVs and heatmaps.
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results_heatmaps --include-heatmaps
 
-## Repository Structure
-
-```text
-MasterThesis/
-├── src/                  # Main Python source code
-├── notebooks/            # Jupyter notebooks for exploration and analysis
-├── data/                 # Input data and assumptions
-│   ├── raw/              # Raw data, usually not tracked by Git
-│   └── processed/        # Cleaned or processed data
-├── results/              # Simulation results, usually not tracked by Git
-├── figures/              # Plots and figures for reports
-├── docs/                 # Handover and workflow documentation
-├── regenerate_all.py     # Manifest-backed full-result regeneration command
-├── sensitivity_dashboard.py # Streamlit sensitivity analysis dashboard
-├── README.md             # Project overview
-├── requirements.txt      # Python dependencies
-└── .gitignore            # Files and folders ignored by Git
+# Add non-destructive execution of every project notebook.
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results_notebooks --verify-notebooks
 ```
 
-For a practical map of the model, generated files, assumptions, and known
-handover risks, read [`docs/HANDOVER.md`](docs/HANDOVER.md).
+These flags add work to the standard financial run. In particular,
+`--verify-notebooks` does not execute notebooks by themselves: the normal
+financial summaries are still generated first. Notebook verification always
+executes all notebooks, even if `--sectors` limits the financial steps. The
+executed copies are stored in the run directory; the source notebooks are not
+overwritten.
 
-## Source Code Guide
+### Preview before running
 
-The reusable Python code is organized around sector-independent helpers and
-sector-specific calculations.
+`--dry-run` prints the exact commands and active shared assumptions without
+creating a directory or running calculations:
 
-- `src/distributions.py` defines deterministic parameters and probability
-  distribution specifications used by Monte Carlo simulations.
-- `src/general_parameters.py` stores shared assumptions such as carbon price,
-  discount rate, and fuel-price distributions.
-- `src/npv_finance.py` is the single discounted-finance kernel used by the
-  deterministic, Monte Carlo, and sensitivity paths for NPV, levelized profit
-  margin, and LCOX.
-- `src/sensitivity_analysis.py` translates editable scenarios into that shared
-  financial kernel and contains one-factor-at-a-time tables and tornado plots;
-  it does not maintain a second NPV calculation engine.
-- `src/npv_summary.py` converts simulation outputs into summary tables, rankings,
-  and CSV files.
-- `src/npv_summary_plots.py` contains reusable plotting functions for NPV bar
-  charts and ranking figures.
-- `src/financial_summary_workflow.py` owns the common simulation, summary,
-  ranking, export, plotting, and CLI orchestration for every sector. The five
-  `*_financial_summary.py` modules now contain only sector configuration and
-  compatibility names. The former `*_npv_summary_figures.py` names remain as
-  deprecated forwarding shims for existing external commands.
-- Every `src/<sector>/` now uses the same calculation boundary:
-  `<sector>_npv_model.py` resolves absolute technology inputs and owns the
-  sector-specific cost/result calculation; `<sector>_npv_deterministic.py`
-  chooses representative inputs; and `<sector>_npv_monte_carlo.py` samples
-  input arrays. Both input providers call the same sector model, which in turn
-  calls `src/npv_finance.py`.
-- The remaining sector modules contain assumptions, MACC calculations, and
-  financial-summary configuration for electricity, cement, steel, ammonia, or
-  hydrogen.
+```bash
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name preview --full --dry-run
+```
 
-## Which Notebook or Script Should I Use?
+This is the safest way to check the selected sectors, metrics, simulation
+settings, carbon price, and output paths before a large run.
 
-- Use `notebooks/<sector>/<sector>_summary.ipynb` for an inline overview of all
-  technologies in electricity, cement, steel, ammonia, or hydrogen. Their
-  Monte Carlo tables include mean, median, percentiles, and counts of
-  non-negative versus negative NPV simulations.
-- Use `notebooks/<sector>/plot_*_npv.ipynb` to inspect one technology's Monte
-  Carlo inputs and NPV distribution. Each notebook reports the count and share
-  of non-negative versus negative NPV simulations.
-- Use `notebooks/<sector>/deterministic_*_npv.ipynb` to inspect one
-  expected-input deterministic calculation.
-- Use `notebooks/scenario_analysis.ipynb` for the deterministic FLH, lifetime,
-  renewable value-factor, CO2-price, discount-rate, and hydrogen fuel-price,
-  electricity-price, and CAPEX scenarios, plus ammonia electricity-price,
-  fuel-price, and CAPEX scenarios.
-- Use the command-line summary modules when figures and CSV outputs must be
-  regenerated reproducibly.
-- Use `sensitivity_dashboard.py` for interactive deterministic
-  one-factor-at-a-time sensitivity analysis.
+### Important run options
 
-Deterministic results are expected-input scenarios, not modal scenarios. Each
-uncertain input is set to its analytical mean: the stored mean for scaled beta,
-`(minimum + mode + maximum) / 3` for triangular, and the midpoint for uniform
-distributions. Fixed parameters retain their stored values. Applying expected
-inputs does not mathematically guarantee the exact Monte Carlo output mean when
-downstream calculations are nonlinear, but it provides the directly comparable
-one-point case.
-
-## BECCS Electricity Assumptions
-
-BECCS follows the same normalized-output, deterministic, Monte Carlo, NPV, LPM,
-and LCOE pipeline as the other electricity technologies. Its assumptions are:
-
-| Input | BECCS assumption |
+| Option | Purpose |
 | --- | --- |
-| CAPEX | Uniform, 2,454-4,239 EUR/kW |
-| Fixed OPEX | Uniform, 128.4-229.1 EUR/kW/year |
-| Variable OPEX excluding fuel | Uniform, 1.16-2.31 EUR/MWh |
-| CO2 transport and storage | Uniform, 22-29 EUR/MWh_e |
-| Biomass consumption | Uniform, 2.42-3.27 MWh_th/MWh_e |
-| Net emissions | Uniform, -1.33 to -1.01 tCO2/MWh_e |
-| Full-load hours | Fixed at 7,665 h/year, the average of 7,446-7,884 |
-| Biomass price | Triangular, 17.36 / 28.93 / 46.28 EUR/MWh_th |
-| Lifetime | 25 years, assumed equal to the existing biogas lifetime |
+| `--run-name NAME` | Names the isolated result directory; a timestamp is used if omitted |
+| `--sectors ...` | Selects one or more sectors |
+| `--metrics ...` | Selects `NPV`, `LPM`, and/or `LCOX` |
+| `--sample-size N` | Sets Monte Carlo draws per technology |
+| `--random-seed N` | Sets the top-level reproducibility seed |
+| `--retrofit-bau-mode sampled\|deterministic` | Selects the Monte Carlo parent baseline for retrofit technologies |
+| `--macc-mode deterministic\|simulated\|both` | Adds sector MACCs; electricity has no MACC module |
+| `--include-heatmaps` | Adds standardized sensitivity tables and heatmaps |
+| `--sensitivity-variation-percent N` | Sets the heatmap movement in percent; default is 20 |
+| `--verify-notebooks` | Adds execution copies of all notebooks |
+| `--notebook-timeout SECONDS` | Sets the maximum execution time per notebook |
+| `--output-root PATH` | Changes the parent directory for named runs |
+| `--dry-run` | Prints the plan without creating outputs |
 
-The supplied negative-emissions range is multiplied by the common carbon price.
-This produces a negative carbon-cost term, which becomes carbon-removal revenue
-when subtracted in the shared cash-flow formula. The same negative term reduces
-LCOE because the established LCOX boundary includes carbon costs and credits.
+Run names are never reused. If `results/runs/<run-name>/` already exists, the
+workflow stops instead of overwriting it.
 
-## Retrofit BAU Baseline Modes
-
-Cement retrofit technologies and the electricity technologies `hard_coal_ccs`
-and `ccgt_ccs` are modelled as changes relative to a BAU technology. The two
-electricity retrofits use `hard_coal` and `ccgt`, respectively, as their BAU
-parents.
-
-Monte Carlo workflows expose `retrofit_bau_mode` with two choices:
-
-- `sampled` is the default. BAU technical inputs are sampled once per simulation
-  ID and reused for the matching BAU result and retrofit, so each comparison uses
-  one shared uncertain baseline.
-- `deterministic` holds the retrofit's BAU technical inputs at their expected
-  values while continuing to sample incremental retrofit and other stochastic
-  inputs. This isolates retrofit uncertainty for diagnostic runs.
-
-Incremental costs are added to BAU costs. Fuel use, electricity use where
-applicable, and emissions follow `BAU value * (1 - reduction fraction)`. Positive
-fractions therefore reduce the BAU value, while negative reduction fractions
-represent increases. Deterministic calculations always use expected BAU and
-retrofit input values; the selectable mode controls Monte Carlo calculations.
-
-CCS transport and storage (T&S) adds 18.7% of the levelized incremental capture
-cost, defined as `(BAU + CCS) - BAU` across CAPEX, OPEX, and fuel/electricity
-costs before carbon-price effects and before T&S. This applies to hard-coal CCS,
-CCGT CCS, and cement CCS. BECCS instead uses its independent 22-29 EUR/MWh_e
-uniform T&S cost range. The capture-share calculation is evaluated from the
-current inputs rather than stored as a fixed surcharge: changing CAPEX, OPEX,
-fuel or electricity inputs, full-load hours, lifetime, or discount rate therefore
-also updates T&S wherever those inputs enter the incremental capture cost.
-
-## Renewable Electricity Value Factors
-
-PV, onshore wind, and offshore wind use triangular value-factor distributions
-in `src/electricity/electricity_parameters.py`. The supplied base remains the
-distribution mode, while deterministic calculations use the triangular mean:
-
-| Technology | Minimum | Mode | Maximum | Deterministic mean |
-| --- | ---: | ---: | ---: | ---: |
-| Onshore wind | 0.80 | 0.90 | 1.00 | 0.90 |
-| Offshore wind | 0.85 | 0.95 | 1.00 | 0.933 |
-| Solar PV | 0.80 | 0.90 | 1.00 | 0.90 |
-
-The value factor scales the model's common electricity sales price to a captured
-price. The parameter names remain `VF_PV`, `VF_Wind_onshore`, and
-`VF_windoffshore`:
+### Named-run output structure
 
 ```text
-captured electricity price = electricity sales price * value factor
-annual electricity revenue = annual generation * captured electricity price
+results/runs/<run-name>/
+├── manifest.json
+├── logs/
+├── financial/<sector>/<metric>/
+│   ├── figures/
+│   ├── raw/
+│   └── processed/
+├── macc/<sector>/<deterministic|simulated>/
+│   ├── figures/
+│   └── processed/
+├── heatmaps/<metric>/
+│   ├── figures/
+│   └── processed/
+└── notebook_verification/
 ```
 
-It does not change generation, required capacity, costs, discounted output, or
-LCOE. The separate renewable plot in `notebooks/scenario_analysis.ipynb`
-compares the minimum, base, and maximum factors for PV and both wind
-technologies. Value factor is also included for these three technologies in the
-electricity sensitivity heatmap.
+Only requested optional folders are created. `manifest.json` records the run
+status, active global assumptions, selected options, Git state, environment,
+dependency versions, commands, logs, and SHA-256 hashes of generated files.
+When comparing runs, check the manifests first rather than relying only on the
+folder names.
 
-## Sensitivity Dashboard
+## Run One Sector Quickly
 
-The Streamlit dashboard provides interactive deterministic sensitivity analysis
-for cement, electricity, steel, ammonia, and hydrogen. Each sector has its own
-tab for selecting a technology, financial metric, and scenario inputs and for
-generating a one-factor-at-a-time tornado diagram.
-
-To run the dashboard from the repository root:
+Every sector uses the same financial-summary interface. Replace `electricity`
+in this example with `cement`, `steel`, `ammonia`, or `hydrogen`:
 
 ```bash
-PYTHONPATH=src streamlit run sensitivity_dashboard.py
+PYTHONPATH=src .venv/bin/python \
+  -m electricity.electricity_financial_summary \
+  --metric NPV --sample-size 1000
 ```
 
-If you use the thesis Conda environment directly:
+By default, a direct sector run writes:
+
+- date-stamped plots to `figures/`;
+- sampled Monte Carlo inputs to `data/raw/`; and
+- calculated results and rankings to `data/processed/`.
+
+These locations are shared by quick runs. Use a named run when outputs from
+different assumptions or scenarios must remain separated.
+
+### Useful financial-summary options
 
 ```bash
-/opt/anaconda3/envs/master-thesis/bin/streamlit run sensitivity_dashboard.py
+# Deterministic result only; save the figure but no CSV files or rankings.
+PYTHONPATH=src .venv/bin/python \
+  -m steel.steel_financial_summary \
+  --metric LCOX --kind deterministic --no-data --ranking-output none
+
+# Monte Carlo mean and deterministic plots with a smaller test sample.
+PYTHONPATH=src .venv/bin/python \
+  -m ammonia.ammonia_financial_summary \
+  --metric LPM --sample-size 100 --ranking-output plots
+
+# Put a quick check in explicit temporary output directories.
+PYTHONPATH=src .venv/bin/python \
+  -m hydrogen.hydrogen_financial_summary \
+  --metric NPV --sample-size 100 \
+  --output-dir results/quick_check/figures \
+  --raw-data-dir results/quick_check/raw \
+  --processed-data-dir results/quick_check/processed
 ```
 
-The path above is specific to the original development machine. On another
-machine, activate the environment created in the quick start and use the first
-command.
+The most useful options are:
 
-The dashboard uses the same `NPV`, `LPM`, and `LCOX` selector as the summary and
-scenario notebooks. Green bars indicate changes that improve the selected
-metric and red bars indicate changes that worsen it; for LCOX, a lower value is
-treated as better. The `+x%` or `-x%` labels show which input movement caused
-the impact. Downloaded or in-app saved dashboard figures can be written to
-`figures/`.
+| Option | Values | Meaning |
+| --- | --- | --- |
+| `--metric` | `NPV`, `LPM`, `LCOX` | Financial measure to calculate and plot |
+| `--kind` | `all`, `mean`, `deterministic` | Which main comparison figures to create |
+| `--sample-size` | positive integer | Monte Carlo draws per technology |
+| `--random-seed` | integer | Reproducibility seed |
+| `--ranking-output` | `both`, `plots`, `csv`, `none` | Which ranking outputs to save |
+| `--no-data` | flag | Suppresses raw and processed CSV exports |
+| `--retrofit-bau-mode` | `sampled`, `deterministic` | Parent inputs used for Monte Carlo retrofits |
 
-Each sector tab also contains a **Variables in sensitivity analysis** panel.
-Check or uncheck inputs there to control which variables are recalculated and
-shown in the tornado diagram. The product sectors expose their relevant fuel,
-electricity, and emissions inputs; H2-DRI-EAF also exposes hydrogen and its
-secondary charcoal input separately. For BAU-relative CCS technologies the
-dashboard exposes the T&S share of capture cost; for BECCS it exposes the direct
-T&S cost. The same assumptions appear in the standardized heatmaps as `T&S`.
-
-The dashboard is a deterministic scenario tool. It does not change stored model
-assumptions, and it currently varies annual production/generation consistently
-with the deterministic plant-size setup rather than holding capacity
-fixed. Its carbon-price control starts from the active value in
-`src/general_parameters.py`; restart Streamlit after changing that file.
-
-To regenerate the standardized technology-input sensitivity CSV and heatmaps:
+Use the module help for the complete current interface:
 
 ```bash
-PYTHONPATH=src python -m sensitivity_deep_dive
+PYTHONPATH=src .venv/bin/python \
+  -m cement.cement_financial_summary --help
 ```
 
-The heatmaps compare equal relative input changes using the selected `NPV`,
-`LPM`, or `LCOX` metric. Annual output and product selling prices are excluded
-from these cross-technology heatmaps because they are common comparison
-assumptions rather than technology-development inputs. Lifetime and discount
-rate remain included as common financial assumptions. Every row is a
-one-factor-at-a-time calculation, but all downstream equations are evaluated:
-for example full-load hours resize electricity capacity, value factor changes
-captured revenue, and capture-share T&S follows its current capture-cost basis.
-Grouped `Fuel`, `Electricity`, and `Emissions` heatmap cells show the larger of
-their two constituent one-at-a-time impacts; they do not vary both inputs jointly
-or estimate interaction effects.
-The derived sensitivity CSV is written to `data/processed/`; heatmaps are
-written to `figures/`.
+## Generate Marginal Abatement Cost Curves
 
-To regenerate electricity-sector total NPV figures and CSV outputs, run:
+MACCs are available for cement, steel, ammonia, and hydrogen. Electricity has
+no MACC module in this project.
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_financial_summary --metric NPV
+# Deterministic cement MACC.
+PYTHONPATH=src .venv/bin/python -m cement.cement_macc
+
+# Monte Carlo mean steel MACC.
+PYTHONPATH=src .venv/bin/python -m steel.steel_macc \
+  --simulated --sample-size 1000
 ```
 
-For electricity levelized profit margin, use:
+Direct MACC commands write figures to `figures/` and tables to
+`data/processed/` unless output directories are supplied. Add `--simulated` to
+use aligned Monte Carlo means. Steel, ammonia, and hydrogen MACCs also accept
+`--retrofit-bau-mode`; cement does not need that option in its MACC interface.
+
+MACC heights represent annualized resource cost per tonne of direct CO2
+avoided. Carbon payments and product revenue are excluded from the numerator.
+The technologies within one sector are alternatives at the same annual output,
+so their displayed widths are illustrative and must not be summed as
+independent abatement potential.
+
+## Run Sensitivity Analyses
+
+### Standardized heatmaps
+
+Generate one-factor-at-a-time sensitivity results for all sectors:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_financial_summary --metric LPM
+PYTHONPATH=src .venv/bin/python -m sensitivity_deep_dive \
+  --metric LPM --variation 0.20
 ```
 
-For LCOE, use the same electricity workflow with `LCOX`:
+Limit the run when needed:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_financial_summary --metric LCOX
+PYTHONPATH=src .venv/bin/python -m sensitivity_deep_dive \
+  --metric NPV --variation 0.10 --sectors cement steel
 ```
 
-Electricity Monte Carlo summaries use sampled BAU values for the coal and CCGT
-CCS retrofits by default. To hold those BAU inputs at expected values, add
-the electricity summary flag:
+The direct sensitivity command expresses `--variation` as a fraction, so
+`0.20` means 20%. By contrast, `regenerate_all.py` uses
+`--sensitivity-variation-percent 20`. Direct outputs go to `figures/` and
+`data/processed/` unless explicit output directories are provided.
+
+Each heatmap cell is a one-factor-at-a-time recalculation. Downstream equations
+are evaluated again, but grouped cells such as fuel, electricity, or emissions
+report the larger constituent effect rather than varying multiple inputs
+together.
+
+### Interactive dashboard
+
+Start the Streamlit dashboard from the repository root:
 
 ```bash
-PYTHONPATH=src python -m electricity.electricity_financial_summary \
-  --metric LCOX --retrofit-bau-mode deterministic
+PYTHONPATH=src .venv/bin/python -m streamlit run sensitivity_dashboard.py
 ```
 
-For cement, use the same `--metric NPV`, `--metric LPM`, or `--metric LCOX`
-switch. In the cement model, `LCOX` is reported as LCOC:
+The dashboard provides sector tabs, technology and metric selection, editable
+scenario inputs, and tornado diagrams. It is a deterministic exploration tool:
+changes made in the interface do not alter the stored source assumptions.
+Restart it after editing `src/general_parameters.py` or sector parameter files.
+
+## Use the Notebooks
+
+Start Jupyter Lab from the repository root:
 
 ```bash
-PYTHONPATH=src python -m cement.cement_financial_summary --metric LCOX
+PYTHONPATH=src .venv/bin/python -m jupyter lab
 ```
 
-Generated figures are written to `figures/`, raw sampled inputs to `data/raw/`,
-and processed model outputs to `data/processed/`.
+Notebook organization is consistent across sectors:
 
-Raw-input exports contain model inputs after unit normalization. The
-electricity export retains the independently sampled BECCS T&S input as
-`transport_and_storage_cost_input_eur_per_mwh`. Resolved per-unit T&S costs
-for CCS routes are derived values and are stored with the processed outputs.
+- `notebooks/<sector>/<sector>_summary.ipynb` compares all technologies in a
+  sector using deterministic and Monte Carlo results.
+- `notebooks/<sector>/deterministic_*_npv.ipynb` explains one deterministic
+  technology calculation and its inputs.
+- `notebooks/<sector>/plot_*_npv.ipynb` explores one technology's Monte Carlo
+  inputs, financial distribution, and cost components.
+- `notebooks/<sector>/<sector>_macc.ipynb` presents that sector's MACC for
+  cement, steel, ammonia, and hydrogen.
+- `notebooks/scenario_analysis.ipynb` contains selected deterministic scenario
+  comparisons.
+- `notebooks/sensitivity_heatmap.ipynb` presents standardized sensitivity
+  heatmaps.
+- `notebooks/plot_fuel_elec_price_distributions.ipynb` inspects shared price
+  distributions.
 
-Use `--help` on either module to see options for sample size, random seed,
-financial metric, output type, and retrofit BAU baseline mode.
+Notebook figures are displayed inline. The notebooks do not contain separate
+save-output switches. For a non-destructive verification of every notebook,
+use `regenerate_all.py --verify-notebooks`; it saves executed copies under the
+named run and leaves the source notebooks unchanged.
 
-## Financial Metrics
+## How the Model Is Organized
 
-The reporting workflows can switch between:
-
-- `NPV`: total project net present value, displayed in million EUR.
-- `LPM`: levelized profit margin, displayed in EUR per sector product unit.
-- `LCOX`: levelized cost of the sector product. This is displayed as LCOE in
-  EUR/MWh for electricity and LCOC in EUR/t cement for cement.
-
-All three metrics use the same project lifetime, discount rate, and cash-flow
-timing:
+The main calculation path is:
 
 ```text
-LPM = NPV / discounted lifetime output
-LPM = levelized revenue - LCOX
-LCOX = discounted lifetime cost / discounted lifetime output
-discounted lifetime output = sum(output_t / (1 + r)^t)
-discounted lifetime cost = CAPEX at t=0 + sum(annual cost_t / (1 + r)^t)
+shared and sector parameters
+        ↓
+deterministic expected inputs or Monte Carlo samples
+        ↓
+sector technology model
+        ↓
+shared discounted-finance functions
+        ↓
+summary tables, rankings, figures, MACCs, and sensitivities
 ```
 
-For the current level annual-output models, discounted lifetime output equals
-annual output multiplied by the level cash-flow present-value factor. Positive
-LPM creates value, zero is break-even, and negative LPM destroys value under the
-stated assumptions. Lower LCOX is preferable. The LCOX boundary includes CAPEX,
-fixed OPEX, variable OPEX, fuel, cement electricity consumption, and carbon
-cost; product sales revenue is excluded. The supplied fixed and variable OPEX
-parameters exclude fuel and purchased electricity, which are added separately.
-The LPM terminology follows the life-cycle unit-profit definition introduced by
-[Glenk and Reichelstein (2022)](https://doi.org/10.1016/j.rser.2022.112758).
-Under the current constant-price and constant-output assumptions:
+For each sector, the reusable modules have the same responsibilities:
+
+| Module | Responsibility |
+| --- | --- |
+| `<sector>_parameters.py` | Final technology and sector assumptions |
+| `<sector>_npv_deterministic.py` | Builds the expected-input case |
+| `<sector>_npv_monte_carlo.py` | Samples uncertain inputs with aligned simulation IDs |
+| `<sector>_npv_model.py` | Resolves technology inputs and calculates sector results |
+| `<sector>_financial_summary.py` | Configures figures, tables, rankings, units, and CLI behavior |
+| `<sector>_macc.py` | Calculates deterministic or simulated MACCs where available |
+
+Shared logic lives in:
+
+- `src/general_parameters.py` for assumptions used across sectors, including
+  carbon price, discount rate, CCS transport and storage, and energy prices;
+- `src/distributions.py` for fixed, uniform, triangular, and scaled-beta input
+  definitions;
+- `src/npv_finance.py` for discounted cash flow, NPV, LPM, and LCOX;
+- `src/financial_summary_workflow.py` for the common simulation-to-output
+  workflow;
+- `src/npv_summary.py` and `src/npv_summary_plots.py` for reusable summaries,
+  rankings, and plots; and
+- `src/sensitivity_analysis.py` and `src/sensitivity_deep_dive.py` for
+  deterministic sensitivity calculations and heatmaps.
+
+The `*_npv_summary_figures.py` modules are compatibility forwarders for older
+commands. New work should use `*_financial_summary.py`.
+
+## Financial Metrics and Units
+
+The same metric selectors are used in all sectors:
+
+| Selector | Meaning | Interpretation |
+| --- | --- | --- |
+| `NPV` | Total project net present value | Higher is better; figures report million EUR |
+| `LPM` | Levelized profit margin | Higher is better; positive values create value |
+| `LCOX` | Levelized cost of the sector product | Lower is better; product-specific unit |
+
+`LCOX` is displayed with a sector-specific name:
+
+| Sector | Displayed metric | Unit |
+| --- | --- | --- |
+| Electricity | LCOE | EUR/MWh |
+| Cement | LCOC | EUR/t cement |
+| Steel | LCOS | EUR/t crude steel |
+| Ammonia | LCOA | EUR/tNH3 |
+| Hydrogen | LCOH | EUR/tH2 |
+
+The shared relationships are:
 
 ```text
-electricity captured price - LCOE = electricity LPM
-cement price - LCOC = cement LPM
+discounted lifetime output = Σ output_t / (1 + r)^t
+discounted lifetime cost   = CAPEX at t=0 + Σ annual cost_t / (1 + r)^t
+LCOX                       = discounted lifetime cost / discounted lifetime output
+LPM                        = NPV / discounted lifetime output
+LPM                        = levelized revenue - LCOX
 ```
 
-Deterministic and probabilistic LCOX comparisons are available in each
-sector's `*_summary.ipynb` notebook and through the corresponding
-`*_financial_summary --metric LCOX` command. Cross-sector LCOX values should
-not be placed on one ranking because they refer to different products and
-functional units.
+Product sales revenue is excluded from LCOX. Technology costs, fuel and
+purchased electricity where relevant, and direct carbon costs or credits are
+included according to each sector model. Cross-sector LCOX values must not be
+placed in one ranking because the products and functional units differ.
 
-The sector MACCs annualize CAPEX and use all annual technology costs, including
-CCS transport and storage, while excluding carbon payments and product revenue.
-Their bar heights therefore measure resource cost per tonne of direct CO2
-avoided. The reference technologies are cement BAU, steel BF-BOF BAU, ammonia
-NG-SMR + Haber-Bosch, and hydrogen NG-SMR. Each sector supports deterministic
-and aligned Monte Carlo results through its `src/<sector>/<sector>_macc.py`
-module and matching `notebooks/<sector>/<sector>_macc.ipynb` notebook.
+## Important Modeling Conventions
 
-All routes within a sector are alternatives at the same annual output, so their
-plotted abatement widths are illustrative and cannot be added as independent
-sector potential. Routes without positive direct abatement relative to the
-reference are omitted; this excludes unabated coal gasification from the
-ammonia MACC. Run the new MACCs with:
+- Technology cost assumptions in the sector parameter modules are the final
+  model values. Costs that required CEPCI conversion have been normalized to
+  2024 values before being entered into the active model.
+- The active carbon price is defined in `src/general_parameters.py`; there is
+  no carbon-price command-line override. Change it deliberately in that file
+  and use a new run name. Every named-run manifest records the value actually
+  used.
+- The carbon price is applied to modeled direct operational emissions. Negative
+  direct emissions, such as BECCS, therefore create a carbon-credit term in the
+  financial calculation.
+- Deterministic cases use analytical expected inputs: the stored mean for a
+  scaled-beta distribution, `(minimum + mode + maximum) / 3` for a triangular
+  distribution, the midpoint for a uniform distribution, and the stored value
+  for a fixed parameter.
+- A deterministic expected-input result need not equal the Monte Carlo output
+  mean when later equations are nonlinear.
+- The default Monte Carlo setup uses 100,000 draws per technology and random
+  seed 42. Use smaller samples for development, but use and record an
+  appropriate final sample size for thesis results.
+- `retrofit_bau_mode=sampled` is the default. A retrofit and its parent reuse
+  the same sampled BAU inputs for each simulation ID. The `deterministic` mode
+  fixes the parent at expected inputs while sampling the retrofit increments;
+  it is mainly useful for diagnostics.
+- Applicable CCS routes add transport and storage as 18.7% of the levelized
+  incremental capture cost before carbon-price effects. BECCS uses its direct
+  transport-and-storage cost input instead.
+- Model outputs cover the system boundaries encoded in the source modules.
+  Do not infer upstream life-cycle emissions, infrastructure constraints, or
+  market deployment potential unless they are explicitly represented.
+
+Always inspect the relevant parameter and model modules before changing an
+assumption. After a change, make a small direct run first and then create a new
+named result run so old and new assumptions remain distinguishable.
+
+## Generated Files and Version Control
+
+- `data/raw/` contains generated, unit-resolved Monte Carlo input samples. It
+  does not contain the only copy of source assumptions.
+- `data/processed/` contains generated technology results, summary statistics,
+  rankings, MACC tables, and sensitivity tables.
+- `results/runs/` contains isolated named runs, logs, executed notebook copies,
+  and manifests.
+- `results/temporary/` is reserved for explicitly temporary comparison work.
+- `figures/` contains tracked reference figures. Quick commands create new
+  date-stamped figures rather than silently replacing older dates.
+
+The generated data and result directories can become very large and are
+ignored by Git. Do not place hand-edited assumptions or irreplaceable work only
+inside an ignored directory.
+
+## Basic Validation
+
+Compile the source files after editing code:
 
 ```bash
-PYTHONPATH=src python -m ammonia.ammonia_macc
-PYTHONPATH=src python -m ammonia.ammonia_macc --simulated
-PYTHONPATH=src python -m hydrogen.hydrogen_macc
-PYTHONPATH=src python -m hydrogen.hydrogen_macc --simulated
+.venv/bin/python -m compileall -q src regenerate_all.py \
+  sensitivity_dashboard.py
 ```
 
-## Ammonia financial model
-
-The ammonia source modules in `src/ammonia/` compare seven greenfield routes
-and two CCS add-ons at **1,000,000 tNH3/year**. They use the supplied 25-year
-lifetime and 890 EUR/tNH3 price, shared fuel and electricity prices from
-`src/general_parameters.py`, and the common discount, carbon-price, and CCS
-transport/storage formulas. `LCOX` reports levelized cost of ammonia (LCOA).
-Run the deterministic and Monte Carlo figures, raw inputs, processed outputs,
-and rankings with:
+Preview the full workflow without creating files:
 
 ```bash
-PYTHONPATH=src python -m ammonia.ammonia_financial_summary \
-  --metric LCOX --sample-size 1000
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name validation_preview --full --dry-run
 ```
 
-`notebooks/ammonia/ammonia_summary.ipynb` displays the comparison tables,
-paired metric charts, and Monte Carlo rankings inline. The default
-`notebooks/sensitivity_heatmap.ipynb` run includes ammonia alongside cement,
-electricity, and steel. `notebooks/ammonia/ammonia_macc.ipynb` compares direct
-emissions abatement and resource cost against NG-SMR + Haber-Bosch.
-
-Use `--retrofit-bau-mode deterministic` to hold each CCS parent at its
-expected inputs. The default `sampled` mode shares parent draws with its CCS
-add-on. Coal and biomass feedstock plus process fuel are each costed once via
-their supplied total MWh/tNH3. Biomass gasification uses zero direct operational
-emissions and the shared biomass-energy price distribution. The model does not
-add upstream emissions or a solid-carbon coproduct credit for methane
-pyrolysis.
-
-## Hydrogen financial model
-
-The source modules in `src/hydrogen/` compare six stand-alone hydrogen routes
-and two NG-SMR retrofits at **100,000 tH2/year**, with a 25-year lifetime and
-technology-specific retail prices: 7,500 EUR/tH2 for AEL, PEM, and SOEC, and
-2,800 EUR/tH2 for every non-electrolysis route. They calculate deterministic
-NPV, levelized profit margin, and levelized cost of hydrogen (LCOH), plus
-aligned Monte Carlo simulations, rankings, figures, and raw/processed CSVs.
-For example:
+Run a small sector check before a large simulation:
 
 ```bash
-PYTHONPATH=src python -m hydrogen.hydrogen_financial_summary \
-  --metric LCOX --sample-size 1000
+PYTHONPATH=src .venv/bin/python \
+  -m electricity.electricity_financial_summary \
+  --metric NPV --sample-size 100 \
+  --output-dir results/validation/figures \
+  --raw-data-dir results/validation/raw \
+  --processed-data-dir results/validation/processed
 ```
 
-`LCOX` selects LCOH in this sector. The default retrofit baseline mode shares
-sampled NG-SMR inputs with biomethane SMR and NG-SMR + CCS; use
-`--retrofit-bau-mode deterministic` to hold the parent at expected inputs.
-The eight `notebooks/hydrogen/deterministic_*_npv.ipynb` notebooks show
-expected inputs, financial outputs, and parent/incremental retrofit inputs.
-The matching `plot_*_npv.ipynb` notebooks show NPV, LPM, and LCOH Monte Carlo
-distributions plus annual cost components. Notebook figures remain inline.
-`notebooks/hydrogen/hydrogen_summary.ipynb` compares all eight routes using
-aligned Monte Carlo and deterministic NPV, LPM, or LCOH results and displays
-the Monte Carlo ranking. The default `notebooks/sensitivity_heatmap.ipynb`
-run includes hydrogen alongside ammonia, cement, electricity, and steel.
-`notebooks/hydrogen/hydrogen_macc.ipynb` compares direct emissions abatement
-and resource cost against NG-SMR.
-Biomethane SMR replaces the parent's natural gas with biomethane. NG-SMR + CCS
-uses its incremental costs and energy consumption, 90% capture, and the shared
-CCS transport/storage cost rule. Fuel and electricity costs are calculated
-separately from the supplied OPEX values; upstream emissions and carbon
-by-product credits are outside the model boundary.
-
-The hydrogen model uses the report-sourced shared biomass-energy price
-distribution for biomass gasification and the report-sourced fixed value of
-87.5 EUR/MWh_th for biomethane.
-
-## Generated Data and Version Control
-
-`data/raw/`, `data/processed/`, and `results/` are intentionally ignored by Git.
-They can become very large. They are reproducible outputs, not the only copy of
-source assumptions.
-Do not place hand-edited inputs or irreplaceable results only in these ignored
-folders.
-
-The dated PNG files in `figures/` are tracked selectively. Regenerating a
-workflow creates new date-stamped files rather than overwriting older figures.
-
-## Basic Check
-
-Before handing over a change:
-
-```bash
-python -m compileall -q src sensitivity_dashboard.py
-```
+For the authoritative options of any command, use `--help`. The README explains
+the intended workflow; the command-line help reflects the exact current
+interface.

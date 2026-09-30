@@ -10320,3 +10320,78 @@ through the reproducible result workflow.
 ### Next suggested step
 
 Use a new descriptive run name when notebook execution is next required.
+
+## 2026-09-30 15:39 CEST — Replace handover documentation with a complete README
+
+### User request
+
+Delete the `docs/` folder and comprehensively rewrite the README so that a new
+user can understand the repository, find the appropriate commands, locate
+inputs and outputs, and run either isolated result workflows or quick checks.
+
+### Files changed
+
+- `README.md` — replaced the previous mixed overview with a structured project
+  description and operating guide.
+- `docs/HANDOVER.md` — deleted as requested; it was the only file in `docs/`,
+  so the directory was removed.
+- `CHANGELOG.md` — appended this change record.
+
+### What was implemented
+
+- Added a newcomer-oriented start table that distinguishes named result runs,
+  quick sector runs, notebooks, heatmaps, and the interactive dashboard.
+- Documented installation, the repository layout, source-module
+  responsibilities, financial metrics, sector-specific LCOX names and units,
+  and the flow from parameters to outputs.
+- Added copyable commands for standard, full, focused, MACC, sensitivity,
+  notebook, dashboard, and validation workflows.
+- Documented where each workflow writes figures, raw samples, processed data,
+  logs, manifests, and executed notebooks.
+- Added a complete named-run option reference and manifest-backed output tree.
+- Clarified that optional regeneration flags add to the standard financial
+  workflow, that notebook verification executes all notebooks regardless of a
+  sector filter, and that source notebooks are not overwritten.
+- Clarified the different sensitivity variation units used by the direct and
+  named-run interfaces.
+- Retained the essential interpretation rules for deterministic inputs, Monte
+  Carlo sampling, retrofit baselines, 2024 CEPCI-normalized costs, carbon
+  pricing, CCS transport and storage, MACCs, and model boundaries while
+  removing long technology-specific digressions from the onboarding path.
+- Clarified that the carbon price is changed in
+  `src/general_parameters.py`, not through a command-line override, and is
+  recorded in named-run manifests.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m compileall -q src regenerate_all.py
+    sensitivity_dashboard.py`
+  - help checks for all five financial-summary modules, all four MACC modules,
+    `sensitivity_deep_dive`, and `regenerate_all.py`
+  - `PYTHONPATH=src .venv/bin/python -m streamlit version`
+  - `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name
+    readme_validation_preview --full --sectors electricity --metrics NPV
+    --sample-size 10 --dry-run`
+  - README fenced-block and required-topic checks
+  - `git diff --check`
+- Result:
+  - Passed: all Python sources compile and every documented command family is
+    available through its current command-line interface.
+  - Passed: the focused full-workflow preview reports the active assumptions
+    and 102 planned steps without creating outputs.
+  - Passed: Streamlit is installed, README code fences are balanced, all
+    required workflow and output topics are present, and no whitespace errors
+    were found.
+  - Passed: the `docs/` directory no longer exists.
+
+### Reproducibility notes
+
+- This change affects documentation only. No source assumption, model,
+  notebook, generated data, figure, or existing result run was changed.
+- Historical references to the deleted handover file remain only in older,
+  append-only changelog entries; active documentation contains no stale link.
+
+### Next suggested step
+
+Use the README's focused dry-run example before the next complete thesis run.
