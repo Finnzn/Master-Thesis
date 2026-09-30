@@ -119,7 +119,17 @@ PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name macc_results \
 # Financial summaries plus sensitivity CSVs and heatmaps.
 PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name heatmap_results \
   --include-heatmaps
+
+# Financial summaries plus non-destructive execution of all notebooks.
+PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name notebook_results \
+  --verify-notebooks
 ```
+
+The standard command does not execute notebooks. `--verify-notebooks` stores
+the executed copies under
+`results/runs/<run-name>/notebook_verification/` without overwriting the source
+notebooks. The `--full` preset includes notebook verification together with
+both MACC variants and the selected heatmaps.
 
 The main options are:
 

@@ -92,6 +92,18 @@ control scope and simulations, or `--dry-run` to inspect the exact plan. Run
 `.venv/bin/python regenerate_all.py --help` for all options and examples. The
 script refuses to reuse a run directory.
 
+To execute all notebooks without running the MACC or heatmap additions, use:
+
+```bash
+PYTHONPATH=src .venv/bin/python regenerate_all.py \
+  --run-name thesis_results_notebooks --verify-notebooks
+```
+
+The standard command does not execute notebooks. The command above stores
+executed copies in `results/runs/<run-name>/notebook_verification/` and leaves
+the source notebooks unchanged. The `--full` preset includes this notebook
+verification together with both MACC variants and all selected heatmaps.
+
 Interactive five-sector sensitivity dashboard:
 
 ```bash

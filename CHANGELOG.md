@@ -10214,3 +10214,109 @@ Create a complete named run called `Run_4_DACC` with a carbon price of
 The carbon-price validation covered 4.4 million Monte Carlo rows, not
 3.4 million. The stated 44 deterministic rows and all validation conclusions
 remain unchanged.
+
+## 2026-09-30 12:20 CEST — Create temporary EU ETS versus DACC NPV comparisons
+
+### User request
+
+Create a temporary comparison package that directly contrasts the EU ETS
+80 EUR/tCO2 case with the DACC 400 EUR/tCO2 case using only deterministic and
+Monte Carlo mean bar plots.
+
+### Files changed
+
+- `results/temporary/DACC_vs_EU_ETS_NPV/` — created the explicitly requested
+  temporary, Git-ignored comparison package containing 10 figures, the plotted
+  values, generator script, README, and artifact manifest.
+- `CHANGELOG.md` — recorded the temporary analysis and its verification.
+
+### What was implemented
+
+- Used `Run_3_CEPCI` as the EU ETS case and `Run_4_DACC` as the DACC case.
+- Generated two paired horizontal NPV bar charts for each of the five sectors:
+  one Monte Carlo mean comparison and one deterministic comparison.
+- Used blue bars for EU ETS and orange bars for DACC. Monte Carlo charts retain
+  the 5th–95th percentile whiskers and median markers from the thesis plotting
+  convention.
+- Applied one common x-axis range to the deterministic and Monte Carlo figures
+  within each sector so the two analysis types can be compared visually.
+- Wrote `comparison_values.csv` with all 88 plotted sector/technology/analysis
+  rows and `comparison_manifest.json` with source-run assumptions and SHA-256
+  hashes.
+- Included `generate_comparison.py` and a README so the temporary package can be
+  regenerated without changing either source run or rerunning the models.
+
+### Verification
+
+- Confirmed from the source-run manifests that the compared carbon prices are
+  exactly 80 and 400 EUR/tCO2 and that both runs use 100,000 draws and seed 42.
+- Verified all 13 manifested package files against their recorded file sizes and
+  SHA-256 hashes.
+- Confirmed the values table contains all 88 expected rows and that every
+  reported change equals DACC NPV minus EU ETS NPV within 1e-9 million EUR.
+- Confirmed all 10 PNGs are at least 2,000 pixels wide and 1,200 pixels high.
+- Visually inspected representative figures from every sector for label,
+  legend, zero-crossing, bar, median-marker, and whisker rendering.
+- Compiled the generator script and ran `git diff --check` successfully.
+
+### Reproducibility notes
+
+- The comparison reads completed processed outputs only. No model source,
+  source notebook, or existing run artifact was modified.
+- The temporary package occupies approximately 952 KB under `results/` and is
+  intentionally ignored by Git, as explicitly requested.
+
+## 2026-09-30 12:33 CEST — Document notebook-only workflow execution
+
+### User request
+
+Add an explicit explanation and command showing how to execute the notebooks
+through the reproducible result workflow.
+
+### Files changed
+
+- `regenerate_all.py` — added the notebook-only command and clarified the
+  difference between the standard, notebook-verification, and full workflows
+  in both the module documentation and command-line examples.
+- `README.md` — added the notebook execution example, output location, and
+  source-preservation behavior to the primary usage guide.
+- `docs/HANDOVER.md` — added the same notebook-only instructions to the project
+  handover documentation.
+- `CHANGELOG.md` — recorded this documentation update and its verification.
+
+### What was implemented
+
+- Documented `--verify-notebooks` as the independent notebook-execution option.
+- Clarified that the standard command does not execute notebooks.
+- Clarified that executed copies are written to
+  `results/runs/<run-name>/notebook_verification/` and source notebooks are not
+  overwritten.
+- Clarified that `--full` includes notebook verification as well as both MACC
+  variants and the selected heatmaps.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m py_compile regenerate_all.py`
+  - `.venv/bin/python regenerate_all.py --help`
+  - `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name
+    notebook_documentation_check --verify-notebooks --dry-run`
+  - `git diff --check`
+- Result:
+  - Passed: the script compiles, the help text displays the notebook-only
+    example, and the dry run plans 115 steps (15 financial summaries and 100
+    notebook executions).
+  - Passed: the dry run did not create a result directory or modify notebooks.
+  - Passed: no whitespace errors were found.
+
+### Reproducibility notes
+
+- This is a documentation-only change; no model assumption, source notebook,
+  or existing result was changed.
+- Rerun the documented notebook workflow with `PYTHONPATH=src
+  .venv/bin/python regenerate_all.py --run-name <new-name>
+  --verify-notebooks`.
+
+### Next suggested step
+
+Use a new descriptive run name when notebook execution is next required.

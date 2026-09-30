@@ -24,6 +24,15 @@ Optional analyses can also be selected separately::
     # Financial summaries plus sensitivity CSVs and heatmaps.
     PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results_heatmaps --include-heatmaps
 
+    # Financial summaries plus non-destructive execution of all notebooks.
+    PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results_notebooks --verify-notebooks
+
+The standard command does not execute notebooks. ``--verify-notebooks``
+executes every project notebook and stores the executed copies below
+``results/runs/<run-name>/notebook_verification/`` without overwriting the
+source notebooks. ``--full`` includes this notebook verification together with
+both MACC variants and all selected heatmaps.
+
 Use ``--sectors`` and ``--metrics`` to limit the scope; ``--sample-size``,
 ``--random-seed``, and ``--retrofit-bau-mode`` configure simulations;
 ``--output-root`` changes the parent directory; and ``--dry-run`` previews the
@@ -112,6 +121,10 @@ Examples:
   PYTHONPATH=src .venv/bin/python regenerate_all.py \\
       --run-name thesis_results_selected \\
       --macc-mode deterministic --include-heatmaps
+
+  # Execute all notebooks non-destructively alongside the financial summaries.
+  PYTHONPATH=src .venv/bin/python regenerate_all.py \\
+      --run-name thesis_results_notebooks --verify-notebooks
 
 Output layout:
   results/runs/<run-name>/
