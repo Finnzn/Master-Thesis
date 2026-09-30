@@ -443,9 +443,6 @@ Shared logic lives in:
 - `src/sensitivity_analysis.py` and `src/sensitivity_deep_dive.py` for
   deterministic sensitivity calculations and heatmaps.
 
-The `*_npv_summary_figures.py` modules are compatibility forwarders for older
-commands. New work should use `*_financial_summary.py`.
-
 ## Financial Metrics and Units
 
 The same metric selectors are used in all sectors:

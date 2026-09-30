@@ -10817,3 +10817,131 @@ integration is actually zero-cost.
 
 Use `--abatement-comparison-mode both` in the next named final run so all saved
 artifacts use the renamed architecture.
+
+## 2026-09-30 18:24 CEST — Audit transport-and-storage cost dependencies
+
+### User request
+
+Determine whether carbon payments are included in the percentage-based CCS
+transport-and-storage calculation, explain whether the resulting cost is stored
+or recalculated, and clarify what happens when another cost component is
+ignored.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this model-audit record; no calculation source was
+  changed.
+
+### What was implemented
+
+- Traced the shared transport-and-storage formula and its electricity, cement,
+  steel, ammonia, and hydrogen call sites.
+- Confirmed that the 18.7% surcharge is applied once to the levelized
+  BAU-relative CCS capture cost before transport/storage and before carbon
+  payments.
+- Confirmed that the capture-cost basis contains incremental CAPEX and the
+  differences in fixed OPEX, variable OPEX, fuel, and electricity costs.
+- Confirmed that product revenue, carbon payments, and transport/storage itself
+  are outside the percentage basis.
+- Confirmed that the per-output and annual transport/storage values are
+  calculated for every deterministic case or Monte Carlo draw, retained in the
+  result mapping, and exported in processed outputs.
+- Identified BECCS as the exception: it uses an explicit EUR/MWh transport and
+  storage input rather than the 18.7% calculation.
+
+### Verification
+
+- Commands run:
+  - inspected `calculate_ccs_transport_and_storage_cost_per_output()` and every
+    sector call site
+  - calculated deterministic capture-cost and transport/storage ratios for
+    cement CCS, steel BF-BOF + CCS, ammonia NG-SMR + CCS, hydrogen NG-SMR +
+    CCS, and hard-coal electricity + CCS
+  - inspected processed-output column definitions and abatement-comparison cost
+    construction
+- Result:
+  - Passed: each percentage-based route produced a transport/storage cost equal
+    to exactly 0.187 times its capture cost excluding transport/storage.
+  - Passed: changing carbon price does not change the transport/storage value.
+  - Passed: BECCS retains its independent explicit transport/storage input.
+
+### Reproducibility notes
+
+- Ignoring a component only in a downstream displayed metric does not
+  retroactively change the already-calculated transport/storage surcharge.
+- To remove a component from both the displayed metric and the surcharge, it
+  must be excluded from the capture-cost basis and the model must be rerun.
+
+### Next suggested step
+
+Document this dependency rule next to any future cost-exclusion scenario so it
+is explicit whether transport/storage should be recalculated.
+
+## 2026-09-30 — Clarified sensitivity-module roles in README
+
+### Scope
+
+- Reworked the architecture overview in `README.md` so the two sensitivity
+  modules are described separately and concretely.
+- Removed the newcomer-facing note about legacy
+  `*_npv_summary_figures.py` compatibility forwarders.
+
+### Changes
+
+- Documented `src/sensitivity_analysis.py` as the reusable deterministic
+  one-at-a-time calculation engine used by the dashboard, notebooks, and batch
+  sensitivity workflow.
+- Documented `src/sensitivity_deep_dive.py` as the batch layer that applies a
+  common relative input change, ranks effects, and exports the combined CSV and
+  sector heatmaps.
+- Clarified that this workflow recalculates dependent CCS transport and storage
+  costs, does not run Monte Carlo simulation, and does not make
+  `sensitivity_analysis.py` itself the complete output generator.
+
+### Verification
+
+- Confirmed the stated responsibilities against both modules and their call
+  sites in the dashboard, notebooks, and `regenerate_all.py`.
+- Confirmed that the removed compatibility-forwarder explanation no longer
+  appears in `README.md`.
+
+### Reproducibility notes
+
+- Documentation-only change; no model assumptions, calculations, or generated
+  outputs changed.
+
+## 2026-09-30 — Removed obsolete financial-summary compatibility modules
+
+### Scope
+
+- Removed the five legacy `*_npv_summary_figures.py` compatibility forwarders
+  after confirming that the current codebase, notebooks, commands, and README
+  no longer reference them.
+
+### Files removed
+
+- `src/ammonia/ammonia_npv_summary_figures.py`
+- `src/cement/cement_npv_summary_figures.py`
+- `src/electricity/electricity_npv_summary_figures.py`
+- `src/hydrogen/hydrogen_npv_summary_figures.py`
+- `src/steel/steel_npv_summary_figures.py`
+
+### Verification
+
+- Compiled `src`, `regenerate_all.py`, and `sensitivity_dashboard.py` without
+  errors.
+- Confirmed that all five current `*_financial_summary.py` command-line modules
+  expose their help successfully.
+- Executed every current financial-summary module with a small deterministic
+  and Monte Carlo check run; each sector generated both expected NPV figures.
+- Confirmed that the complete 126-step `regenerate_all.py --full` workflow
+  resolves only current module names in dry-run mode.
+- Re-scanned the active repository and found no remaining references to
+  `npv_summary_figures` outside this historical changelog.
+
+### Reproducibility notes
+
+- No scientific calculation, parameter, notebook, or output format changed.
+- Historical commands that explicitly invoke a removed
+  `*_npv_summary_figures.py` module no longer work; the documented
+  `*_financial_summary.py` commands are the only supported interface.
