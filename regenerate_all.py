@@ -1,25 +1,27 @@
 """Run the thesis result workflows from one reproducible command.
 
 ``regenerate_all.py`` is the central entry point for regenerating financial
-summaries, MACCs, sensitivity heatmaps, and executed notebook copies. It does
-not contain scientific calculation logic: it calls the existing project
-commands, gives every run a user-selected name, and collects the outputs in one
-isolated directory with logs and a reproducibility manifest.
+summaries, technology abatement-cost comparisons, sensitivity heatmaps, and
+executed notebook copies. It does not contain scientific calculation logic: it
+calls the existing project commands, gives every run a user-selected name, and
+collects the outputs in one isolated directory with logs and a reproducibility
+manifest.
 
 Run commands from the repository root. The standard named run generates NPV,
 LPM, and LCOX financial summaries for all five sectors::
 
     PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results
 
-The complete workflow, including both MACC variants, all selected heatmaps, and
-non-destructive execution of every notebook, is one command::
+The complete workflow, including deterministic and simulated abatement-cost
+comparisons, all selected heatmaps, and non-destructive execution of every
+notebook, is one command::
 
     PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results_full --full
 
 Optional analyses can also be selected separately::
 
-    # Financial summaries plus deterministic and simulated MACCs.
-    PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results_macc --macc-mode both
+    # Financial summaries plus deterministic and simulated abatement comparisons.
+    PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results_abatement_comparison --abatement-comparison-mode both
 
     # Financial summaries plus sensitivity CSVs and heatmaps.
     PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name thesis_results_heatmaps --include-heatmaps
@@ -31,7 +33,7 @@ The standard command does not execute notebooks. ``--verify-notebooks``
 executes every project notebook and stores the executed copies below
 ``results/runs/<run-name>/notebook_verification/`` without overwriting the
 source notebooks. ``--full`` includes this notebook verification together with
-both MACC variants and all selected heatmaps.
+both abatement-comparison variants and all selected heatmaps.
 
 Use ``--sectors`` and ``--metrics`` to limit the scope; ``--sample-size``,
 ``--random-seed``, and ``--retrofit-bau-mode`` configure simulations;
@@ -74,9 +76,9 @@ from general_parameters import CARBON_PRICE_EUR_PER_T, INTEREST_RATE  # noqa: E4
 
 SECTORS = ("electricity", "cement", "steel", "ammonia", "hydrogen")
 METRICS = ("NPV", "LPM", "LCOX")
-MACC_SECTORS = ("cement", "steel", "ammonia", "hydrogen")
+ABATEMENT_COMPARISON_SECTORS = ("cement", "steel", "ammonia", "hydrogen")
 RETROFIT_BAU_MODES = ("sampled", "deterministic")
-MACC_MODES = ("none", "deterministic", "simulated", "both")
+ABATEMENT_COMPARISON_MODES = ("none", "deterministic", "simulated", "both")
 RUN_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -97,8 +99,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Run the thesis financial summaries and optional MACC, heatmap, "
-            "and notebook workflows into one named, reproducible result set."
+            "Run the thesis financial summaries and optional abatement-comparison, "
+            "heatmap, and notebook workflows into one named, reproducible result set."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -113,14 +115,15 @@ Examples:
   PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name quick_check \\
       --sectors electricity cement --metrics NPV --sample-size 100
 
-  # Complete workflow: summaries, both MACC modes, heatmaps, and notebooks.
+  # Complete workflow: summaries, both abatement-comparison modes, heatmaps,
+  # and notebooks.
   PYTHONPATH=src .venv/bin/python regenerate_all.py \\
       --run-name thesis_results_full --full
 
   # Select optional analyses individually instead of using --full.
   PYTHONPATH=src .venv/bin/python regenerate_all.py \\
       --run-name thesis_results_selected \\
-      --macc-mode deterministic --include-heatmaps
+      --abatement-comparison-mode deterministic --include-heatmaps
 
   # Execute all notebooks non-destructively alongside the financial summaries.
   PYTHONPATH=src .venv/bin/python regenerate_all.py \\
@@ -131,7 +134,7 @@ Output layout:
     manifest.json
     logs/
     financial/<sector>/<metric>/{figures,raw,processed}/
-    macc/<sector>/<deterministic|simulated>/{figures,processed}/
+    abatement_comparison/<sector>/<deterministic|simulated>/{figures,processed}/
     heatmaps/<metric>/{figures,processed}/
     notebook_verification/                 # only with --verify-notebooks
 
@@ -189,21 +192,23 @@ to prevent different result sets from being silently overwritten.
         ),
     )
     parser.add_argument(
-        "--macc-mode",
-        choices=MACC_MODES,
+        "--abatement-comparison-mode",
+        choices=ABATEMENT_COMPARISON_MODES,
         default="none",
         help=(
-            "Optionally generate deterministic MACCs, simulated mean MACCs, "
-            "or both (default: none). Electricity has no MACC module."
+            "Optionally generate deterministic or simulated mean technology "
+            "abatement-cost comparisons, or both (default: none). Electricity "
+            "has no abatement-comparison module."
         ),
     )
     parser.add_argument(
         "--full",
         action="store_true",
         help=(
-            "Run the complete workflow: financial summaries, both MACC modes, "
-            "sensitivity heatmaps, and notebook verification. Sector, metric, "
-            "simulation, and output options still apply."
+            "Run the complete workflow: financial summaries, both "
+            "abatement-comparison modes, sensitivity heatmaps, and notebook "
+            "verification. Sector, metric, simulation, and output options "
+            "still apply."
         ),
     )
     parser.add_argument(
@@ -321,29 +326,33 @@ def _financial_steps(
     return steps
 
 
-def _macc_steps(
+def _abatement_comparison_steps(
     sectors: tuple[str, ...],
     run_dir: Path,
-    macc_mode: str,
+    abatement_comparison_mode: str,
     sample_size: int,
     random_seed: int,
     retrofit_bau_mode: str,
 ) -> list[Step]:
-    """Build optional deterministic and/or simulated MACC commands."""
+    """Build optional deterministic and/or simulated abatement-comparison commands."""
 
-    if macc_mode == "none":
+    if abatement_comparison_mode == "none":
         return []
-    modes = ("deterministic", "simulated") if macc_mode == "both" else (macc_mode,)
+    modes = (
+        ("deterministic", "simulated")
+        if abatement_comparison_mode == "both"
+        else (abatement_comparison_mode,)
+    )
     steps = []
     for sector in sectors:
-        if sector not in MACC_SECTORS:
+        if sector not in ABATEMENT_COMPARISON_SECTORS:
             continue
         for mode in modes:
-            target = run_dir / "macc" / sector / mode
+            target = run_dir / "abatement_comparison" / sector / mode
             command = [
                 sys.executable,
                 "-m",
-                f"{sector}.{sector}_macc",
+                f"{sector}.{sector}_abatement_comparison",
                 "--project-root",
                 str(PROJECT_ROOT),
                 "--processed-data-dir",
@@ -359,7 +368,9 @@ def _macc_steps(
                 command.append("--simulated")
             if sector in {"steel", "ammonia", "hydrogen"}:
                 command.extend(("--retrofit-bau-mode", retrofit_bau_mode))
-            steps.append(Step(f"macc_{sector}_{mode}", tuple(command)))
+            steps.append(
+                Step(f"abatement_comparison_{sector}_{mode}", tuple(command))
+            )
     return steps
 
 
@@ -445,10 +456,10 @@ def build_steps(args: argparse.Namespace, run_dir: Path) -> list[Step]:
         retrofit_bau_mode=args.retrofit_bau_mode,
     )
     steps.extend(
-        _macc_steps(
+        _abatement_comparison_steps(
             sectors=sectors,
             run_dir=run_dir,
-            macc_mode=args.macc_mode,
+            abatement_comparison_mode=args.abatement_comparison_mode,
             sample_size=args.sample_size,
             random_seed=args.random_seed,
             retrofit_bau_mode=args.retrofit_bau_mode,
@@ -528,7 +539,7 @@ def _initial_manifest(
             "sample_size": args.sample_size,
             "random_seed": args.random_seed,
             "retrofit_bau_mode": args.retrofit_bau_mode,
-            "macc_mode": args.macc_mode,
+            "abatement_comparison_mode": args.abatement_comparison_mode,
             "full_workflow": args.full,
             "include_heatmaps": args.include_heatmaps,
             "sensitivity_variation_percent": args.sensitivity_variation_percent,
@@ -669,7 +680,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.full:
-        args.macc_mode = "both"
+        args.abatement_comparison_mode = "both"
         args.include_heatmaps = True
         args.verify_notebooks = True
     _validate_arguments(args, parser)

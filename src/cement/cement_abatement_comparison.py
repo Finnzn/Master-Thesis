@@ -1,13 +1,18 @@
-"""Cement marginal abatement cost curve calculations.
+"""Cement technology abatement-cost comparison calculations.
 
-The MACC compares each cement technology with the BAU cement baseline. The
-abatement potential is direct stack-emissions abatement only:
+Each technology is evaluated independently against the BAU cement reference at
+the same annual output. Annual direct stack-emissions abatement is:
 
     BAU direct emissions - technology direct emissions
 
+Bar heights show annualized incremental cost per tonne of direct CO2 avoided.
+Bar widths show each option's individual annual direct emissions avoided. The
+technologies are alternative full-output routes, so widths are not additive and
+the graphic is not a cumulative sector deployment curve.
+
 Carbon-price payments are deliberately excluded from the cost numerator. This
-keeps the curve focused on the technology cost of reducing emissions, not on the
-financial offset created by the model's carbon-price assumption.
+keeps the comparison focused on the technology cost of reducing emissions, not
+on the financial offset created by the model's carbon-price assumption.
 """
 
 from __future__ import annotations
@@ -35,7 +40,7 @@ from general_parameters import INTEREST_RATE
 from npv_finance import calculate_level_cash_flow_present_value_factor
 
 
-CEMENT_MACC_TECHNOLOGY_LABELS = {
+CEMENT_ABATEMENT_COMPARISON_TECHNOLOGY_LABELS = {
     "bau": "BAU",
     "electrification": "Electrification",
     "electrolysis": "Electrolysis",
@@ -47,13 +52,13 @@ CEMENT_MACC_TECHNOLOGY_LABELS = {
     "process_heat_integration": "Process heat integration",
 }
 
-DEFAULT_MACC_TECHNOLOGIES = tuple(
+DEFAULT_ABATEMENT_COMPARISON_TECHNOLOGIES = tuple(
     technology
-    for technology in CEMENT_MACC_TECHNOLOGY_LABELS
+    for technology in CEMENT_ABATEMENT_COMPARISON_TECHNOLOGY_LABELS
     if technology != "bau"
 )
 
-MACC_COLUMNS = [
+ABATEMENT_COMPARISON_COLUMNS = [
     "technology",
     "label",
     "annual_abatement_tco2",
@@ -67,25 +72,25 @@ MACC_COLUMNS = [
 ]
 
 
-def deterministic_cement_macc(
-    technologies: tuple[str, ...] = DEFAULT_MACC_TECHNOLOGIES,
+def deterministic_cement_abatement_comparison(
+    technologies: tuple[str, ...] = DEFAULT_ABATEMENT_COMPARISON_TECHNOLOGIES,
 ) -> pd.DataFrame:
-    """Calculate deterministic cement MACC values relative to BAU."""
+    """Calculate deterministic cement abatement-cost values relative to BAU."""
 
     selected_technologies = ("bau", *technologies)
     results = calculate_deterministic_cement_results(
         technologies=selected_technologies,
     )
-    return build_cement_macc_table(results)
+    return build_cement_abatement_comparison_table(results)
 
 
-def simulated_cement_macc(
+def simulated_cement_abatement_comparison(
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
-    technologies: tuple[str, ...] = DEFAULT_MACC_TECHNOLOGIES,
+    technologies: tuple[str, ...] = DEFAULT_ABATEMENT_COMPARISON_TECHNOLOGIES,
     retrofit_bau_mode: str = DEFAULT_RETROFIT_BAU_MODE,
 ) -> pd.DataFrame:
-    """Calculate cement MACC values from aligned Monte Carlo simulations.
+    """Calculate cement abatement-cost values from aligned Monte Carlo simulations.
 
     The headline abatement cost is the aggregate ratio of mean incremental cost
     to mean abatement. Draw-level cost quantiles are also reported because
@@ -99,13 +104,13 @@ def simulated_cement_macc(
         technologies=selected_technologies,
         retrofit_bau_mode=retrofit_bau_mode,
     )
-    return build_cement_macc_table(results)
+    return build_cement_abatement_comparison_table(results)
 
 
-def build_cement_macc_table(
+def build_cement_abatement_comparison_table(
     results_by_technology: Mapping[str, Mapping[str, object]],
 ) -> pd.DataFrame:
-    """Build a cement MACC table from deterministic or simulated result mappings."""
+    """Build a cement abatement-cost table from deterministic or simulated results."""
 
     if "bau" not in results_by_technology:
         raise ValueError("results_by_technology must include 'bau'.")
@@ -146,7 +151,10 @@ def build_cement_macc_table(
         rows.append(
             {
                 "technology": technology,
-                "label": CEMENT_MACC_TECHNOLOGY_LABELS.get(technology, technology),
+                "label": CEMENT_ABATEMENT_COMPARISON_TECHNOLOGY_LABELS.get(
+                    technology,
+                    technology,
+                ),
                 "annual_abatement_tco2": mean_annual_abatement,
                 "annual_abatement_mtco2": mean_annual_abatement / 1e6,
                 "abatement_share_of_bau": float(np.nanmean(abatement_share)),
@@ -170,27 +178,29 @@ def build_cement_macc_table(
             }
         )
 
-    table = pd.DataFrame(rows, columns=MACC_COLUMNS)
+    table = pd.DataFrame(rows, columns=ABATEMENT_COMPARISON_COLUMNS)
     if table.empty:
         return table
     return table.sort_values("abatement_cost_eur_per_tco2").reset_index(drop=True)
 
 
-def plot_cement_macc(
-    macc_table: pd.DataFrame,
+def plot_cement_abatement_comparison(
+    comparison_table: pd.DataFrame,
     output_path: Path | None = None,
-    title: str = "Cement Sector - Marginal Abatement Cost Curve",
+    title: str = "Cement Technology Abatement-Cost Comparison",
 ) -> object:
-    """Plot a cement marginal abatement cost curve."""
+    """Plot the cement technology abatement-cost comparison."""
 
     import matplotlib.pyplot as plt
 
-    if macc_table.empty:
-        raise ValueError("macc_table must contain at least one abatement option.")
+    if comparison_table.empty:
+        raise ValueError(
+            "comparison_table must contain at least one abatement option."
+        )
 
-    table = macc_table.sort_values("abatement_cost_eur_per_tco2").reset_index(
-        drop=True
-    )
+    table = comparison_table.sort_values(
+        "abatement_cost_eur_per_tco2"
+    ).reset_index(drop=True)
     widths = table["annual_abatement_mtco2"].to_numpy(dtype=float)
     heights = table["abatement_cost_eur_per_tco2"].to_numpy(dtype=float)
     left_edges = np.concatenate(([0.0], np.cumsum(widths[:-1])))
@@ -265,9 +275,14 @@ def plot_cement_macc(
         color="#1f2933",
         pad=18,
     )
-    ax.set_ylabel("Abatement cost (EUR/tCO2)", fontsize=10, color="#1f2933")
+    ax.set_ylabel(
+        "Abatement cost relative to BAU (EUR/tCO2)",
+        fontsize=10,
+        color="#1f2933",
+    )
     ax.set_xlabel(
-        "Direct abatement potential (MtCO2/year)",
+        "Individual annual direct emissions avoided "
+        "(bar width; alternatives are not additive)",
         fontsize=10,
         color="#1f2933",
     )
@@ -279,15 +294,7 @@ def plot_cement_macc(
     for spine in ("top", "right", "left"):
         ax.spines[spine].set_visible(False)
     ax.spines["bottom"].set_color("#222222")
-    fig.text(
-        0.99,
-        0.02,
-        "Costs include T&S, exclude carbon payments; widths show annual direct emissions avoided.",
-        ha="right",
-        fontsize=8,
-        color="#555555",
-    )
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.tight_layout()
 
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -296,7 +303,7 @@ def plot_cement_macc(
     return fig
 
 
-def generate_cement_macc_outputs(
+def generate_cement_abatement_comparison_outputs(
     project_root: Path,
     output_dir: Path | None = None,
     figure_dir: Path | None = None,
@@ -304,27 +311,36 @@ def generate_cement_macc_outputs(
     sample_size: int = DEFAULT_SAMPLE_SIZE,
     random_seed: int = DEFAULT_RANDOM_SEED,
 ) -> tuple[Path, Path]:
-    """Save one cement MACC CSV and PNG figure."""
+    """Save one cement abatement-comparison CSV and PNG figure."""
 
     table = (
-        deterministic_cement_macc()
+        deterministic_cement_abatement_comparison()
         if deterministic
-        else simulated_cement_macc(sample_size=sample_size, random_seed=random_seed)
+        else simulated_cement_abatement_comparison(
+            sample_size=sample_size,
+            random_seed=random_seed,
+        )
     )
     run_date = date.today().isoformat()
     mode = "Deterministic" if deterministic else "Simulated"
 
     processed_dir = output_dir or project_root / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = processed_dir / f"{run_date}-Cement_MACC_{mode}.csv"
+    csv_path = (
+        processed_dir
+        / f"{run_date}-Cement_Abatement_Cost_Comparison_{mode}.csv"
+    )
     table.to_csv(csv_path, index=False)
 
     resolved_figure_dir = figure_dir or project_root / "figures"
-    figure_path = resolved_figure_dir / f"{run_date}-Cement_MACC_{mode}.png"
-    fig = plot_cement_macc(
+    figure_path = (
+        resolved_figure_dir
+        / f"{run_date}-Cement_Abatement_Cost_Comparison_{mode}.png"
+    )
+    fig = plot_cement_abatement_comparison(
         table,
         output_path=figure_path,
-        title=f"Cement Sector - Marginal Abatement Cost Curve ({mode.lower()})",
+        title=f"Cement Technology Abatement-Cost Comparison ({mode.lower()})",
     )
     import matplotlib.pyplot as plt
 
@@ -387,10 +403,10 @@ def _first_value(values: object) -> float:
 
 
 def main() -> None:
-    """Run the cement MACC generator from the command line."""
+    """Run the cement abatement-comparison generator from the command line."""
 
     parser = argparse.ArgumentParser(
-        description="Generate a cement marginal abatement cost curve."
+        description="Generate a cement technology abatement-cost comparison."
     )
     parser.add_argument(
         "--project-root",
@@ -401,13 +417,13 @@ def main() -> None:
         "--processed-data-dir",
         type=Path,
         default=None,
-        help="Directory where the MACC CSV is saved.",
+        help="Directory where the abatement-comparison CSV is saved.",
     )
     parser.add_argument(
         "--figure-dir",
         type=Path,
         default=None,
-        help="Directory where the MACC figure is saved.",
+        help="Directory where the abatement-comparison figure is saved.",
     )
     parser.add_argument(
         "--output-dir",
@@ -419,7 +435,10 @@ def main() -> None:
     parser.add_argument(
         "--simulated",
         action="store_true",
-        help="Use mean Monte Carlo MACC values instead of deterministic values.",
+        help=(
+            "Use mean Monte Carlo abatement-comparison values instead of "
+            "deterministic values."
+        ),
     )
     parser.add_argument(
         "--sample-size",
@@ -435,7 +454,7 @@ def main() -> None:
     if args.processed_data_dir is not None and args.legacy_output_dir is not None:
         parser.error("use either --processed-data-dir or --output-dir, not both")
 
-    paths = generate_cement_macc_outputs(
+    paths = generate_cement_abatement_comparison_outputs(
         project_root=args.project_root,
         output_dir=args.processed_data_dir or args.legacy_output_dir,
         figure_dir=args.figure_dir,

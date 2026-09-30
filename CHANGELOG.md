@@ -10395,3 +10395,425 @@ inputs and outputs, and run either isolated result workflows or quick checks.
 ### Next suggested step
 
 Use the README's focused dry-run example before the next complete thesis run.
+
+## 2026-09-30 16:53 CEST — Prototype a non-cumulative cement abatement comparison
+
+### User request
+
+Create a temporary cement-sector example showing how the existing MACC results
+can be presented as a technology abatement-cost comparison without implying
+that mutually exclusive technology widths are additive, while retaining
+compatibility with the current architecture.
+
+### Files changed
+
+- `results/temporary/Cement_Abatement_Cost_Comparison/` — created the explicitly
+  requested Git-ignored temporary package containing a generator, README, two
+  figures, three value tables, and a reproducibility manifest.
+- `CHANGELOG.md` — appended this implementation and verification record.
+
+### What was implemented
+
+- Reused `deterministic_cement_macc()` and `simulated_cement_macc()` directly;
+  no financial, emissions, abatement-cost, or Monte Carlo calculation was
+  copied or modified.
+- Replaced the cumulative-width presentation with two aligned panels: ranked
+  abatement cost in EUR/tCO2 and independent annual direct emissions avoided
+  in MtCO2/year plus the share of BAU emissions.
+- Stated directly in both figures that each route is evaluated independently
+  at the same modeled cement output and that the abatement values are not
+  additive.
+- Highlighted CCS separately, distinguished negative-cost measures, and added
+  the existing draw-level 5th–95th percentile whiskers and median markers to
+  the Monte Carlo mean figure.
+- Added a command-line generator with sample-size, seed, and output-directory
+  options, plus a local README explaining interpretation and regeneration.
+- Added a manifest recording the active global assumptions, calculation
+  source, interpretation, settings, file sizes, and SHA-256 hashes.
+
+### Verification
+
+- Commands run:
+  - `PYTHONPATH=src .venv/bin/python
+    results/temporary/Cement_Abatement_Cost_Comparison/generate_comparison.py`
+  - `.venv/bin/python -m py_compile
+    results/temporary/Cement_Abatement_Cost_Comparison/generate_comparison.py`
+  - generator `--help` check
+  - direct table comparisons against the active deterministic and 100,000-draw
+    cement MACC functions
+  - manifest size and SHA-256 verification
+  - visual inspection of both generated figures
+  - `git diff --check`
+- Result:
+  - Passed: both exported seven-technology tables match the active cement MACC
+    functions within CSV precision, and the combined table contains the
+    expected 14 rows.
+  - Passed: all five manifested outputs match their recorded sizes and hashes.
+  - Passed: the deterministic figure is 2864x1330 pixels and the Monte Carlo
+    figure is 3169x1330 pixels; both are clear and correctly labelled.
+  - Passed: the generator compiles, its command-line interface works, and no
+    tracked model source was modified.
+
+### Reproducibility notes
+
+- The package uses 100,000 Monte Carlo draws and seed 42 by default and records
+  the active carbon price and interest rate in `comparison_manifest.json`.
+- Carbon payments remain excluded from the abatement-cost numerator; applicable
+  CCS transport and storage costs remain included through the existing cement
+  model.
+- The temporary package is intentionally ignored by Git and occupies
+  approximately 400 KB. Its location and regeneration command are preserved in
+  this tracked changelog entry.
+
+### Next suggested step
+
+Decide whether to replace the current cumulative-width cement MACC figure with
+this two-panel presentation before applying the same change to other sectors.
+
+## 2026-09-30 17:02 CEST — Add direct cement cost–abatement maps
+
+### User request
+
+Extend the temporary cement prototype so it retains the original MACC's direct
+visual comparison between abatement cost and abatement potential without using
+misleading cumulative widths.
+
+### Files changed
+
+- `results/temporary/Cement_Abatement_Cost_Comparison/` — extended the
+  explicitly requested Git-ignored temporary generator and package with
+  deterministic and Monte Carlo cost–abatement maps.
+- `CHANGELOG.md` — appended this implementation and verification record.
+
+### What was implemented
+
+- Added a scatter-based cost–abatement map with independent annual direct
+  emissions avoided on the x-axis and abatement cost relative to cement BAU on
+  the y-axis.
+- Retained one point per full-output technology alternative rather than a
+  cumulative abatement axis, preserving the direct two-dimensional comparison
+  without implying additive deployment potential.
+- Added technology names and exact cost/abatement values to the plot, with CCS
+  highlighted in orange, negative-cost measures in green, and other measures
+  in blue.
+- Added vertical guides to make each technology's cost and potential position
+  easy to read.
+- Added draw-level 5th–95th percentile cost whiskers and median diamonds to the
+  Monte Carlo map while keeping the aggregate mean cost ratio as the headline
+  point.
+- Updated the temporary README to explain when the cost–abatement map is more
+  useful than the aligned two-panel figure.
+
+### Verification
+
+- Commands run:
+  - regenerated the complete temporary package with 100,000 draws and seed 42
+  - `.venv/bin/python -m py_compile
+    results/temporary/Cement_Abatement_Cost_Comparison/generate_comparison.py`
+  - manifest file-size and SHA-256 verification
+  - visual inspection of both new cost–abatement maps
+  - `git diff --check`
+- Result:
+  - Passed: the deterministic map is 2352x1382 pixels and the Monte Carlo map
+    is 2417x1382 pixels, with readable labels and no cumulative x-axis.
+  - Passed: all seven generated data and figure artifacts match their manifest
+    file sizes and hashes.
+  - Passed: the generator compiles and no tracked model source was modified.
+
+### Reproducibility notes
+
+- The new maps use the same deterministic and Monte Carlo tables as the
+  existing two-panel prototype; only the visualization changed.
+- The temporary package remains Git-ignored and is regenerated with the same
+  command documented in its README.
+
+### Next suggested step
+
+Choose between the cost–abatement map and two-panel figure as the final cement
+presentation before changing the production MACC workflow.
+
+## 2026-09-30 17:18 CEST — Add minimal relabelled cement MACC-style figures
+
+### User request
+
+Reduce the amount of information in the cement prototype by retaining the
+original clean MACC-style plot and clarifying its interpretation through the
+title and axis labels.
+
+### Files changed
+
+- `results/temporary/Cement_Abatement_Cost_Comparison/` — extended the
+  explicitly requested Git-ignored temporary package with deterministic and
+  Monte Carlo mean relabelled MACC-style figures.
+- `CHANGELOG.md` — appended this implementation and verification record.
+
+### What was implemented
+
+- Reused the existing `plot_cement_macc()` presentation directly rather than
+  creating another plotting implementation.
+- Renamed the graphic from a marginal abatement cost curve to a cement
+  technology abatement-cost comparison.
+- Changed the y-axis to `Abatement cost relative to BAU (EUR/tCO2)`.
+- Changed the x-axis to `Individual annual direct emissions avoided (bar width;
+  alternatives are not additive)`.
+- Removed the explanatory footer so that the slide contains only the title,
+  technology bars, values, and the two clarified axes.
+- Preserved the deterministic and 100,000-draw Monte Carlo mean variants.
+
+### Verification
+
+- Commands run:
+  - regenerated the complete temporary package with 100,000 draws and seed 42
+  - `.venv/bin/python -m py_compile
+    results/temporary/Cement_Abatement_Cost_Comparison/generate_comparison.py`
+  - manifest file-size and SHA-256 verification
+  - visual inspection of both relabelled MACC-style figures
+  - `git diff --check`
+- Result:
+  - Passed: both relabelled figures are 2352x1008 pixels and retain the clean
+    original visual comparison with clear non-additive wording.
+  - Passed: all nine generated data and figure artifacts match their manifest
+    file sizes and hashes.
+  - Passed: no tracked model or production plotting source was changed.
+
+### Reproducibility notes
+
+- Only labels and presentation were changed. All values and bar dimensions are
+  produced by the active cement MACC functions.
+- The temporary package remains Git-ignored and can be regenerated with the
+  command in its README.
+
+### Next suggested step
+
+Use the relabelled MACC-style version if slide simplicity is the priority, while
+describing the bar widths as independent and non-additive in the thesis text.
+
+## 2026-09-30 17:27 CEST — Add emissions uncertainty to the cement dot prototype
+
+### User request
+
+Generate one temporary cement cost–abatement dot plot that reflects Monte Carlo
+uncertainty in sampled emissions and therefore in annual abatement as well as
+uncertainty in abatement cost.
+
+### Files changed
+
+- `results/temporary/Cement_Abatement_Cost_Comparison/` — extended the
+  explicitly requested Git-ignored temporary package with a two-axis uncertainty
+  figure and its abatement-uncertainty table.
+- `CHANGELOG.md` — appended this implementation and verification record.
+
+### What was implemented
+
+- Reused the active aligned cement Monte Carlo simulation with 100,000 draws
+  and seed 42 to calculate annual direct emissions avoided for every draw.
+- Added the mean, 5th percentile, median, and 95th percentile annual abatement
+  for each of the seven plotted cement technologies to
+  `cement_abatement_uncertainty_monte_carlo.csv`.
+- Added horizontal 5th–95th percentile whiskers for annual direct abatement to
+  the existing vertical abatement-cost whiskers in
+  `cement_cost_abatement_map_monte_carlo_xy_uncertainty.png`.
+- Positioned the diamond at the marginal median abatement and marginal median
+  cost, while retaining the aggregate mean cost-ratio point as the headline
+  value.
+- Clarified in the figure, README, and manifest that the horizontal and vertical
+  ranges are marginal distributions and do not form a joint confidence region.
+
+### Verification
+
+- Commands run:
+  - regenerated the complete temporary package with 100,000 draws and seed 42
+  - `.venv/bin/python -m py_compile
+    results/temporary/Cement_Abatement_Cost_Comparison/generate_comparison.py`
+  - compared the exported mean annual abatements with the active MACC summary
+    values
+  - checked percentile ordering for every technology
+  - manifest file-size and SHA-256 verification
+  - visual inspection of the two-axis uncertainty figure
+  - `git diff --check`
+- Result:
+  - Passed: all seven exported mean abatements match the active Monte Carlo MACC
+    table within 1e-12 MtCO2/year.
+  - Passed: each abatement distribution satisfies 5th percentile <= median <=
+    95th percentile.
+  - Passed: all eleven generated data and figure artifacts match their manifest
+    file sizes and hashes.
+  - Passed: the figure is 2678x1382 pixels and clearly displays both horizontal
+    and vertical uncertainty.
+
+### Reproducibility notes
+
+- The emissions uncertainty is calculated from the same aligned BAU and
+  technology draws used by the active cement Monte Carlo architecture.
+- No production model, assumption, or plotting module was modified; this
+  remains an explicitly temporary visualization prototype.
+
+### Next suggested step
+
+Keep the relabelled MACC-style plot for the presentation and use the two-axis
+uncertainty map only if the thesis text needs to discuss uncertainty in both
+cost and abatement explicitly.
+
+## 2026-09-30 17:48 CEST — Adopt technology abatement-cost comparison terminology
+
+### User request
+
+Delete the temporary cement prototype, apply the selected abatement-comparison
+title, axes, and explanation to all relevant production files and notebooks,
+and update the README accordingly.
+
+### Files changed
+
+- `src/cement/cement_macc.py` — relabelled and documented the cement plot as a
+  technology abatement-cost comparison.
+- `src/steel/steel_macc.py` — applied the same presentation with BF-BOF BAU as
+  the explicit reference.
+- `src/ammonia/ammonia_macc.py` — applied the same presentation with NG-SMR +
+  HB as the explicit reference.
+- `src/hydrogen/hydrogen_macc.py` — applied the same presentation with NG-SMR
+  as the explicit reference.
+- `notebooks/{cement,steel,ammonia,hydrogen}/*_macc.ipynb` — updated the titles,
+  explanations, headings, status text, plots, and saved execution outputs.
+- `regenerate_all.py` — updated user-facing documentation and command help for
+  the renamed comparison while preserving existing command compatibility.
+- `README.md` — replaced the MACC interpretation with a precise guide to the
+  technology abatement-cost comparison, its axes, references, limitations,
+  commands, and retained legacy names.
+- `CHANGELOG.md` — appended this implementation and verification record.
+
+### What was implemented
+
+- Removed `results/temporary/Cement_Abatement_Cost_Comparison/` from the thesis
+  workspace by moving the exact ignored folder to the macOS Trash.
+- Renamed every production plot title to `<Sector> Technology Abatement-Cost
+  Comparison`.
+- Labelled the y-axis as abatement cost relative to the sector-specific
+  reference and the x-axis as individual annual direct emissions avoided,
+  explicitly stating that alternative widths are not additive.
+- Removed the plot footer so the selected clean presentation is used in both
+  deterministic and simulated outputs.
+- Clarified in source and notebook documentation that each technology is an
+  independent full-output alternative, not a cumulative deployment segment or
+  an optimal portfolio.
+- Preserved `_macc` module names, function names, `--macc-mode`, `macc/` output
+  folders, and `MACC` output filenames so existing commands and result
+  workflows remain compatible.
+- Re-executed all four source notebooks so their stored outputs use the current
+  model inputs and the new presentation rather than stale labels or figures.
+
+### Verification
+
+- Commands run:
+  - `.venv/bin/python -m py_compile` for all four abatement-comparison modules
+    and `regenerate_all.py`
+  - deterministic label, axis, footer, and non-empty-table assertions for all
+    four sectors
+  - 200-draw simulated smoke runs for cement, steel, ammonia, and hydrogen
+  - in-place execution and `nbformat` validation of all four sector notebooks
+  - `regenerate_all.py --macc-mode both --dry-run` for all four sectors
+  - repository searches for old plot terminology
+  - visual inspection of all deterministic and simulated figures
+  - `git diff --check`
+- Result:
+  - Passed: deterministic and simulated comparisons generate successfully for
+    all four sectors with the intended title and reference-specific axes.
+  - Passed: all four notebooks are valid, fully executed, and contain no error
+    outputs or old marginal-abatement-curve wording.
+  - Passed: the named-run orchestrator still plans both modes through the
+    retained compatibility interface.
+
+### Reproducibility notes
+
+- No scientific assumption or calculation equation was changed; this is a
+  terminology, documentation, and presentation update.
+- Re-executing the notebooks refreshed their embedded deterministic tables and
+  figures from the current source modules. These stored outputs can be
+  reproduced by running the notebooks or by using
+  `regenerate_all.py --verify-notebooks`.
+- The deleted prototype was Git-ignored. Its recoverable copy is currently in
+  `/Users/finn/.Trash/Cement_Abatement_Cost_Comparison_2026-09-30` until the
+  Trash is emptied.
+
+### Next suggested step
+
+Use a new named full run before final submission if every generated thesis
+artifact should also carry the updated plot labels.
+
+## 2026-09-30 18:09 CEST — Complete abatement-comparison architecture rename
+
+### User request
+
+Explain the removed figure footer, remove the remaining legacy marginal-curve
+terminology and names from the active project architecture and commands, audit
+the repository for misleading usage, and determine whether cement process heat
+integration is actually zero-cost.
+
+### Files changed
+
+- `src/{cement,steel,ammonia,hydrogen}/*_abatement_comparison.py` — renamed the
+  four modules and all public constants, functions, parameters, generated
+  filenames, and command entry points to use abatement-comparison terminology.
+- `notebooks/{cement,steel,ammonia,hydrogen}/*_abatement_comparison.ipynb` —
+  renamed the notebooks, their imports, function calls, working variables, and
+  stored executed outputs.
+- `figures/2026-09-30-*_Abatement_Cost_Comparison_*.png` — renamed and
+  regenerated the eight tracked deterministic and 100,000-draw reference
+  figures.
+- `regenerate_all.py` — renamed the optional workflow flag, step builder,
+  constants, manifest field, step names, module commands, and result directory.
+- `README.md` — updated every command, path, notebook name, module name, and
+  option to match the new architecture.
+- `CHANGELOG.md` — appended this implementation and verification record.
+
+### What was implemented
+
+- The direct sector command is now
+  `python -m <sector>.<sector>_abatement_comparison`.
+- The named-run option is now `--abatement-comparison-mode`, and outputs are
+  stored under `abatement_comparison/<sector>/<mode>/`.
+- Generated files now use `<Sector>_Abatement_Cost_Comparison_<Mode>` names.
+- Removed the compatibility aliases so active code, commands, notebooks,
+  documentation, output names, and tracked filenames use one unambiguous term.
+- Audited tracked active text, notebook sources and textual outputs, and
+  filenames for legacy literature-style marginal-curve terminology; no active
+  occurrences remain. Historical append-only changelog entries were preserved.
+- Confirmed that process heat integration is not zero-cost. Its deterministic
+  incremental resource cost is EUR 55,731/year and its direct emissions
+  reduction is 41,167 tCO2/year, giving EUR 1.354/tCO2. The 100,000-draw
+  aggregate mean is EUR 1.388/tCO2.
+- Confirmed that the zero process-heat inputs apply only to non-energy variable
+  OPEX and electricity-consumption change. Incremental CAPEX and fixed OPEX are
+  almost, but not exactly, offset by fuel savings.
+
+### Verification
+
+- Commands run:
+  - direct `--help` checks for all four renamed sector modules
+  - execution and `nbformat` validation of all four renamed notebooks
+  - deterministic and 100,000-draw reference-figure generation for all four
+    sectors
+  - 200-draw before/after CSV equality checks for all four sectors
+  - `regenerate_all.py --abatement-comparison-mode both --dry-run`
+  - structured active-text, notebook-output, and filename terminology audit
+  - deterministic label, axis, footer, and result assertions
+  - compilation of the active source tree and `git diff --check`
+- Result:
+  - Passed: all four renamed direct commands and the named-run integration work.
+  - Passed: all four numerical CSVs are exactly unchanged by the rename.
+  - Passed: all four notebooks execute without error under their new names.
+  - Passed: no active tracked content or filename retains the former
+    marginal-curve terminology.
+
+### Reproducibility notes
+
+- This is an architectural terminology change only; no model equation,
+  parameter, or numerical result was changed.
+- Existing named runs and their manifests were not rewritten because they are
+  immutable records of the commands that originally generated them. New runs
+  use the renamed command, manifest field, result folder, and filenames.
+- The regenerated simulated figures use 100,000 draws and random seed 42.
+
+### Next suggested step
+
+Use `--abatement-comparison-mode both` in the next named final run so all saved
+artifacts use the renamed architecture.

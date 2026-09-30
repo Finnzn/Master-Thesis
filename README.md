@@ -17,7 +17,7 @@ For each sector, the project compares deterministic results with Monte Carlo
 results under uncertainty in technology costs, energy use, fuel and electricity
 prices, emissions, and other technical or financial inputs. The main outputs
 are net present value, levelized profit margin, levelized cost, marginal
-abatement cost curves, and sensitivity analyses.
+abatement-cost comparisons, and sensitivity analyses.
 
 ## Start Here
 
@@ -111,13 +111,15 @@ PYTHONPATH=src .venv/bin/python regenerate_all.py \
 ```
 
 The standard run includes deterministic and Monte Carlo mean figures, ranking
-outputs, raw sampled inputs, and processed results. It does not generate MACCs,
-sensitivity heatmaps, or executed notebook copies unless those are requested.
+outputs, raw sampled inputs, and processed results. It does not generate
+abatement-cost comparisons, sensitivity heatmaps, or executed notebook copies
+unless those are requested.
 
 ### Complete run
 
-Use `--full` for financial summaries, deterministic and simulated MACCs,
-sensitivity heatmaps, and non-destructive execution of all notebooks:
+Use `--full` for financial summaries, deterministic and simulated
+abatement-cost comparisons, sensitivity heatmaps, and non-destructive
+execution of all notebooks:
 
 ```bash
 PYTHONPATH=src .venv/bin/python regenerate_all.py \
@@ -148,9 +150,10 @@ Valid metrics are `NPV`, `LPM`, and `LCOX`.
 The optional analyses can be selected independently:
 
 ```bash
-# Add deterministic and Monte Carlo mean MACCs.
+# Add deterministic and Monte Carlo mean abatement-cost comparisons.
 PYTHONPATH=src .venv/bin/python regenerate_all.py \
-  --run-name thesis_results_macc --macc-mode both
+  --run-name thesis_results_abatement_comparison \
+  --abatement-comparison-mode both
 
 # Add standardized sensitivity CSVs and heatmaps.
 PYTHONPATH=src .venv/bin/python regenerate_all.py \
@@ -191,7 +194,7 @@ settings, carbon price, and output paths before a large run.
 | `--sample-size N` | Sets Monte Carlo draws per technology |
 | `--random-seed N` | Sets the top-level reproducibility seed |
 | `--retrofit-bau-mode sampled\|deterministic` | Selects the Monte Carlo parent baseline for retrofit technologies |
-| `--macc-mode deterministic\|simulated\|both` | Adds sector MACCs; electricity has no MACC module |
+| `--abatement-comparison-mode deterministic\|simulated\|both` | Adds sector abatement-cost comparisons; electricity has no corresponding module |
 | `--include-heatmaps` | Adds standardized sensitivity tables and heatmaps |
 | `--sensitivity-variation-percent N` | Sets the heatmap movement in percent; default is 20 |
 | `--verify-notebooks` | Adds execution copies of all notebooks |
@@ -212,7 +215,7 @@ results/runs/<run-name>/
 │   ├── figures/
 │   ├── raw/
 │   └── processed/
-├── macc/<sector>/<deterministic|simulated>/
+├── abatement_comparison/<sector>/<deterministic|simulated>/
 │   ├── figures/
 │   └── processed/
 ├── heatmaps/<metric>/
@@ -288,30 +291,44 @@ PYTHONPATH=src .venv/bin/python \
   -m cement.cement_financial_summary --help
 ```
 
-## Generate Marginal Abatement Cost Curves
+## Generate Technology Abatement-Cost Comparisons
 
-MACCs are available for cement, steel, ammonia, and hydrogen. Electricity has
-no MACC module in this project.
+Technology abatement-cost comparisons are available for cement, steel,
+ammonia, and hydrogen. Electricity has no corresponding module in this
+project.
 
 ```bash
-# Deterministic cement MACC.
-PYTHONPATH=src .venv/bin/python -m cement.cement_macc
+# Deterministic cement abatement-cost comparison.
+PYTHONPATH=src .venv/bin/python -m cement.cement_abatement_comparison
 
-# Monte Carlo mean steel MACC.
-PYTHONPATH=src .venv/bin/python -m steel.steel_macc \
+# Monte Carlo mean steel abatement-cost comparison.
+PYTHONPATH=src .venv/bin/python -m steel.steel_abatement_comparison \
   --simulated --sample-size 1000
 ```
 
-Direct MACC commands write figures to `figures/` and tables to
-`data/processed/` unless output directories are supplied. Add `--simulated` to
-use aligned Monte Carlo means. Steel, ammonia, and hydrogen MACCs also accept
-`--retrofit-bau-mode`; cement does not need that option in its MACC interface.
+These direct commands write figures to `figures/` and tables to
+`data/processed/` unless output directories are supplied. Add `--simulated`
+to use aligned Monte Carlo means. Steel, ammonia, and hydrogen commands also
+accept `--retrofit-bau-mode`; cement does not need that option in this
+interface.
 
-MACC heights represent annualized resource cost per tonne of direct CO2
-avoided. Carbon payments and product revenue are excluded from the numerator.
-The technologies within one sector are alternatives at the same annual output,
-so their displayed widths are illustrative and must not be summed as
-independent abatement potential.
+Each bar compares one technology independently with the sector reference at
+the same annual output:
+
+- bar height: annualized incremental resource cost per tonne of direct CO2
+  avoided relative to the reference technology;
+- bar width: that technology's individual annual direct emissions avoided;
+- horizontal order: increasing abatement cost.
+
+Carbon payments and product revenue are excluded from the cost numerator.
+Because the technologies are alternative full-output routes, their widths are
+not additive. The figure supports a direct cost-versus-avoided-emissions
+comparison, but it is not a cumulative sector deployment curve and does not
+represent an optimal technology portfolio.
+
+The reference technologies are BAU cement, BF-BOF BAU steel, NG-SMR + HB
+ammonia, and NG-SMR hydrogen. Options without positive direct emissions
+abatement relative to their reference are omitted.
 
 ## Run Sensitivity Analyses
 
@@ -370,8 +387,9 @@ Notebook organization is consistent across sectors:
   technology calculation and its inputs.
 - `notebooks/<sector>/plot_*_npv.ipynb` explores one technology's Monte Carlo
   inputs, financial distribution, and cost components.
-- `notebooks/<sector>/<sector>_macc.ipynb` presents that sector's MACC for
-  cement, steel, ammonia, and hydrogen.
+- `notebooks/<sector>/<sector>_abatement_comparison.ipynb` presents that
+  sector's technology abatement-cost comparison for cement, steel, ammonia,
+  and hydrogen.
 - `notebooks/scenario_analysis.ipynb` contains selected deterministic scenario
   comparisons.
 - `notebooks/sensitivity_heatmap.ipynb` presents standardized sensitivity
@@ -397,7 +415,7 @@ sector technology model
         ↓
 shared discounted-finance functions
         ↓
-summary tables, rankings, figures, MACCs, and sensitivities
+summary tables, rankings, figures, abatement-cost comparisons, and sensitivities
 ```
 
 For each sector, the reusable modules have the same responsibilities:
@@ -409,7 +427,7 @@ For each sector, the reusable modules have the same responsibilities:
 | `<sector>_npv_monte_carlo.py` | Samples uncertain inputs with aligned simulation IDs |
 | `<sector>_npv_model.py` | Resolves technology inputs and calculates sector results |
 | `<sector>_financial_summary.py` | Configures figures, tables, rankings, units, and CLI behavior |
-| `<sector>_macc.py` | Calculates deterministic or simulated MACCs where available |
+| `<sector>_abatement_comparison.py` | Calculates deterministic or simulated technology abatement-cost comparisons where available |
 
 Shared logic lives in:
 
@@ -504,7 +522,7 @@ named result run so old and new assumptions remain distinguishable.
 - `data/raw/` contains generated, unit-resolved Monte Carlo input samples. It
   does not contain the only copy of source assumptions.
 - `data/processed/` contains generated technology results, summary statistics,
-  rankings, MACC tables, and sensitivity tables.
+  rankings, abatement-comparison tables, and sensitivity tables.
 - `results/runs/` contains isolated named runs, logs, executed notebook copies,
   and manifests.
 - `results/temporary/` is reserved for explicitly temporary comparison work.
