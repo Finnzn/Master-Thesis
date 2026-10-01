@@ -31,9 +31,10 @@ Optional analyses can also be selected separately::
 
 The standard command does not execute notebooks. ``--verify-notebooks``
 executes every project notebook and stores the executed copies below
-``results/runs/<run-name>/notebook_verification/`` without overwriting the
-source notebooks. ``--full`` includes this notebook verification together with
-both abatement-comparison variants and all selected heatmaps.
+``results/runs/<run-name>/notebook_verification/`` using the same relative
+folder structure as ``notebooks/`` and without overwriting the source
+notebooks. ``--full`` includes this notebook verification together with both
+abatement-comparison variants and all selected heatmaps.
 
 Use ``--sectors`` and ``--metrics`` to limit the scope; ``--sample-size``,
 ``--random-seed``, and ``--retrofit-bau-mode`` configure simulations;
@@ -136,7 +137,7 @@ Output layout:
     financial/<sector>/<metric>/{figures,raw,processed}/
     abatement_comparison/<sector>/<deterministic|simulated>/{figures,processed}/
     heatmaps/<metric>/{figures,processed}/
-    notebook_verification/                 # only with --verify-notebooks
+    notebook_verification/                 # mirrors notebooks/ when requested
 
 The command refuses to reuse an existing run directory. Choose a new run name
 to prevent different result sets from being silently overwritten.
@@ -411,14 +412,18 @@ def _heatmap_steps(
 
 
 def _notebook_steps(run_dir: Path, timeout: int) -> list[Step]:
-    """Build non-destructive execution commands for all project notebooks."""
+    """Build notebook commands that mirror the source folder structure."""
 
-    output_dir = run_dir / "notebook_verification"
+    notebooks_root = PROJECT_ROOT / "notebooks"
+    verification_root = run_dir / "notebook_verification"
     steps = []
-    for notebook in sorted((PROJECT_ROOT / "notebooks").rglob("*.ipynb")):
-        relative = notebook.relative_to(PROJECT_ROOT)
-        output_name = "_".join(relative.parts)
-        step_name = "notebook_" + "_".join(relative.with_suffix("").parts)
+    for notebook in sorted(notebooks_root.rglob("*.ipynb")):
+        source_relative = notebook.relative_to(PROJECT_ROOT)
+        notebook_relative = notebook.relative_to(notebooks_root)
+        output_dir = verification_root / notebook_relative.parent
+        step_name = "notebook_" + "_".join(
+            source_relative.with_suffix("").parts
+        )
         steps.append(
             Step(
                 name=step_name,
@@ -430,9 +435,9 @@ def _notebook_steps(run_dir: Path, timeout: int) -> list[Step]:
                     "--to",
                     "notebook",
                     "--execute",
-                    str(relative),
+                    str(source_relative),
                     "--output",
-                    output_name,
+                    notebook_relative.name,
                     "--output-dir",
                     str(output_dir),
                     f"--ExecutePreprocessor.timeout={timeout}",

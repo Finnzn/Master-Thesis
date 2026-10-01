@@ -16,7 +16,7 @@ The analysis covers five sectors:
 For each sector, the project compares deterministic results with Monte Carlo
 results under uncertainty in technology costs, energy use, fuel and electricity
 prices, emissions, and other technical or financial inputs. The main outputs
-are net present value, levelized profit margin, levelized cost, marginal
+are net present value, levelized profit margin, levelized cost, technology
 abatement-cost comparisons, and sensitivity analyses.
 
 ## Start Here
@@ -168,8 +168,8 @@ These flags add work to the standard financial run. In particular,
 `--verify-notebooks` does not execute notebooks by themselves: the normal
 financial summaries are still generated first. Notebook verification always
 executes all notebooks, even if `--sectors` limits the financial steps. The
-executed copies are stored in the run directory; the source notebooks are not
-overwritten.
+executed copies are stored in the run directory with the same relative folder
+structure as `notebooks/`; the source notebooks are not overwritten.
 
 ### Preview before running
 
@@ -221,7 +221,13 @@ results/runs/<run-name>/
 ├── heatmaps/<metric>/
 │   ├── figures/
 │   └── processed/
-└── notebook_verification/
+└── notebook_verification/          Mirrors notebooks/
+    ├── ammonia/
+    ├── cement/
+    ├── electricity/
+    ├── hydrogen/
+    ├── steel/
+    └── *.ipynb                     Repository-level notebooks
 ```
 
 Only requested optional folders are created. `manifest.json` records the run
@@ -400,7 +406,8 @@ Notebook organization is consistent across sectors:
 Notebook figures are displayed inline. The notebooks do not contain separate
 save-output switches. For a non-destructive verification of every notebook,
 use `regenerate_all.py --verify-notebooks`; it saves executed copies under the
-named run and leaves the source notebooks unchanged.
+named run, mirrors the source notebook folders, and leaves the source notebooks
+unchanged.
 
 ## How the Model Is Organized
 
