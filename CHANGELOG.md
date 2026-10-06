@@ -11073,3 +11073,115 @@ hours once, then held fixed when full-load hours vary.
 
 Review the NPV-mode electricity heatmap and FLH scenario table before replacing
 any thesis figures based on the former capacity-resizing convention.
+
+## 2026-10-06 10:39 CEST — Refocus deterministic sector scenarios
+
+### User request
+
+Update the scenario notebook to evaluate the selected sensitivity-informed
+variables for cement, electricity, steel, ammonia, and hydrogen, and explain the
+methodological treatment of selling prices and annual output.
+
+### Files changed
+
+- `notebooks/scenario_analysis.ipynb` — replaced the previous scenario set,
+  added steel, documented the methodology and literature rationale, and stored
+  newly executed tables and figures.
+- `CHANGELOG.md` — appended this record.
+
+### What was implemented
+
+- Cement now varies CO2 price and discount rate.
+- Electricity now varies full-load hours at fixed installed capacity, CO2
+  price, and discount rate.
+- Steel now varies CO2 price, purchased electricity price, and route-specific
+  fuel/reductant prices; the H2-DRI-EAF case scales both hydrogen and secondary
+  charcoal prices in the grouped fuel scenario.
+- Ammonia and hydrogen now vary purchased electricity price, route-specific
+  fuel price, and CO2 price.
+- Retired the notebook's lifetime, renewable value-factor, and investment-cost
+  panels so there is one unambiguous requested scenario set.
+- Kept the medium cases equal to deterministic base inputs; used 80% / 100% /
+  120% for FLH and purchased-energy prices, EUR 40 / 80 / 120 per tCO2, and
+  4% / 8% / 12% discount rates.
+- Added an interpretation section explaining that normalized output isolates
+  technology comparisons, while product selling prices belong in a separate
+  market-revenue scenario when absolute profitability or bankability is the
+  research question.
+
+### Verification
+
+- Commands run:
+  - executed `notebooks/scenario_analysis.ipynb` non-destructively to `/tmp`
+  - executed `notebooks/scenario_analysis.ipynb` in place
+  - checked the exact sector-variable sets and zero medium-case deltas
+  - checked all scenario metrics for expected monotonic or emissions-consistent
+    responses, including fixed electricity capacity under FLH changes
+  - `git diff --check`
+- Result:
+  - Passed: all nine code cells execute without errors.
+  - Passed: 369 scenario rows cover 44 technologies across the five sectors.
+  - Passed: every medium scenario reproduces its deterministic base metric.
+  - Passed: all displayed scenario results are finite and directionally
+    consistent with their physical or financial exposure.
+
+### Reproducibility notes
+
+- The notebook contains stored outputs for the default levelized-profit-margin
+  view and does not write generated files outside the notebook.
+- The cases are deterministic one-at-a-time stresses, not probability bounds;
+  joint uncertainty and interactions remain the role of the Monte Carlo model.
+- No parameter file, deterministic model, Monte Carlo model, or existing result
+  and figure directory was changed.
+
+### Next suggested step
+
+Review the new panels in NPV mode as a complementary absolute-profitability
+view before selecting thesis figures.
+
+## 2026-10-06 10:48 CEST — Restore standalone renewable value-factor scenarios
+
+### User request
+
+Keep the renewable electricity value-factor analysis as its own scenario panel
+in the updated scenario notebook.
+
+### Files changed
+
+- `notebooks/scenario_analysis.ipynb` — restored the standalone renewable
+  value-factor settings, summary table, validation, and figure.
+- `CHANGELOG.md` — appended this record.
+
+### What was implemented
+
+- Restored Min / Base / Max value-factor cases of 0.80 / 0.90 / 1.00 for
+  onshore wind and solar PV and 0.85 / 0.95 / 1.00 for offshore wind.
+- Kept the value-factor results separate from the main electricity FLH, CO2
+  price, and discount-rate scenario summary.
+- Clarified that the Base value is the triangular distribution mode; offshore
+  wind's deterministic analytical mean remains 0.933 rather than 0.95.
+- Documented that value factors change captured electricity sales revenue and
+  therefore NPV and LPM, while leaving generation, capacity, costs, and LCOE
+  unchanged.
+
+### Verification
+
+- Commands run:
+  - executed `notebooks/scenario_analysis.ipynb` non-destructively to `/tmp`
+  - executed `notebooks/scenario_analysis.ipynb` in place
+- Result:
+  - Passed: all notebook cells execute without errors.
+  - Passed: Min < Base < Max for renewable NPV/LPM results; the existing
+    notebook assertion also checks that LCOE remains unchanged in LCOX mode.
+
+### Reproducibility notes
+
+- The notebook stores the refreshed default LPM outputs and writes no external
+  result or figure files.
+- No model or parameter source file was changed.
+
+### Next suggested step
+
+Use the standalone value-factor panel when discussing captured-price risk for
+variable renewables, separately from physical utilization risk represented by
+FLH.
