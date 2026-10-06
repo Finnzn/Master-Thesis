@@ -30,7 +30,6 @@ from cement.cement_parameters import (
     CEMENT_RETROFIT_TECHNOLOGY_DISTRIBUTIONS,
     CEMENT_TECHNOLOGY_DISTRIBUTIONS,
 )
-from electricity.electricity_capacity_calculation import calculate_capacity_kw
 from electricity.electricity_npv_deterministic import (
     calculate_deterministic_electricity_result,
 )
@@ -97,6 +96,7 @@ class ScenarioInputs:
     emissions: float
     carbon_price: float
     full_load_hours: float | None = None
+    installed_capacity_kw: float | None = None
     value_factor: float = 1.0
     uses_value_factor: bool = False
     secondary_fuel_consumption: float = 0.0
@@ -492,6 +492,7 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
             emissions=result["emissions_tco2_per_mwh_e"],
             carbon_price=result["carbon_price_eur_per_t"],
             full_load_hours=result["full_load_hours_per_year"],
+            installed_capacity_kw=result["capacity_kw"],
             value_factor=result["value_factor"],
             uses_value_factor=(
                 technology in {"wind_offshore", "wind_onshore", "pv"}
@@ -565,6 +566,21 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
     raise ValueError(f"Unknown sector: {sector!r}.")
 
 
+def _electricity_capacity_and_output(
+    inputs: ScenarioInputs,
+) -> tuple[float, float]:
+    """Return fixed installed capacity and FLH-dependent annual generation."""
+
+    if inputs.full_load_hours is None:
+        raise ValueError("Electricity scenarios require full_load_hours.")
+    if inputs.installed_capacity_kw is None:
+        raise ValueError("Electricity scenarios require installed_capacity_kw.")
+    annual_output_mwh = (
+        inputs.installed_capacity_kw / 1_000.0 * inputs.full_load_hours
+    )
+    return inputs.installed_capacity_kw, annual_output_mwh
+
+
 def calculate_transport_and_storage_cost_per_output(
     sector: str,
     inputs: ScenarioInputs,
@@ -580,10 +596,8 @@ def calculate_transport_and_storage_cost_per_output(
     baseline = inputs.capture_cost_baseline
     if baseline is None:
         return inputs.transport_and_storage_cost
-    if inputs.full_load_hours is None and sector == "electricity":
-        raise ValueError("Electricity scenarios require full_load_hours.")
-
     if sector in {"ammonia", "cement", "hydrogen"}:
+        annual_output_for_capture_cost = inputs.annual_output
         ccs_initial_capex_eur = inputs.annual_output * inputs.capex
         bau_initial_capex_eur = inputs.annual_output * baseline.capex
         ccs_annual_cost_excluding_carbon_eur = inputs.annual_output * (
@@ -599,23 +613,22 @@ def calculate_transport_and_storage_cost_per_output(
             + baseline.electricity_consumption * inputs.electricity_price
         )
     elif sector == "electricity":
-        capacity_kw = calculate_capacity_kw(
-            annual_electricity_output_mwh=inputs.annual_output,
-            full_load_hours_per_year=inputs.full_load_hours,
-        )
+        capacity_kw, annual_output = _electricity_capacity_and_output(inputs)
+        annual_output_for_capture_cost = annual_output
         ccs_initial_capex_eur = capacity_kw * inputs.capex
         bau_initial_capex_eur = capacity_kw * baseline.capex
         ccs_annual_cost_excluding_carbon_eur = (
             capacity_kw * inputs.fixed_opex
-            + inputs.annual_output * inputs.variable_opex
-            + inputs.annual_output * inputs.fuel_consumption * inputs.fuel_price
+            + annual_output * inputs.variable_opex
+            + annual_output * inputs.fuel_consumption * inputs.fuel_price
         )
         bau_annual_cost_excluding_carbon_eur = (
             capacity_kw * baseline.fixed_opex
-            + inputs.annual_output * baseline.variable_opex
-            + inputs.annual_output * baseline.fuel_consumption * inputs.fuel_price
+            + annual_output * baseline.variable_opex
+            + annual_output * baseline.fuel_consumption * inputs.fuel_price
         )
     elif sector == "steel":
+        annual_output_for_capture_cost = inputs.annual_output
         ccs_initial_capex_eur = inputs.annual_output * inputs.capex
         bau_initial_capex_eur = inputs.annual_output * baseline.capex
         ccs_annual_cost_excluding_carbon_eur = inputs.annual_output * (
@@ -645,7 +658,7 @@ def calculate_transport_and_storage_cost_per_output(
             bau_annual_cost_excluding_carbon_eur=(
                 bau_annual_cost_excluding_carbon_eur
             ),
-            annual_output=inputs.annual_output,
+            annual_output=annual_output_for_capture_cost,
             lifetime_years=int(round(inputs.lifetime_years)),
             discount_rate=inputs.discount_rate,
             transport_and_storage_share=inputs.transport_and_storage_share,
@@ -686,10 +699,9 @@ def _calculate_sector_financial_result(
     )
     lifetime_years = int(round(inputs.lifetime_years))
     if sector == "electricity":
-        if inputs.full_load_hours is None:
-            raise ValueError("Electricity scenarios require full_load_hours.")
+        _, annual_output_mwh = _electricity_capacity_and_output(inputs)
         return calculate_electricity_financial_result(
-            annual_output_mwh=inputs.annual_output,
+            annual_output_mwh=annual_output_mwh,
             full_load_hours_per_year=inputs.full_load_hours,
             capex_eur_per_kw=inputs.capex,
             electricity_price_eur_per_mwh=inputs.sales_price,
@@ -813,8 +825,20 @@ def build_sensitivity_table(
         base_value = getattr(inputs, parameter.attribute)
         low_value = max(parameter.minimum, base_value * (1.0 - variation_fraction))
         high_value = max(parameter.minimum, base_value * (1.0 + variation_fraction))
-        low_inputs = replace(inputs, **{parameter.attribute: low_value})
-        high_inputs = replace(inputs, **{parameter.attribute: high_value})
+        low_changes = {parameter.attribute: low_value}
+        high_changes = {parameter.attribute: high_value}
+        if (
+            parameter.attribute == "annual_output"
+            and inputs.installed_capacity_kw is not None
+        ):
+            low_changes["installed_capacity_kw"] = (
+                inputs.installed_capacity_kw * low_value / base_value
+            )
+            high_changes["installed_capacity_kw"] = (
+                inputs.installed_capacity_kw * high_value / base_value
+            )
+        low_inputs = replace(inputs, **low_changes)
+        high_inputs = replace(inputs, **high_changes)
         low_metric_value = calculate_metric_value(
             sector,
             low_inputs,

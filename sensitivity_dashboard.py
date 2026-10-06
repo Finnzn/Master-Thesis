@@ -447,6 +447,11 @@ def build_input_controls(sector: str, technology: str, defaults):
         emissions=emissions,
         carbon_price=carbon_price,
         full_load_hours=full_load_hours,
+        installed_capacity_kw=(
+            defaults.installed_capacity_kw * annual_output / defaults.annual_output
+            if defaults.installed_capacity_kw is not None
+            else None
+        ),
         value_factor=value_factor,
         uses_value_factor=defaults.uses_value_factor,
         secondary_fuel_consumption=secondary_fuel_consumption,

@@ -11015,3 +11015,61 @@ remove `Run_1` and `Run_2`, and refresh the shared results, data, and figures.
 
 Inspect the final reference figures and `Run_final/manifest.json`, then empty
 the Trash only after confirming the handover copy is complete.
+
+## 2026-10-06 09:56 CEST — Hold electricity capacity fixed in FLH analyses
+
+### User request
+
+Change only the electricity sensitivity and deterministic scenario logic so
+installed capacity is calculated from base annual output and base full-load
+hours once, then held fixed when full-load hours vary.
+
+### Files changed
+
+- `src/sensitivity_analysis.py` — stored base electricity capacity and made FLH
+  sensitivity recalculate annual generation instead of plant capacity.
+- `sensitivity_dashboard.py` — preserved the stored electricity capacity when
+  dashboard FLH inputs and tornado cases change.
+- `notebooks/scenario_analysis.ipynb` — documented the fixed-capacity FLH
+  scenario convention.
+- `notebooks/sensitivity_heatmap.ipynb` — documented the fixed-capacity FLH
+  sensitivity convention.
+- `CHANGELOG.md` — appended this record.
+
+### What was implemented
+
+- Loaded installed capacity from each deterministic electricity base case.
+- Calculated scenario generation as fixed capacity multiplied by varied FLH.
+- Kept CAPEX and fixed OPEX tied to the unchanged installed capacity while
+  revenue, variable OPEX, fuel, emissions, and output-based T&S costs follow
+  changed generation.
+- Preserved annual-output sensitivity as a plant-sizing change by scaling the
+  stored base capacity with the supplied reference output.
+- Left deterministic models, Monte Carlo models, parameter files, cement, and
+  all other sector model logic unchanged.
+
+### Verification
+
+- Commands run:
+  - compiled `src/sensitivity_analysis.py` and `sensitivity_dashboard.py`
+  - checked all electricity technologies at 80%, 100%, and 120% of base FLH
+  - recalculated all 15 sector/metric heatmap combinations
+  - executed both changed notebooks non-destructively to `/tmp`
+  - ran `git diff --check`
+- Result:
+  - Passed: deterministic electricity base NPVs remain unchanged.
+  - Passed: installed capacity remains constant in every tested FLH case and
+    annual generation changes to 80%, 100%, and 120% of base output.
+  - Passed: all sector heatmaps and both notebooks execute successfully.
+
+### Reproducibility notes
+
+- Existing deterministic, Monte Carlo, and final-run outputs were not changed.
+- Rerun the sensitivity or scenario notebook to display NPV results under the
+  corrected FLH convention. Their default LPM results remain mathematically
+  unchanged because fixed cost per MWh still scales inversely with FLH.
+
+### Next suggested step
+
+Review the NPV-mode electricity heatmap and FLH scenario table before replacing
+any thesis figures based on the former capacity-resizing convention.
