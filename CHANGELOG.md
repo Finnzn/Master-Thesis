@@ -11185,3 +11185,59 @@ in the updated scenario notebook.
 Use the standalone value-factor panel when discussing captured-price risk for
 variable renewables, separately from physical utilization risk represented by
 FLH.
+
+## 2026-10-06 10:59 CEST — Generate Run_Final_2.0
+
+### User request
+
+Generate a new complete final thesis run named `Run_Final_2.0` after the
+electricity FLH and scenario-analysis updates.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this record.
+
+### What was implemented
+
+- Generated the isolated ignored run directory
+  `results/runs/Run_Final_2.0` with the complete workflow.
+- Ran all five sectors for NPV, LPM, and LCOX with 100,000 Monte Carlo draws,
+  random seed 42, and sampled retrofit BAU inputs.
+- Generated deterministic and simulated technology abatement-cost comparisons,
+  all NPV/LPM/LCOX sensitivity heatmaps, and executed copies of all project
+  notebooks.
+- Preserved `Run_final`, `Run_3_CEPCI`, `Run_4_DACC`, and the shared `data/`,
+  `results/`, and `figures/` outputs without replacement.
+
+### Verification
+
+- Commands run:
+  - compiled `src`, `regenerate_all.py`, and `sensitivity_dashboard.py`
+  - previewed the complete 126-step workflow with `--dry-run`
+  - ran `PYTHONPATH=src .venv/bin/python regenerate_all.py --run-name
+    Run_Final_2.0 --full`
+  - independently verified every manifested file size and SHA-256 hash
+  - checked command return codes, notebook coverage, assumptions, and artifact
+    counts
+- Result:
+  - Passed: the manifest reports `complete` with 126/126 successful steps.
+  - Passed: all 395 inventoried artifacts match their manifest hashes and sizes.
+  - Passed: the run contains 101 CSV files, 68 PNG figures, 126 logs, and 100
+    executed notebooks matching all 100 source notebooks.
+  - Passed: recorded assumptions are 100,000 draws, seed 42, EUR 80/tCO2,
+    8% interest rate, and 20% sensitivity variation.
+  - Passed: the run records clean commit
+    `a7f1f0b4ee6648fe40415bd3aee62e4485e78d25` on `main`.
+
+### Reproducibility notes
+
+- `Run_Final_2.0` occupies approximately 7.8 GB and is ignored by Git; its
+  `manifest.json` is the authoritative record of configuration and provenance.
+- The completed run is isolated and no pre-existing run or shared output was
+  overwritten.
+
+### Next suggested step
+
+Inspect `results/runs/Run_Final_2.0/manifest.json` and selected heatmap and
+scenario notebook outputs before deciding whether to promote this run into the
+shared `data/`, `results/`, and `figures/` folders.
