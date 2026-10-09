@@ -362,10 +362,10 @@ BIOMETHANE_SMR_VARIABLE_OPEX_CHANGE = FixedParameter(
     description="Assumed zero incremental variable OPEX for biomethane SMR.",
 )
 
-BIOMETHANE_SMR_NATURAL_GAS_CONSUMPTION_CHANGE = FixedParameter(
-    value=-43.89,
-    unit="MWh/tH2",
-    description="Removal of the parent NG-SMR natural-gas input when switching to biomethane.",
+BIOMETHANE_SMR_NATURAL_GAS_REDUCTION = FixedParameter(
+    value=1.0,
+    unit="fraction",
+    description="Natural-gas consumption reduction fraction when switching to biomethane.",
 )
 
 BIOMETHANE_SMR_BIOMETHANE_FEEDSTOCK_CONSUMPTION = FixedParameter(
@@ -380,16 +380,16 @@ BIOMETHANE_SMR_BIOMETHANE_PROCESS_FUEL_CONSUMPTION = FixedParameter(
     description="Biomethane process-fuel component of biomethane SMR consumption.",
 )
 
-BIOMETHANE_SMR_BIOMETHANE_CONSUMPTION = FixedParameter(
-    value=43.89,
-    unit="MWh/tH2",
-    description="Total biomethane consumption for biomethane SMR, including feedstock and process fuel.",
+BIOMETHANE_SMR_BIOMETHANE_SUBSTITUTION_FRACTION = FixedParameter(
+    value=1.0,
+    unit="fraction",
+    description="Biomethane energy as a share of parent NG-SMR natural-gas consumption.",
 )
 
-BIOMETHANE_SMR_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
+BIOMETHANE_SMR_ELECTRICITY_REDUCTION = FixedParameter(
     value=0.0,
-    unit="MWh/tH2",
-    description="Assumed zero purchased-electricity change relative to NG-SMR.",
+    unit="fraction",
+    description="Unchanged purchased electricity relative to NG-SMR.",
 )
 
 BIOMETHANE_SMR_EMISSIONS = FixedParameter(
@@ -400,10 +400,10 @@ BIOMETHANE_SMR_EMISSIONS = FixedParameter(
 
 
 # NG-SMR+CCS is an incremental capture retrofit of NG-SMR. Cost and energy
-# changes are added to the parent, and the capture fraction reduces parent
-# direct operational emissions. Only the natural-gas increment is registered
-# for the retrofit; documented feedstock, process-fuel, and total values are
-# traceability aids rather than additional cost inputs.
+# cost changes are added to the parent, and the capture fraction reduces parent
+# direct operational emissions. Natural-gas demand uses a reduction fraction;
+# electricity remains absolute because parent purchased electricity is zero.
+# Documented feedstock, process-fuel, and total values are traceability aids.
 NG_SMR_CCS_CAPEX_CHANGE_DISTRIBUTION = TriangularDistribution(
     minimum=2_310.0,
     mode=2_369.0,
@@ -444,10 +444,10 @@ NG_SMR_CCS_NATURAL_GAS_CONSUMPTION = FixedParameter(
     description="Total NG-SMR + CCS natural-gas consumption, including feedstock and process fuel.",
 )
 
-NG_SMR_CCS_NATURAL_GAS_CONSUMPTION_CHANGE = FixedParameter(
-    value=4.33,
-    unit="MWh/tH2",
-    description="Natural-gas increase for NG-SMR + CCS relative to 43.89 MWh/tH2 NG-SMR.",
+NG_SMR_CCS_NATURAL_GAS_REDUCTION = FixedParameter(
+    value=-0.09865573023467761,
+    unit="fraction",
+    description="Natural-gas consumption reduction fraction relative to NG-SMR; negative means increased demand.",
 )
 
 NG_SMR_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
@@ -551,12 +551,12 @@ HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "capex_change_eur_per_th2": BIOMETHANE_SMR_CAPEX_CHANGE,
         "fixed_opex_change_eur_per_th2": BIOMETHANE_SMR_FIXED_OPEX_CHANGE,
         "variable_opex_change_eur_per_th2": BIOMETHANE_SMR_VARIABLE_OPEX_CHANGE,
-        "natural_gas_consumption_change_mwh_per_th2": (
-            BIOMETHANE_SMR_NATURAL_GAS_CONSUMPTION_CHANGE
+        "natural_gas_consumption_reduction_fraction": (
+            BIOMETHANE_SMR_NATURAL_GAS_REDUCTION
         ),
-        "biomethane_consumption_mwh_per_th2": BIOMETHANE_SMR_BIOMETHANE_CONSUMPTION,
-        "electricity_consumption_change_mwh_per_th2": (
-            BIOMETHANE_SMR_ELECTRICITY_CONSUMPTION_CHANGE
+        "biomethane_substitution_fraction": BIOMETHANE_SMR_BIOMETHANE_SUBSTITUTION_FRACTION,
+        "electricity_consumption_reduction_fraction": (
+            BIOMETHANE_SMR_ELECTRICITY_REDUCTION
         ),
         "emissions_tco2_per_th2": BIOMETHANE_SMR_EMISSIONS,
     },
@@ -566,8 +566,8 @@ HYDROGEN_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
             NG_SMR_CCS_FIXED_OPEX_CHANGE_DISTRIBUTION
         ),
         "variable_opex_change_eur_per_th2": NG_SMR_CCS_VARIABLE_OPEX_CHANGE,
-        "natural_gas_consumption_change_mwh_per_th2": (
-            NG_SMR_CCS_NATURAL_GAS_CONSUMPTION_CHANGE
+        "natural_gas_consumption_reduction_fraction": (
+            NG_SMR_CCS_NATURAL_GAS_REDUCTION
         ),
         "electricity_consumption_change_mwh_per_th2": (
             NG_SMR_CCS_ELECTRICITY_CONSUMPTION_CHANGE

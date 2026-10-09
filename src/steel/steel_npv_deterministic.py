@@ -50,6 +50,7 @@ def steel_fuel_price_parameters(technology: str) -> Mapping[str, ParameterSpec]:
         },
         "bf_bof_ccs": {
             "pci_coking_coal_mix": PCI_COKING_COAL_MIX_PRICE_EUR_PER_MWH_TH,
+            "natural_gas": GAS_PRICE_DISTRIBUTION,
         },
         "scrap_eaf": {"charcoal": CHARCOAL_PRICE_EUR_PER_MWH_TH},
         "ng_dri_eaf_bau": {"natural_gas": GAS_PRICE_DISTRIBUTION},

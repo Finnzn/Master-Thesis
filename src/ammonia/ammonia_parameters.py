@@ -430,10 +430,10 @@ NG_SMR_HB_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
     description="Assumed zero non-energy variable-OPEX change for NG-SMR + HB + CCS.",
 )
 
-NG_SMR_HB_CCS_NATURAL_GAS_CONSUMPTION_CHANGE = FixedParameter(
+NG_SMR_HB_CCS_NATURAL_GAS_REDUCTION = FixedParameter(
     value=0.0,
-    unit="MWh/tNH3",
-    description="Assumed zero natural-gas consumption change relative to NG-SMR + HB.",
+    unit="fraction",
+    description="Natural-gas consumption reduction fraction relative to NG-SMR + HB.",
 )
 
 NG_SMR_HB_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
@@ -453,8 +453,8 @@ NG_SMR_HB_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = TriangularDistribution(
 
 # Coal gasification+HB+CCS is an incremental capture retrofit of coal
 # gasification+HB. The source provides best-available-technology point estimates
-# for energy changes; these are added to the parent, while the capture fraction
-# reduces parent direct operational emissions.
+# for energy changes, stored as reduction fractions relative to the parent.
+# The capture fraction reduces parent direct operational emissions.
 COAL_GASIFICATION_HB_CCS_CAPEX_CHANGE = FixedParameter(
     value=288.5,
     unit="EUR/(tNH3/y)",
@@ -473,16 +473,16 @@ COAL_GASIFICATION_HB_CCS_VARIABLE_OPEX_CHANGE = FixedParameter(
     description="Assumed zero non-energy variable-OPEX change for coal gasification + HB + CCS.",
 )
 
-COAL_GASIFICATION_HB_CCS_COAL_CONSUMPTION_CHANGE = FixedParameter(
+COAL_GASIFICATION_HB_CCS_COAL_REDUCTION = FixedParameter(
     value=0.0,
-    unit="MWh/tNH3",
-    description="Assumed zero coal-consumption change relative to coal gasification + HB.",
+    unit="fraction",
+    description="Coal consumption reduction fraction relative to coal gasification + HB.",
 )
 
-COAL_GASIFICATION_HB_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
-    value=0.333,
-    unit="MWh/tNH3",
-    description="Point estimate for purchased-electricity increase relative to coal gasification + HB.",
+COAL_GASIFICATION_HB_CCS_ELECTRICITY_REDUCTION = FixedParameter(
+    value=-0.3233009708737864,
+    unit="fraction",
+    description="Purchased-electricity consumption reduction fraction relative to coal gasification + HB; negative means increased demand.",
 )
 
 COAL_GASIFICATION_HB_CCS_EMISSIONS_REDUCTION = FixedParameter(
@@ -611,8 +611,8 @@ AMMONIA_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "capex_change_eur_per_tnh3": NG_SMR_HB_CCS_CAPEX_CHANGE_DISTRIBUTION,
         "fixed_opex_change_eur_per_tnh3": NG_SMR_HB_CCS_FIXED_OPEX_CHANGE,
         "variable_opex_change_eur_per_tnh3": NG_SMR_HB_CCS_VARIABLE_OPEX_CHANGE,
-        "natural_gas_consumption_change_mwh_per_tnh3": (
-            NG_SMR_HB_CCS_NATURAL_GAS_CONSUMPTION_CHANGE
+        "natural_gas_consumption_reduction_fraction": (
+            NG_SMR_HB_CCS_NATURAL_GAS_REDUCTION
         ),
         "electricity_consumption_change_mwh_per_tnh3": (
             NG_SMR_HB_CCS_ELECTRICITY_CONSUMPTION_CHANGE
@@ -629,11 +629,11 @@ AMMONIA_RETROFIT_TECHNOLOGY_DISTRIBUTIONS: Mapping[
         "variable_opex_change_eur_per_tnh3": (
             COAL_GASIFICATION_HB_CCS_VARIABLE_OPEX_CHANGE
         ),
-        "coal_consumption_change_mwh_per_tnh3": (
-            COAL_GASIFICATION_HB_CCS_COAL_CONSUMPTION_CHANGE
+        "coal_consumption_reduction_fraction": (
+            COAL_GASIFICATION_HB_CCS_COAL_REDUCTION
         ),
-        "electricity_consumption_change_mwh_per_tnh3": (
-            COAL_GASIFICATION_HB_CCS_ELECTRICITY_CONSUMPTION_CHANGE
+        "electricity_consumption_reduction_fraction": (
+            COAL_GASIFICATION_HB_CCS_ELECTRICITY_REDUCTION
         ),
         "emissions_reduction_fraction": (
             COAL_GASIFICATION_HB_CCS_EMISSIONS_REDUCTION

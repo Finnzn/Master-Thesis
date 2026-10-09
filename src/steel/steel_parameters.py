@@ -366,7 +366,7 @@ BF_BOF_CCS_FUEL_REDUCTION_DISTRIBUTION = UniformDistribution(
     lower_bound=-0.22,
     upper_bound=0.0,
     unit="fraction",
-    description="Uniform distribution for BF + BOF + CCS fuel-consumption reduction relative to BAU; negative values represent increases.",
+    description="Uniform distribution for BF + BOF + CCS fuel-consumption reduction relative to BAU; negative values represent additional natural gas while baseline coal demand remains unchanged.",
 )
 
 BF_BOF_CCS_ELECTRICITY_REDUCTION_DISTRIBUTION = (
@@ -389,9 +389,8 @@ BF_BOF_CCS_EMISSIONS_REDUCTION_DISTRIBUTION = (
 )
 
 
-# NG-DRI-EAF+CCS is an incremental retrofit of NG-DRI-EAF. The exact electricity
-# increment is stored both as an absolute change and as the equivalent negative
-# reduction fraction required by the shared retrofit model.
+# NG-DRI-EAF+CCS is an incremental retrofit of NG-DRI-EAF. Energy changes
+# are stored directly as reduction fractions; negative values mean increases.
 NG_DRI_EAF_CCS_CAPEX_CHANGE = FixedParameter(
     value=225.7,
     unit="EUR/(tCS/year)",
@@ -418,19 +417,10 @@ NG_DRI_EAF_CCS_FUEL_REDUCTION = FixedParameter(
     description="Assumed zero natural-gas consumption change relative to NG-DRI-EAF.",
 )
 
-NG_DRI_EAF_CCS_ELECTRICITY_CONSUMPTION_CHANGE = FixedParameter(
-    value=0.30,
-    unit="MWh/tCS",
-    description="Absolute purchased-electricity consumption increase for NG-DRI-EAF CCS.",
-)
-
 NG_DRI_EAF_CCS_ELECTRICITY_REDUCTION = FixedParameter(
-    value=-(
-        NG_DRI_EAF_CCS_ELECTRICITY_CONSUMPTION_CHANGE.value
-        / NG_DRI_EAF_BAU_ELECTRICITY_CONSUMPTION.value
-    ),
+    value=-0.2830188679245283,
     unit="fraction",
-    description="Purchased-electricity consumption reduction for NG-DRI-EAF CCS relative to BAU; the negative value represents the exact 0.30 MWh/tCS increase.",
+    description="Purchased-electricity consumption reduction fraction for NG-DRI-EAF CCS; negative means increased demand.",
 )
 
 NG_DRI_EAF_CCS_EMISSIONS_REDUCTION = FixedParameter(

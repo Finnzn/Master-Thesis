@@ -11241,3 +11241,746 @@ electricity FLH and scenario-analysis updates.
 Inspect `results/runs/Run_Final_2.0/manifest.json` and selected heatmap and
 scenario notebook outputs before deciding whether to promote this run into the
 shared `data/`, `results/`, and `figures/` folders.
+
+## 2026-10-07 12:00 CEST — Review sector results against the thesis research question
+
+### User request
+
+Read the thesis materials and explain the results and final conclusion in direct
+response to which emitting sectors should implement carbon capture and which
+should investigate alternative decarbonization technologies.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this review record.
+
+### What was implemented
+
+- Read both pages of the desktop project proposal
+  `2026_01_MSc_Boulos__Impact_of_Technology_Development_Uncertainty_on_CC_Demand_Uncertainty.pdf`;
+  identified it as the project description rather than a completed manuscript.
+- Reviewed all five sectors' financial models and assumptions, deterministic
+  results, Monte Carlo cost/profit results and rankings, abatement comparisons,
+  sensitivity tables, and the scenario-analysis notebook.
+- Based the synthesis on `results/runs/Run_Final_2.0`, recorded as complete on
+  6 October with 100,000 draws, seed 42, EUR 80/tCO2, 8% discount rate, and sampled
+  retrofit parent inputs.
+- Distinguished cost competitiveness, absolute profitability, and depth of
+  direct-emissions abatement. The synthesis supports natural-gas ammonia CCS,
+  cement CCS for deep reductions, renewable alternatives for power, selective
+  transitional CCS and further alternatives investigation in steel, and
+  alternatives investigation with conditional CCS in hydrogen.
+- Identified the hydrogen sales-price assumption (EUR 7,500/t for electrolysis
+  versus EUR 2,800/t for other routes) as the reason NPV rankings differ from
+  cost-only rankings.
+- Calculated fixed-input CCS-versus-parent carbon-price thresholds from current
+  deterministic equations: approximately EUR 47/tCO2 for natural-gas ammonia,
+  EUR 87 for cement, EUR 98 for BF-BOF steel, EUR 191 for NG-DRI-EAF steel,
+  EUR 87 for hydrogen SMR, EUR 133 for coal power, and EUR 156 for gas power.
+  These are conditional model calculations, not carbon-price forecasts.
+
+### Verification
+
+- Commands run:
+  - extracted and rendered both PDF pages using temporary PDF dependencies
+    installed under `/tmp`, then inspected the page images
+  - read the final-run manifest and sector result CSVs; calculated Monte Carlo
+    means, quantiles, profitability shares, and CCS ranking probabilities
+  - recalculated all 44 deterministic technology costs from current source
+    through `sensitivity_analysis.base_inputs` and `calculate_metric_value`
+  - checked every sector's ranking sample size and sum of rank-one probabilities
+- Result:
+  - Passed: all 44 current deterministic costs match the final-run CSVs.
+  - Passed: all sector ranking tables record 100,000 draws and their rank-one
+    probabilities sum to one.
+  - Passed: the run manifest records 126/126 completed commands with no failures.
+- Notes:
+  - The proposal defines the question; sector conclusions come from the project
+    analysis rather than from an unavailable completed thesis manuscript.
+  - Rankings include routes with different abatement depths and do not establish
+    a least-cost solution for a specified common emissions target.
+  - Conclusions retain the modeled direct-emissions boundary and do not establish
+    life-cycle neutrality, deployment volumes, infrastructure feasibility, or
+    commercial readiness of conceptual alternatives.
+
+### Reproducibility notes
+
+- No model assumptions, source notebooks, raw data, numerical outputs, or figures
+  were changed. Existing named runs were read without modification.
+- The review uses the latest complete run rather than mixing it with the older
+  EUR 400/tCO2 scenario run. Carbon-price comparisons use current deterministic
+  equations with all other inputs held fixed.
+
+### Next suggested step
+
+State an explicit emissions-reduction target before reporting the probability
+that CCS is the cheapest qualifying decarbonization option in each sector.
+
+## 2026-10-07 14:29 CEST — Assess LCOX as the primary thesis comparison metric
+
+### User request
+
+Assess whether excluding cement selling price and annual output from sensitivity
+analysis was a methodological mistake, explain the literature's use of LCOX
+relative to NPV/LPM, and advise whether to prioritize LCOX.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this methodological review record.
+
+### What was implemented
+
+- Inspected shared finance and sensitivity equations and confirmed
+  LPM = selling price - LCOX and NPV = LPM times discounted lifetime output
+  for the model's constant-price product routes.
+- Distinguished annual output as modeled plant-size scaling from utilization
+  at fixed capacity. Industrial output scaling changes NPV but cancels in
+  LPM and LCOX under the existing linear cost assumptions.
+- Confirmed common cement selling-price changes affect absolute profitability
+  but leave cost rankings unchanged; excluding that input is defensible for a
+  scoped technology-cost comparison, not a complete profitability assessment.
+- Reviewed primary IEA/OECD-NEA, NREL/SAM, and IEAGHG sources on levelized costs,
+  NPV, electricity system value, and CO2 avoidance cost.
+- Recommended LCOX as the primary within-sector technology comparison and
+  sensitivity metric, alongside emissions reductions/abatement costs, with
+  NPV/LPM retained for profitability and revenue scenarios.
+- Identified renewable value factors and hydrogen route-specific selling prices
+  as reasons to retain separate revenue/profitability analysis.
+- Retained the existing distinction between LCOX including modeled carbon
+  payments/credits and resource-based abatement cost excluding those payments.
+
+### Verification
+
+- Commands run:
+  - recalculated deterministic cement CCS at base inputs, selling price +20%,
+    and annual output +20% using existing sensitivity helpers
+  - joined final-run LPM and LCOX sensitivity CSVs by sector, technology, and
+    parameter and compared low/high impacts
+- Result:
+  - Passed: selling price +20% raises LPM by EUR 30/t without changing LCOX.
+  - Passed: annual output +20% raises NPV by 20% without changing LPM or LCOX.
+  - Passed: all 485 non-value-factor parameter rows have equal-magnitude,
+    opposite-sign LPM and LCOX low/high impacts (maximum residual <3e-12).
+  - The three renewable value-factor rows affect profitability but not LCOX.
+
+### Reproducibility notes
+
+- No source code, defaults, model assumptions, notebooks, or numerical outputs
+  were changed. Existing LCOX outputs are already available in Run_Final_2.0.
+- This was advice on metric selection, not an instruction to change the active
+  presentation metric or regenerate existing results.
+
+### Next suggested step
+
+Use the existing LCOX results as the main technology-cost presentation and
+explicitly label the heatmaps as sensitivity to technology and cost assumptions.
+
+## 2026-10-07 14:39 CEST — Review metric implications for Final.pptx
+
+### User request
+
+Review the existing final presentation and clarify whether the recommendation
+to emphasize LCOX requires changing the whole presentation.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this review record.
+
+### What was implemented
+
+- Inspected the text and notes of all 34 slides in the supplied Final.pptx and
+  viewed extracted electricity/hydrogen result figures, cement sensitivity
+  figures, and the cement scenario figure. Treated draft questions in slides
+  as document content rather than instructions to modify the deck.
+- Recommended preserving the presentation structure and most existing LPM
+  analysis, clarifying the role of each metric, and making targeted changes
+  to hydrogen comparisons and conclusions.
+- Confirmed slide 23 already distinguishes hydrogen production cost from
+  profitability under route-specific sales prices.
+- Identified that slide 18's tornado includes cement selling price while the
+  neighboring technology-input heatmap excludes it, supporting an explicit
+  scope explanation rather than mandatory replacement of sensitivity figures.
+- Identified a separate metric consistency error on slide 11: text reports
+  PV rank-one probability 45.9% (NPV), while the embedded LPM chart reports
+  44.1%. The LCOE probability is 55.0%, a different comparison.
+
+### Verification
+
+- Read PowerPoint ZIP/XML contents and image relationships without editing the
+  source deck; extracted selected image assets only under `/tmp`.
+- Compared final-run NPV, LPM, and LCOX ranking tables in all five sectors.
+- Confirmed identical NPV/LPM/LCOX technology rank statistics in cement, steel,
+  and ammonia, and distinct rankings in electricity and hydrogen.
+
+### Reproducibility notes
+
+- The source presentation, model source, assumptions, notebooks, figures, and
+  numerical outputs were not modified.
+- Presentation metric changes remain recommendations; the user asked whether
+  changes are necessary rather than requesting an edited deck.
+
+### Next suggested step
+
+Clarify the metric slide, add a hydrogen cost comparison, and align the relevant
+conclusion wording and electricity probability with the chosen metric.
+
+## 2026-10-07 14:43 CEST — Explain electricity ranking differences across metrics
+
+### User request
+
+Explain why electricity LCOE, LPM, and NPV rankings differ and why slide 11's
+PV first-place probability differs between its text and chart.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this explanation record.
+
+### What was implemented
+
+- Traced LCOE versus LPM differences to technology-specific captured selling
+  prices: the EUR 94.07/MWh base selling price is multiplied by renewable
+  value factors, which are sampled in Monte Carlo.
+- Traced LPM versus NPV differences to technology-specific lifetimes and thus
+  different discounted lifetime-output denominators despite equal annual output.
+- Confirmed the slide's 45.9% matches the NPV ranking, its chart's 44.1% matches
+  LPM, and 55.0% corresponds to LCOE. The document establishes a metric mismatch
+  but does not establish when or how its text was assembled.
+- Extracted actual stored simulation 124 as an example: PV has lower LCOE
+  (EUR 82.5433/MWh), offshore wind has higher LPM (EUR 5.2368/MWh), and PV
+  has higher NPV (EUR 57.125 million versus EUR 55.902 million).
+
+### Verification
+
+- Read current electricity price/value-factor and lifetime assumptions.
+- Checked all three final-run electricity ranking summaries.
+- Verified LPM = captured selling price - LCOE and
+  NPV = LPM times discounted lifetime output across all 1,000,000 stored
+  electricity LPM result rows. Both identities passed numerical comparison.
+
+### Reproducibility notes
+
+- The explanation uses existing Run_Final_2.0 results; no simulations were
+  rerun and no source presentation, code, assumptions, or results were changed.
+
+### Next suggested step
+
+Align slide 11's probability with its displayed LPM chart and explain captured
+prices and lifetime normalization on the metric slide.
+
+
+## 2026-10-08 12:14 CEST — Verify deterministic versus Monte Carlo comparison percentages
+
+### User request
+
+Quickly explain the deterministic/Monte Carlo comparison and the presentation's
+44 below 5%, 40 below 2%, and median 0.06% statements.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this analysis record.
+
+### What was implemented
+
+- Read expected-input and mean-output helpers and the financial/sector formulas.
+- Recomputed absolute relative deviations as
+  100 * abs(Monte Carlo mean - deterministic) / abs(deterministic),
+  separately for NPV, LPM, and LCOX across all 44 technologies.
+- Confirmed NPV and LPM each have 44 below 5%, 40 below 2%, median
+  0.0593806884%, and maximum 4.3073539223%. The four above 2% are
+  offshore wind, hydrogen NG-SMR, hydrogen NG-SMR with CCS, and steel
+  NG-DRI-EAF with CCS.
+- Found LCOX instead has all 44 below 2%, median 0.0093950408%,
+  and maximum 0.1209063638%; the slide percentages must identify NPV/LPM.
+- Explained percentage amplification near zero profit and finite-sample
+  deviations. Products of independent uncertain inputs do not by themselves
+  imply a systematic difference between expected-input results and mean outputs.
+
+### Verification
+
+- Used pandas to read five final-run deterministic NPV processed tables and
+  aggregate their corresponding Monte Carlo tables; those tables contain all
+  three financial metrics. Confirmed 100,000 observations for every technology.
+- Matched the presentation's three reported statistics without changing
+  any simulation, input, source code, or presentation.
+
+### Reproducibility notes
+
+- Analysis used existing `results/runs/Run_Final_2.0/financial/` CSV files.
+- Temporary comparison table was written only to `/tmp/thesis-det-mc-comparison.json`.
+- No scientific assumptions or stored numerical outputs changed.
+
+### Next suggested step
+
+Label the slide's percentages as absolute relative deviations in NPV/LPM
+and describe them as agreement of central estimates, not uncertainty widths.
+
+
+## 2026-10-08 12:15 CEST — Explain infinite-sample convergence of financial means
+
+### User request
+
+Determine whether deterministic versus Monte Carlo mean differences converge
+to zero with infinitely many simulations.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this explanation record.
+
+### What was implemented
+
+- Inspected sector financial formulas and the shared CCS transport/storage
+  calculation for nonlinear transformations of uncertain inputs.
+- Confirmed that current financial outputs use sums and products of independent
+  primitive uncertain inputs, with fixed output, discount rate, lifetime, and
+  electricity full-load hours for each technology. T&S is a linear surcharge.
+- Explained why the current expected-input deterministic outputs equal population
+  mean outputs, so finite-sample deviations converge to zero. This result is
+  conditional on the present model structure, not a general Monte Carlo rule.
+- Distinguished convergence of means from persistent scenario uncertainty.
+
+### Verification
+
+- Read all five sector model modules and `src/npv_finance.py`; no simulation rerun.
+
+### Reproducibility notes
+
+- No code, assumptions, presentation, or numerical results changed.
+
+### Next suggested step
+
+Describe the observed deviations as finite-sample variation and retain Monte
+Carlo distributions and ranking probabilities to communicate uncertainty.
+
+
+## 2026-10-08 14:26 CEST — Validate research-question slide CCS relevance legend
+
+### User request
+
+Check whether the sector relevance labels and proposed Strong/Significant/Weak
+legend correctly describe the thesis results.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this review record.
+
+### What was implemented
+
+- Reviewed all five final-run LPM ranking summaries and industrial deterministic
+  abatement comparison tables.
+- Supported Strong for natural-gas ammonia CCS, Significant for cement and
+  selected steel CCS routes, and Weak as a relative LPM assessment for fossil
+  electricity CCS and hydrogen CCS under modeled selling-price assumptions.
+- Recommended a relative rather than absolute-profit legend and described the
+  labels as qualitative assessments rather than a numerical classification.
+- Identified two interpretation qualifications: BECCS already ranks first in
+  11.439% of base-case LPM draws, and hydrogen CCS trails SOEC in LPM because
+  electrolysis receives a higher selling price, while CCS has lower LCOH than SOEC.
+- Clarified that steel CCS relevance is route-specific and alternatives achieve
+  deeper modeled direct-emissions abatement; biomass hydrogen is a conceptual
+  alternative rather than demonstrated deployment evidence.
+
+### Verification
+
+- Read existing `Run_Final_2.0` LPM summaries and deterministic abatement CSVs.
+- Compared findings with previously verified LCOX and sales-price assumptions.
+
+### Reproducibility notes
+
+- No presentation, source code, parameter, or numerical result was edited.
+
+### Next suggested step
+
+Use a qualitative LPM-and-abatement legend and qualify the electricity and
+hydrogen interpretation cells to preserve metric and scenario boundaries.
+
+
+## 2026-10-09 14:04 CEST — Explain cement alternative-fuels calculation
+
+### User request
+
+Quickly explain how fuel is calculated for cement alternative fuels.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this explanation record.
+
+### What was implemented
+
+- Checked the thermal-energy-share-weighted biofuel/coal price formula.
+- Verified unchanged BAU thermal demand, alternative fuel share Uniform(25%,60%),
+  biofuel price Uniform(5.4,32.4) EUR/MWh_th, and coal expected price 12.11 EUR/MWh_th.
+- Calculated deterministic mean mixed price 14.99575 EUR/MWh_th and fuel cost
+  9.99717 EUR/t at expected thermal demand 0.666667 MWh_th/t.
+
+### Verification
+
+- Read cement model and parameter definitions and shared fuel price definitions.
+
+### Reproducibility notes
+
+- No source, assumption, presentation, or numerical output was changed.
+
+### Next suggested step
+
+Use the weighted-price formula when explaining the alternative-fuels route.
+
+
+## 2026-10-09 14:08 CEST — Check BF-BOF CCS additional fuel carrier against steel input document
+
+### User request
+
+Quickly verify whether documented BF-BOF CCS additional natural gas is instead
+priced as PCI/coking coal at EUR 23/MWh in the model.
+
+### Files changed
+
+- `CHANGELOG.md` — appended this review record.
+
+### What was implemented
+
+- Read supplied Steel_Production_Monte_Carlo_Inputs.docx through its OOXML,
+  including BF-BOF fuel-price assumptions and the complete CCS fuel/energy sections.
+- Confirmed the document states IEAGHG coal inputs are unchanged, additional
+  fuel is natural gas, and its 0 to +22% fuel envelope refers to additional
+  natural gas at the upper end; the Agora endpoint has no additional fuel.
+- Confirmed code multiplies total BF-BOF CCS thermal demand, including its
+  0 to +22% increase, by the fixed PCI/coking-coal price of EUR 23/MWh_th.
+- Identified a fuel-carrier pricing mismatch: the baseline should retain its
+  coal-mix price while the added gas demand should use the natural-gas price.
+- Estimated the mean-input fuel-cost understatement at EUR 10.0169/tCS,
+  using expected additional demand 0.614533 MWh/tCS and gas mean price
+  EUR 39.3/MWh_th. This excludes the consequent change in the modeled T&S surcharge.
+
+### Verification
+
+- Inspected steel retrofit and fuel-price parameters, model fuel-cost branch,
+  and deterministic/Monte Carlo price mappings. No corrected simulations run.
+
+### Reproducibility notes
+
+- The attached document, source, assumptions, figures, and results were not edited.
+- The numerical estimate is a mean-input calculation, not a regenerated result.
+
+### Next suggested step
+
+Separate BF-BOF CCS incremental natural gas from baseline coal in both financial
+and abatement calculations, then rerun affected results if the user requests a fix.
+
+
+## 2026-10-09 14:24 CEST — Correct BF-BOF CCS gas pricing and refresh Run_Final_2.0
+
+### User request
+
+Implement the BF-BOF CCS additional-fuel correction, update the affected
+Run_Final_2.0 documents/results, and assess whether the change is substantial.
+
+### Files changed
+
+- `src/steel/steel_npv_model.py` — keep baseline coal demand unchanged and price
+  the CCS thermal increment as natural gas; expose separate carrier quantities.
+- `src/steel/steel_npv_deterministic.py` — identify gas and coal price inputs.
+- `src/steel/steel_financial_summary.py` — export separate carrier quantities.
+- `src/steel/steel_parameters.py` — clarify the existing gas-increase assumption.
+- `src/sensitivity_analysis.py` — use separate primary coal and secondary gas
+  inputs in BF-BOF CCS sensitivity and scenario calculations.
+- `notebooks/steel/deterministic_bf_bof_ccs_npv.ipynb` — display both carrier
+  quantities/prices/costs and clear historical cached outputs in the source.
+- `tests/test_steel_ccs_fuel.py` — add five regression checks.
+- `thesis/steel_ccs_fuel_correction.md` — add an auditable before/after report.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Corrected the fuel-carrier mismatch without altering physical energy/emissions
+  input distributions, carbon price, discount rate, sample size or random seed.
+- Recalculated downstream T&S costs through the shared capture-cost surcharge;
+  abatement calculations automatically use the corrected financial outputs.
+- Regenerated steel NPV/LPM/LCOX outputs, rankings and figures, deterministic and
+  simulated abatement outputs, and sensitivity tables/heatmaps. Refreshed the
+  combined sensitivity exports so all 44 technologies remain present.
+- Executed six affected notebook copies, including BF-BOF CCS deterministic and
+  Monte Carlo, steel summary, steel abatement, sector scenarios and heatmaps.
+- Created the dated correction within Run_Final_2.0, promoted 2026-10-09 outputs
+  into the established folders, and recorded explicit supersession/provenance
+  in manifests. Original 2026-10-06 raw/results files were retained. Replaced
+  executed notebook copies were backed up first.
+- The input Word document already specifies natural gas; no change to it was
+  needed. The PowerPoint presentation was not edited.
+- Monte Carlo BF-BOF CCS mean LCOS rises from EUR 768.7527 to 780.5794/tCS;
+  mean LPM falls from EUR -18.7527 to -30.5794/tCS; mean NPV falls from
+  EUR -184.1166 million to -300.2333 million.
+- Non-negative NPV probability falls from 32.274% to 23.371%; rank-one
+  probability falls from 4.561% to 1.959%; top-three probability falls from
+  40.943% to 30.249%. Simulated abatement cost rises from EUR 98.1451 to
+  107.9888/tCO2. Direct abatement and mean-cost ordering are unchanged.
+- NG-DRI-EAF BAU remains the sector leader; its first-place probability is
+  now 86.815%. NG-DRI-EAF CCS remains the lowest-cost steel CCS route and
+  reaches the top three in 77.879% of draws.
+
+### Verification
+
+- `.venv/bin/python -m unittest discover -s tests -v`: five tests passed.
+- Matched pre/post 100,000-draw arrays: seven unaffected steel routes retain
+  identical financial and emissions results; BF-BOF CCS energy/emissions input
+  draws are unchanged. Verified the LCOS change equals incremental gas demand
+  times (gas price minus coal price) times 1.187 in every draw.
+- NPV/LPM/LCOX ranking summaries agree exactly; combined sensitivity exports
+  include all 44 technologies and other-sector rows remain identical.
+- Eleven regeneration commands plus six notebook executions completed (17/17).
+- Visually inspected corrected ranking and abatement figures.
+- Verified preserved historical raw-file hashes and corrected artifact hashes;
+  `git diff --check` passed.
+
+### Reproducibility notes
+
+- Corrected run provenance is in
+  `results/runs/Run_Final_2.0/corrections/2026-10-09_BF_BOF_CCS_Natural_Gas/manifest.json`.
+- Settings remain 100,000 draws, seed 42, sampled parents, carbon price EUR 80/tCO2,
+  discount rate 8%, and sensitivity variation plus/minus 20%.
+- Existing independent sampling of gas/electricity energy penalties remains a
+  separate documented modeling choice; this correction addresses fuel pricing.
+- The tracked report records the focused regeneration command, affected files,
+  before/after results, and remaining scope limitations.
+
+### Next suggested step
+
+Refresh the steel figures and percentages in Final.pptx from the 2026-10-09
+artifacts; the sector conclusion remains selective rather than general CCS use.
+
+
+## 2026-10-09 15:04 CEST — Select electricity-supplied BF-BOF CCS and audit retrofit energy inputs
+
+### User request
+
+Revert the added-gas correction, use fixed +669% electricity and 0% fuel change
+for BF-BOF CCS, refresh Run_Final_2.0, quantify the result changes, and provide
+a breakdown of percentage versus absolute retrofit energy inputs.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — replace BF-BOF CCS energy-penalty ranges
+  with FixedParameter values 0.0 fuel reduction and -6.69 electricity reduction.
+- Restored the preceding model, deterministic mapping, export and sensitivity
+  changes in `src/steel/steel_npv_model.py`, `steel_npv_deterministic.py`,
+  `steel_financial_summary.py`, and `src/sensitivity_analysis.py`.
+- `notebooks/steel/deterministic_bf_bof_ccs_npv.ipynb` — restore the single-coal
+  display code and clear cached source outputs; execute a corrected run copy.
+- `tests/test_steel_ccs_fuel.py` — update five regression tests for the selected
+  electricity-supplied architecture.
+- `thesis/steel_ccs_electricity_669_update.md` — add before/after analysis.
+- `thesis/steel_ccs_fuel_correction.md` — mark the preceding gas-priced analysis
+  superseded while retaining its historical numerical comparison.
+- `thesis/retrofit_energy_input_breakdown.md` and `.csv` — audit all 14 retrofits.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Applied the user's +669% increase exactly to current BAU electricity demand
+  0.115 MWh/tCS, giving CCS total 0.88435 MWh/tCS and increment 0.76935.
+- Removed additional gas; fuel/reductant demand equals BAU in every draw and
+  remains priced as PCI/coking coal at EUR 23/MWh_th.
+- Retained all other cost/emissions distributions and general assumptions.
+- Regenerated NPV/LPM/LCOX financial results, rankings and figures, deterministic
+  and simulated abatement comparisons, full five-sector sensitivities, and six
+  affected notebook copies (17 successful commands total).
+- Saved an auditable correction inside Run_Final_2.0. Promoted CSV/PNG filenames
+  use `2026-10-09-Electric669-` to preserve preceding raw and result files without
+  collisions. Updated manifests and marked the prior correction superseded.
+- BF-BOF CCS mean LCOS changes from EUR 780.5794/tCS in the preceding gas-priced
+  version to 813.1831; LPM changes from -30.5794 to -63.1831; NPV changes from
+  EUR -300.2333 million to -620.3408 million. Non-negative NPV probability
+  falls from 23.371% to 1.108%, rank-one probability from 1.959% to 0%,
+  and top-three probability from 30.249% to 3.490%. Simulated abatement cost
+  changes from EUR 107.9888 to 135.1417/tCO2.
+- Explained that the former electricity distribution averaged +285%, whereas
+  the new +669% applies in every draw. Direct-emissions assumptions remain
+  unchanged; the research conclusion remains selective steel CCS relevance.
+- Confirmed percentage energy changes for power/cement, fixed percentages for
+  BF-BOF CCS, absolute-to-percentage conversion for NG-DRI-EAF CCS (+0.30 MWh/tCS
+  = +28.30% of fixed BAU 1.06), absolute increments for ammonia/hydrogen CCS,
+  and absolute carrier replacement for biomethane SMR.
+- Clarified that absolute units refer to MWh per tonne of product, not annual
+  plant totals; percentage increases are undefined when BAU electricity is zero.
+
+### Verification
+
+- `.venv/bin/python -m unittest discover -s tests -v`: five tests passed.
+- All 100,000 BF-BOF CCS input rows have fuel equal to BAU, fixed 0.88435
+  MWh/tCS electricity and coal price EUR 23/MWh_th.
+- Corrected NPV/LPM/LCOX ranking summaries agree. All 44 technologies remain
+  in combined sensitivity tables; other-sector rows are unchanged.
+- Six unaffected steel routes retain identical financial/emissions values in
+  every draw. NG-DRI-EAF CCS mean LCOS changes by only EUR 0.00013/tCS because
+  fixing two distributions shifts subsequent RNG draws; its assumptions do not change.
+- Eleven regeneration commands and six notebook executions passed (17/17).
+- Visually inspected corrected ranking and abatement figures; checked artifact
+  hashes, raw-file preservation, and `git diff --check`.
+
+### Reproducibility notes
+
+- Active correction:
+  `results/runs/Run_Final_2.0/corrections/2026-10-09_BF_BOF_CCS_Electricity_669/`.
+- Settings remain 100,000 draws, seed 42, sampled parents, carbon price EUR 80/tCO2,
+  discount 8%, and sensitivity plus/minus 20%.
+- Fixing previously sampled inputs changes RNG consumption; minor realization
+  differences are distinguished from changes in assumptions in the report.
+- The historical gas correction remains available for auditing. The PowerPoint
+  presentation and external source Word document were not edited.
+
+### Next suggested step
+
+Refresh steel figures and probabilities in Final.pptx using Electric669 outputs
+and describe mixed retrofit energy units explicitly in the methodology.
+
+
+## 2026-10-09 16:24 — Restore gas-priced BF-BOF CCS and retain retrofit input audit
+
+### User request
+
+Retain the fraction-versus-absolute retrofit energy-input analysis and restore
+BF-BOF CCS to the preceding version where additional fuel is natural gas.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — restore uniform 0–22% additional fuel
+  and 0–570% additional electricity rather than fixed 0% / +669%.
+- `src/steel/steel_npv_model.py` — retain BAU coal demand and price the capture
+  fuel increment using natural gas; export separate carrier quantities/costs.
+- `src/steel/steel_npv_deterministic.py`, `src/steel/steel_financial_summary.py`
+  and `src/sensitivity_analysis.py` — restore gas pricing, exports and sensitivity.
+- `notebooks/steel/deterministic_bf_bof_ccs_npv.ipynb` — restore separate
+  coal/gas display and clear stale execution outputs.
+- `tests/test_steel_ccs_fuel.py` — restore five gas-route regression checks.
+- `thesis/steel_ccs_fuel_correction.md` — mark gas correction active again
+  and document restoration verification.
+- `thesis/steel_ccs_electricity_669_update.md` — mark the intervening fixed
+  electricity configuration historical and point to current gas outputs.
+- `thesis/retrofit_energy_input_breakdown.md` and `.csv` — retain the
+  complete audit and update only the BF-BOF assumption row and its explanation.
+- `results/runs/Run_Final_2.0/` — restore active correction metadata, reports
+  and six executed notebook copies; retain both sets of historical results.
+- `CHANGELOG.md` — append this record without altering previous entries.
+
+### What was implemented
+
+- Restored exactly the five scientific source files and deterministic notebook
+  source from the original gas-priced correction, verified using recorded SHA-256.
+- Restored sampled additional natural gas of 0–22% of BAU thermal demand and
+  sampled additional purchased electricity of 0–570% of BAU demand. Coal
+  demand is unchanged. Gas/electricity increments remain independently sampled.
+- Reactivated the original 55 verified gas-run financial, abatement,
+  sensitivity, figure and executed-notebook artifacts. Existing CSV/PNG gas
+  outputs already matched the archive and needed no rewriting.
+- Preserved the fixed +669% version as historical outputs; backed up notebook
+  and report copies plus the parent manifest before replacement.
+- Retained all 14 rows of the fraction/absolute audit. The 13 non-BF-BOF rows
+  are unchanged. BF-BOF now records sampled percentage changes and natural gas.
+
+### Verification
+
+- `.venv/bin/python -m unittest discover -s tests -v`: five tests passed.
+- All six restored source hashes match the original gas-run manifest.
+- All 89 archived gas-run inventory entries pass SHA-256 integrity checks;
+  55 promoted financial/abatement/heatmap/notebook artifacts verified.
+- Repeated the 100,000-draw simulation with seed 42 and sampled BAU parents.
+  Compared eight financial columns across all 800,000 technology/scenario rows
+  against archived processed results; all matched at numerical precision.
+- Deterministic results match the archived gas correction for all eight routes.
+- BF-BOF CCS mean LCOS is EUR 780.5794/tCS, LPM EUR -30.5794/tCS,
+  NPV EUR -300.2333 million; non-negative NPV probability is 23.371%.
+- `git diff --check`: passed.
+
+### Reproducibility notes
+
+- Active correction is again
+  `corrections/2026-10-09_BF_BOF_CCS_Natural_Gas/manifest.json`.
+- Restoration audit and backups are in
+  `corrections/2026-10-09_BF_BOF_CCS_Gas_Restored/` inside Run_Final_2.0.
+- Reused verified results from the original 17 successful gas-run commands;
+  repeated the steel simulation for verification rather than regenerating exports.
+- Active gas CSV/PNG filenames use `2026-10-09-` without `Electric669`.
+- Carbon price EUR 80/tCO2, discount rate 8%, and sensitivity ±20% are unchanged.
+
+### Next suggested step
+
+Use the active gas-priced outputs and retained retrofit audit when refreshing
+steel figures and the thesis methodology.
+
+
+## 2026-10-09 16:45 — Store valid retrofit energy changes directly as fractions
+
+### User request
+
+Convert absolute retrofit energy inputs to fractions, store the values directly
+without conversion calculations in code, and preserve all numerical outcomes.
+Explain the conversions in chat.
+
+### Files changed
+
+- `src/steel/steel_parameters.py` — replace the NG-DRI-EAF electricity
+  conversion expression and absolute parameter with a literal reduction fraction.
+- `src/ammonia/ammonia_parameters.py` and `ammonia_npv_model.py` — register and
+  apply gas/coal reduction fractions and the coal-route electricity fraction.
+- `src/hydrogen/hydrogen_parameters.py` and `hydrogen_npv_model.py` — register
+  and apply gas/electricity reduction fractions and a biomethane substitution share.
+- Four affected deterministic ammonia/hydrogen notebooks — display fraction
+  inputs with appropriate units and clear stale source execution outputs.
+- `tests/test_retrofit_energy_fractions.py` — add physical-demand, fuel-switch
+  and sector/scenario-metric regression checks.
+- `thesis/retrofit_energy_input_breakdown.md` and `.csv` — retain all retrofit
+  rows and update their representation labels and directly stored percentages.
+- `thesis/retrofit_energy_fraction_verification.json` — preserve numerical
+  before/after verification outcomes outside ignored result folders.
+- `thesis/steel_ccs_fuel_correction.md` — document the subsequent representation
+  update without changing the gas-pricing assumptions or historical comparison.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- All valid nonzero retrofit energy changes use literal full-precision reduction
+  fractions. Negative reduction fractions mean increased demand.
+- Zero changes use zero fractions, including sampled ammonia gas demand and
+  unchanged zero purchased electricity in biomethane SMR.
+- Biomethane SMR uses full natural-gas reduction and a substitution share of
+  parent natural-gas energy, rather than an absolute biomethane total input.
+- Preserved two positive absolute purchased-electricity additions because their
+  BAU demand is zero: ammonia NG-SMR + HB CCS and hydrogen NG-SMR CCS.
+  No finite relative fraction can represent these additions without changing
+  the reference basis or modeled outcomes.
+- No conversion divisions remain in the affected parameter definitions.
+  The model still applies stored fractions to parent demand as required.
+- Updated Run_Final_2.0 audit/provenance and four executed notebook copies.
+  All financial/abatement/sensitivity exports and numerical figures remain valid
+  and were not rewritten. Historical raw files and reports are preserved.
+
+### Verification
+
+- Captured before-edit Monte Carlo numeric physical/financial outputs for
+  steel, ammonia and hydrogen, seed 42, 100,000 draws per technology, with
+  both sampled and deterministic BAU parents.
+- Compared the refactored model across 25 technologies in both modes: every
+  compared physical and financial value is exactly identical, with zero maximum
+  absolute differences. Rankings and profitability indicators are identical.
+- Expected-input deterministic results also match exactly. Legacy ammonia and
+  hydrogen deterministic baselines were calculated in an isolated temporary
+  package copy using their unchanged pre-edit HEAD source files.
+- `.venv/bin/python -m unittest discover -s tests -v`: eight tests passed,
+  including cross-sector scenario metric agreement and retained zero-BAU additions.
+- Four affected deterministic notebook copies executed successfully.
+- `git diff --check`: passed.
+
+### Reproducibility notes
+
+- Detailed verification is in `thesis/retrofit_energy_fraction_verification.json`.
+- Run_Final_2.0 representation-update provenance is in
+  `corrections/2026-10-09_Retrofit_Energy_Fractions/manifest.json`.
+- Active gas-priced BF-BOF correction and its physical assumptions are unchanged.
+- Full numeric comparison snapshots and isolated legacy package copies were
+  retained in `/tmp/thesis-fraction-refactor` for this verification session.
+- Initial deterministic snapshot selection excluded list-valued outputs; this
+  verification harness issue was corrected before completing the comparisons.
+
+### Next suggested step
+
+Use the revised input audit to describe fraction inputs and the two zero-BAU
+absolute electricity exceptions consistently in the methodology.

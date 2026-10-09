@@ -510,6 +510,13 @@ def base_inputs(sector: str, technology: str) -> ScenarioInputs:
                 "charcoal_consumption_mwh_th_per_tcs"
             ]
             secondary_fuel_price = result["charcoal_price_eur_per_mwh_th"]
+        elif technology == "bf_bof_ccs":
+            fuel_consumption = result["pci_coking_coal_consumption_mwh_th_per_tcs"]
+            fuel_price = result["pci_coking_coal_mix_price_eur_per_mwh_th"]
+            secondary_fuel_consumption = result[
+                "natural_gas_consumption_mwh_th_per_tcs"
+            ]
+            secondary_fuel_price = result["gas_price_eur_per_mwh_th"]
         else:
             fuel_consumption = result["fuel_consumption_mwh_th_per_tcs"]
             fuel_price = result["fuel_price_eur_per_mwh_th"]

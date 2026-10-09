@@ -25,7 +25,7 @@ from steel.steel_parameters import (
 
 STEEL_FUEL_TYPES: Mapping[str, str] = {
     "bf_bof_bau": "pci_coking_coal_mix",
-    "bf_bof_ccs": "pci_coking_coal_mix",
+    "bf_bof_ccs": "pci_coking_coal_mix_and_natural_gas",
     "scrap_eaf": "charcoal",
     "ng_dri_eaf_bau": "natural_gas",
     "ng_dri_eaf_ccs": "natural_gas",
@@ -77,6 +77,7 @@ def _energy_costs_per_tcs(
     values: Mapping[str, np.ndarray],
     market_values: Mapping[str, np.ndarray],
     size: int,
+    bau_values: Mapping[str, np.ndarray] | None = None,
 ) -> dict[str, np.ndarray]:
     """Calculate fuel-carrier cost arrays per tonne of crude steel."""
 
@@ -84,10 +85,29 @@ def _energy_costs_per_tcs(
     charcoal_cost = np.zeros(size)
     natural_gas_cost = np.zeros(size)
     hydrogen_cost = np.zeros(size)
+    pci_consumption = np.zeros(size)
+    natural_gas_consumption = np.zeros(size)
 
-    if technology in {"bf_bof_bau", "bf_bof_ccs"}:
+    if technology == "bf_bof_ccs":
+        if bau_values is None:
+            raise ValueError("BF-BOF CCS requires BAU fuel demand to separate coal and gas.")
+        # The capture energy penalty is additional natural gas; the baseline
+        # metallurgical coal demand remains unchanged (steel input document).
+        pci_consumption = bau_values["fuel_consumption_mwh_th_per_tcs"]
+        natural_gas_consumption = (
+            values["fuel_consumption_mwh_th_per_tcs"] - pci_consumption
+        )
         pci_cost = (
-            values["fuel_consumption_mwh_th_per_tcs"]
+            pci_consumption
+            * market_values["pci_coking_coal_mix_price_eur_per_mwh_th"]
+        )
+        natural_gas_cost = (
+            natural_gas_consumption * market_values["gas_price_eur_per_mwh_th"]
+        )
+    elif technology == "bf_bof_bau":
+        pci_consumption = values["fuel_consumption_mwh_th_per_tcs"]
+        pci_cost = (
+            pci_consumption
             * market_values["pci_coking_coal_mix_price_eur_per_mwh_th"]
         )
     elif technology in {"scrap_eaf", "ael_eaf"}:
@@ -96,8 +116,9 @@ def _energy_costs_per_tcs(
             * market_values["charcoal_price_eur_per_mwh_th"]
         )
     elif technology in {"ng_dri_eaf_bau", "ng_dri_eaf_ccs"}:
+        natural_gas_consumption = values["fuel_consumption_mwh_th_per_tcs"]
         natural_gas_cost = (
-            values["fuel_consumption_mwh_th_per_tcs"]
+            natural_gas_consumption
             * market_values["gas_price_eur_per_mwh_th"]
         )
     elif technology == "h2_dri_eaf":
@@ -113,6 +134,8 @@ def _energy_costs_per_tcs(
         raise ValueError(f"No energy-cost calculation configured for {technology!r}.")
 
     return {
+        "pci_coking_coal_consumption_mwh_th_per_tcs": pci_consumption,
+        "natural_gas_consumption_mwh_th_per_tcs": natural_gas_consumption,
         "pci_coking_coal_cost_eur_per_tcs": pci_cost,
         "charcoal_cost_eur_per_tcs": charcoal_cost,
         "natural_gas_cost_eur_per_tcs": natural_gas_cost,
@@ -128,18 +151,17 @@ def _technology_fuel_price_eur_per_mwh_th(
     market_values: Mapping[str, np.ndarray],
     size: int,
 ) -> np.ndarray:
-    """Return one energy-price array, or NaN for dual-fuel H2-DRI-EAF."""
+    """Return one energy-price array, or NaN for routes using multiple fuels."""
 
     price_key_by_technology = {
         "bf_bof_bau": "pci_coking_coal_mix_price_eur_per_mwh_th",
-        "bf_bof_ccs": "pci_coking_coal_mix_price_eur_per_mwh_th",
         "scrap_eaf": "charcoal_price_eur_per_mwh_th",
         "ng_dri_eaf_bau": "gas_price_eur_per_mwh_th",
         "ng_dri_eaf_ccs": "gas_price_eur_per_mwh_th",
         "moe": "no_fuel_price_eur_per_mwh_th",
         "ael_eaf": "charcoal_price_eur_per_mwh_th",
     }
-    if technology == "h2_dri_eaf":
+    if technology in {"bf_bof_ccs", "h2_dri_eaf"}:
         return np.full(size, np.nan)
     if technology not in price_key_by_technology:
         raise ValueError(f"No fuel price configured for {technology!r}.")
@@ -184,6 +206,7 @@ def calculate_result(
         values=values,
         market_values=market_values,
         size=size,
+        bau_values=bau_values,
     )
     fuel_price_eur_per_mwh_th = _technology_fuel_price_eur_per_mwh_th(
         technology=technology,
@@ -311,6 +334,12 @@ def calculate_result(
         "variable_opex_eur_per_tcs": variable_opex_eur_per_tcs,
         "fuel_type": np.full(size, STEEL_FUEL_TYPES[technology]),
         "fuel_consumption_mwh_th_per_tcs": fuel_consumption_mwh_th_per_tcs,
+        "pci_coking_coal_consumption_mwh_th_per_tcs": energy_costs_per_tcs[
+            "pci_coking_coal_consumption_mwh_th_per_tcs"
+        ],
+        "natural_gas_consumption_mwh_th_per_tcs": energy_costs_per_tcs[
+            "natural_gas_consumption_mwh_th_per_tcs"
+        ],
         "hydrogen_consumption_kg_per_tcs": hydrogen_consumption_kg_per_tcs,
         "charcoal_consumption_mwh_th_per_tcs": charcoal_consumption_mwh_th_per_tcs,
         "electricity_consumption_mwh_per_tcs": electricity_consumption_mwh_per_tcs,

@@ -54,6 +54,8 @@ STEEL_RAW_INPUT_COLUMNS = (
     "variable_opex_eur_per_tcs",
     "fuel_type",
     "fuel_consumption_mwh_th_per_tcs",
+    "pci_coking_coal_consumption_mwh_th_per_tcs",
+    "natural_gas_consumption_mwh_th_per_tcs",
     "hydrogen_consumption_kg_per_tcs",
     "charcoal_consumption_mwh_th_per_tcs",
     "electricity_consumption_mwh_per_tcs",

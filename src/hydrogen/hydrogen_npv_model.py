@@ -62,7 +62,7 @@ def resolve_technology_values(
     parent: Mapping[str, np.ndarray],
     increments: Mapping[str, np.ndarray],
 ) -> dict[str, np.ndarray]:
-    """Resolve additive retrofit inputs, a fuel switch, and CCS capture."""
+    """Resolve retrofit costs, energy fractions, a fuel switch and CCS capture."""
 
     if technology not in HYDROGEN_RETROFIT_BASE_TECHNOLOGIES:
         raise ValueError(f"Unknown hydrogen retrofit technology: {technology!r}.")
@@ -72,14 +72,19 @@ def resolve_technology_values(
         values[key] = parent[key] + increments[f"{name}_change_eur_per_th2"]
     for carrier in (*ENERGY_CARRIERS, "electricity"):
         key = f"{carrier}_consumption_mwh_per_th2"
+        reduction_key = f"{carrier}_consumption_reduction_fraction"
         change_key = f"{carrier}_consumption_change_mwh_per_th2"
-        if change_key in increments:
-            baseline = parent.get(key, np.zeros_like(parent["capex_eur_per_th2"]))
+        baseline = parent.get(key, np.zeros_like(parent["capex_eur_per_th2"]))
+        if reduction_key in increments:
+            values[key] = baseline * (1.0 - increments[reduction_key])
+        elif change_key in increments:
+            # Positive additions to zero BAU demand have no relative fraction.
             values[key] = baseline + increments[change_key]
-    if "biomethane_consumption_mwh_per_th2" in increments:
-        values["biomethane_consumption_mwh_per_th2"] = increments[
-            "biomethane_consumption_mwh_per_th2"
-        ]
+    if "biomethane_substitution_fraction" in increments:
+        values["biomethane_consumption_mwh_per_th2"] = (
+            parent["natural_gas_consumption_mwh_per_th2"]
+            * increments["biomethane_substitution_fraction"]
+        )
     if "capture_fraction" in increments:
         values["emissions_tco2_per_th2"] = parent["emissions_tco2_per_th2"] * (
             1.0 - increments["capture_fraction"]
