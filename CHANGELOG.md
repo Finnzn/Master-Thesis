@@ -11984,3 +11984,78 @@ Explain the conversions in chat.
 
 Use the revised input audit to describe fraction inputs and the two zero-BAU
 absolute electricity exceptions consistently in the methodology.
+
+
+## 2026-10-14 13:26 — Prevent overlapping tornado endpoint labels
+
+### User request
+
+Fix overlapping plus/minus variation labels in the dashboard tornado plot,
+changing only what is necessary.
+
+### Files changed
+
+- `src/sensitivity_analysis.py` — adjust label placement in `plot_tornado`.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Keep the existing endpoint positions, colors and text for separated labels.
+- Measure each row's rendered label bounds after layout. If the pair overlaps,
+  offset the favorable label up and the unfavorable label down by six points.
+- Preserve scenario inputs, sensitivity calculations, financial outputs and bars.
+
+### Verification
+
+- Rendered zero-impact, small positive/negative same-side, small opposite-side
+  and normal-impact rows. No endpoint-label pairs overlap; ordinary labels
+  retain their original positions.
+- Checked actual LPM scenarios for cement alternative fuels, steel BF-BOF CCS
+  and hydrogen biomethane SMR. All label pairs are separated.
+- Verified plotting leaves the sensitivity tables unchanged.
+- Visually inspected the rendered edge-case figure.
+- `git diff --check`: passed. No test files or extra project artifacts added.
+
+### Reproducibility notes
+
+- The dashboard and newly generated tornado exports use the updated shared plot
+  function. Existing saved figures were not regenerated or overwritten.
+
+### Next suggested step
+
+Refresh the dashboard to use the updated label placement.
+
+
+## 2026-10-14 13:28 — Label zero-impact tornado rows as No effect
+
+### User request
+
+Show “No effect” instead of paired variation labels when the input variation
+produces no change in the selected financial metric.
+
+### Files changed
+
+- `src/sensitivity_analysis.py` — update labels in `plot_tornado`.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Render one neutral “No effect” label when both endpoint impacts equal zero.
+- Keep both percentage labels for all nonzero effects, including very small
+  effects and rows with only one zero endpoint.
+- Retain collision spacing for paired labels and all numerical calculations.
+
+### Verification
+
+- Checked zero, tiny nonzero, one-zero-endpoint and normal effects, plus an
+  all-zero chart and three actual sector scenarios. Plotting leaves tables intact.
+- Visually inspected the rendered chart; `git diff --check` passed.
+
+### Reproducibility notes
+
+- New dashboard charts and exports use this label rule. Existing saved figures
+  were not overwritten, and no additional project files were created.
+
+### Next suggested step
+
+Refresh the dashboard to see the updated zero-impact labels.

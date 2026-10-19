@@ -985,21 +985,43 @@ def plot_tornado(
         (favorable, favorable_changes, "#2c6f32"),
         (unfavorable, unfavorable_changes, "#9a3033"),
     )
+    row_labels = [[] for _ in y_positions]
     for values, changes, color in annotations:
         for y_position, value, change in zip(y_positions, values, changes):
+            no_effect = (
+                favorable[y_position] == 0.0 and unfavorable[y_position] == 0.0
+            )
+            if no_effect and row_labels[y_position]:
+                continue
             is_negative = value < 0
-            ax.text(
-                value - label_offset if is_negative else value + label_offset,
-                y_position,
-                change,
+            label = ax.annotate(
+                "No effect" if no_effect else change,
+                xy=(
+                    value - label_offset if is_negative else value + label_offset,
+                    y_position,
+                ),
+                xytext=(0, 0),
+                textcoords="offset points",
                 va="center",
                 ha="right" if is_negative else "left",
                 fontsize=8,
-                color=color,
+                color="#4e5a7f" if no_effect else color,
             )
+            row_labels[y_position].append(label)
     fig.patch.set_facecolor("white")
     ax.set_facecolor("white")
     fig.tight_layout(pad=1.4)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    for labels in row_labels:
+        if len(labels) != 2:
+            continue
+        favorable_label, unfavorable_label = labels
+        if favorable_label.get_window_extent(renderer).padded(2).overlaps(
+            unfavorable_label.get_window_extent(renderer).padded(2)
+        ):
+            favorable_label.set_position((0, 6))
+            unfavorable_label.set_position((0, -6))
 
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
