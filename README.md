@@ -73,8 +73,12 @@ MasterThesis/
 │   ├── general_parameters.py  Shared financial, carbon, and energy assumptions
 │   ├── distributions.py       Probability-distribution definitions
 │   ├── npv_finance.py         Shared discounted-finance calculations
-│   └── financial_summary_workflow.py
-│                               Shared summary, export, plotting, and CLI logic
+│   ├── financial_summary_workflow.py
+│   │                           Shared summary, export, plotting, and CLI logic
+│   ├── sensitivity_analysis.py
+│   │                           Deterministic sensitivity helpers and tornado plots
+│   └── sensitivity_deep_dive.py
+│                               Standardized sensitivity tables and heatmaps
 ├── notebooks/                 Interactive sector and technology analyses
 ├── figures/                   Tracked reference figures and quick-run plots
 ├── data/
