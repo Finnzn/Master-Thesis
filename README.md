@@ -40,11 +40,11 @@ root.
 
 ## Installation
 
-Python 3.10 or newer is required. The thesis environment currently uses Python
-3.12.
+Use Python 3.12; this is the tested version for this project. Install Python
+3.12 before creating the virtual environment below.
 
 ```bash
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt

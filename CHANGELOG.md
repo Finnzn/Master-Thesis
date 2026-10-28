@@ -12252,3 +12252,185 @@ with saved outputs for hand-in.
 
 Review and commit the refreshed notebooks and replacement reference figures
 before publishing the hand-in repository.
+
+
+## 2026-10-28 15:08 — Complete clean desktop handover copy including data and results
+
+### User request
+
+Prepare Desktop/Master Thesis Handover with data, figures and results included,
+excluding changelogs, local assistant files, environments, Git history and caches;
+generalize the handover copy's gitignore.
+
+### Files changed
+
+- `CHANGELOG.md` — append this record in the working project only.
+
+### What was implemented
+
+- Verified the existing handover folder against the working project and added
+  its missing data/raw and data/processed CSVs.
+- Include source models, all 100 executed notebooks, 68 figures, tests,
+  requirements, entry-point scripts and the entire retained Final Run.
+- Exclude Git metadata, virtual environments, local Codex/assistant instructions,
+  changelogs, caches and system files. Omit the empty thesis directory.
+- Generalize the copy's gitignore for common local assistant names/settings,
+  removing the project-specific CHANGELOG_CODEX rule.
+- Remove the excluded changelog entry from the copy's README tree only.
+
+### Verification
+
+- Hash-verified all 738 pre-existing handover files against their source copies.
+- Copied and hash-verified the 101 missing data CSVs.
+- Verified 839 included files totaling 20,051,758,801 bytes, with all required
+  directories present and no excluded files or directories remaining.
+- The only intentional content changes in the copy are .gitignore and README.md.
+
+### Reproducibility notes
+
+- Handover location: /Users/finn/Desktop/Master Thesis Handover.
+- Original model code, notebooks, data, figures, results, README and gitignore
+  remain unchanged. No ZIP was created; no files were committed or pushed.
+- Verification details are in /tmp/master_thesis_handover_verification.json.
+
+### Next suggested step
+
+Review the handover folder and compress it when ready to send.
+
+
+## 2026-10-28 15:27 — Verify and harden the standalone supervisor handover
+
+### User request
+
+Explain the handover README edit and thoroughly verify that the standalone
+handover can be installed, viewed and executed before sending it.
+
+### Files changed
+
+- `CHANGELOG.md` — record the audit in the working project only.
+
+### What was implemented
+
+- Confirmed the initial handover README edit only removed the changelog tree
+  entry and adjusted the final branch.
+- In the handover copy only, make Git optional in regenerate_all.py after a
+  reproduced missing-Git failure, and pin PyArrow 24.0.0 after a reproduced
+  dashboard import failure with PyArrow 26 and NumPy 1.26.4.
+- Add requirements-verified.txt with the tested environment's exact versions;
+  update the copy's README with Python 3.12 setup and handover documentation.
+- Preserve the previous retained-run manifest as manifest_historical.json and
+  create an accurate current inventory of 526 included artifacts. The old
+  inventory had 36 historical correction-backup entries already absent from
+  the working project; present artifacts all matched their recorded hashes.
+- Add HANDOVER_VERIFICATION.md and HANDOVER_SHA256SUMS.txt to the copy.
+
+### Verification
+
+- Hash-checked all 837 initially unmodified included files against the source.
+- Installed the handover dependencies into a fresh external Python 3.12.14
+  environment; pip check passed. Runtime testing found and resolved the
+  PyArrow issue despite metadata dependency checks initially passing.
+- Ran the complete 126-step full workflow from the handover location, with
+  1,000-draw financial export checks and all 100 notebooks at their own
+  configured sample sizes. Every step completed successfully.
+- Reproduced all sample-size assessment table values and probability statistics.
+- Streamlit AppTest loaded all five default LPM sector views without exceptions
+  and checked all five CCS routes with NPV and LCOX.
+- A named financial run completed with Git absent from PATH after the fix.
+- A second clean environment installed directly from requirements-verified.txt;
+  exact installed versions matched, assessment output was identical and the
+  dashboard loaded successfully.
+- Validated 200 supplied notebook files, 330 embedded PNGs, 188 standalone PNGs
+  and all 41 Python files. No supplied notebook error outputs or unexecuted
+  nonempty code cells were found.
+- Final package contains 843 files; 834 original files remain byte-for-byte
+  unchanged. Scientific models, assumptions, notebooks, data and figures are
+  unchanged. All current retained-manifest entries were verified.
+
+### Reproducibility notes
+
+- All execution checks wrote their outputs under /tmp/thesis-handover-audit.6VDgHT,
+  leaving the handover free of test runs, environments and caches.
+- The only changes to existing handover files are README.md, .gitignore,
+  requirements.txt, regenerate_all.py and the retained manifest.
+- The working project's models, requirements, runner, README and results were
+  not edited. No files were committed or pushed.
+
+### Next suggested step
+
+Use the verified handover folder and its README setup instructions for delivery.
+
+
+## 2026-10-28 15:32 — Simplify the handover README and remove verification extras
+
+### User request
+
+Remove the handover verification Markdown and checksum text file, and restore
+an original-style README while excluding items absent from the handover.
+
+### Files changed
+
+- `CHANGELOG.md` — append this record in the working project only.
+
+### What was implemented
+
+- Delete HANDOVER_VERIFICATION.md and HANDOVER_SHA256SUMS.txt from the copy.
+- Restore the original README prose and installation commands verbatim.
+- Adjust only the README tree for the handover folder name, retained Final Run,
+  omitted changelog, and existing optional requirements-verified.txt.
+- Retain all other files, including the compatible PyArrow pin and optional-Git
+  runner fix. No scientific code, data, figures or notebook outputs changed.
+
+### Verification
+
+- Asserted that all README content outside the repository tree exactly matches
+  the working project's README.
+- Confirmed both requested files are absent and compatibility fixes remain.
+
+### Reproducibility notes
+
+- The original README and handover scientific outputs are unchanged.
+- The handover README again installs requirements.txt; its PyArrow compatibility
+  pin remains. requirements-verified.txt is retained as an optional exact version list.
+
+### Next suggested step
+
+Use the simplified handover folder for delivery.
+
+
+## 2026-10-28 15:34 — Specify tested Python 3.12 in both project copies
+
+### User request
+
+Update requirements.txt and README in the original project and handover copy
+so the intended Python version is clearly 3.12.
+
+### Files changed
+
+- `README.md` — specify Python 3.12 and use python3.12 to create the environment.
+- `requirements.txt` — replace the Python >=3.10 comment with tested-version guidance.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Apply the same Python-version guidance and explicit virtual-environment
+  creation command to the handover README and requirements header.
+- Preserve all dependency specifications and all other README content.
+- Existing handover requirements-verified.txt already specifies Python 3.12.
+
+### Verification
+
+- Confirmed package requirement lines are unchanged in both copies.
+- Confirmed README differences are limited to the Python-version paragraph
+  and the virtual-environment creation command.
+- Searched current setup guidance for conflicting Python >=3.10 instructions.
+
+### Reproducibility notes
+
+- requirements.txt comments document the interpreter choice; the explicit
+  python3.12 command creates the environment with the intended interpreter.
+- No scientific code, notebooks, assumptions, data or figures changed.
+
+### Next suggested step
+
+Follow the Python 3.12 installation instructions in either copy's README.

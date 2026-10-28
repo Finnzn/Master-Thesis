@@ -1,4 +1,4 @@
-# Requires Python >= 3.10.
+# Use Python 3.12 (tested with Python 3.12.14).
 numpy<2.0
 pandas
 matplotlib
