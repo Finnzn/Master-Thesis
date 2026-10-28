@@ -12059,3 +12059,102 @@ produces no change in the selected financial metric.
 ### Next suggested step
 
 Refresh the dashboard to see the updated zero-impact labels.
+
+
+## 2026-10-27 16:29 — Add reproducible sample-size and seed assessment
+
+### User request
+
+Recreate a lean Python script in `tests/` for the thesis sample-size and
+seed results.
+
+### Files changed
+
+- `tests/sample_size_seed_assessment.py` — standalone assessment using existing
+  deterministic and Monte Carlo sector models.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Compare mean LPM, first-place probability and top-three probability across
+  six sample sizes from 1,000 to 200,000, using five configurable seeds.
+- Print the deterministic–MC and 100k–200k sector table, deviations from the
+  same-seed largest run, probability changes, seed ranges and leading routes.
+- Preserve the shared model's aligned draws, sampled retrofit BAU mode and
+  minimum-rank treatment of ties. Simulate each size separately.
+- Explicitly document that the original five seeds and intermediate sample
+  sizes are unknown. Use replacement defaults `(0, 1, 2, 3, 42)` without
+  claiming they recover the original seed assessment.
+
+### Verification
+
+- Ran the complete assessment across all five sectors and six sample sizes.
+- All seed-42 deterministic–MC differences match the thesis after rounding:
+  0.16, 0.03, 0.43, 0.77 and 4.54 in the respective sector units.
+- Replacement-seed 100k–200k maximum LPM changes are 0.26, 0.38, 1.19,
+  2.93 and 8.28; maximum probability changes are 0.33 and 0.44 pp, and
+  maximum 100k seed ranges are 0.45 and 0.72 pp. These differ from the
+  excerpt; the original seed-dependent figures remain unverified.
+- Mean-LPM and first-place leaders remain unchanged across the replacement
+  seeds at both large sample sizes in every sector.
+- Compared ranking probabilities with the project's shared ranking helpers
+  on real cement draws and synthetic tied values; both agree.
+
+### Reproducibility notes
+
+- Run `.venv/bin/python tests/sample_size_seed_assessment.py` from the root;
+  optionally append `--seeds` followed by five distinct nonnegative integers.
+- Sample sizes are defined at the top of the script. Outputs go to stdout;
+  no existing data, results, model parameters or thesis text are modified.
+- Exact reproduction of the seed-dependent excerpt requires its original
+  settings; the replacement defaults define a separate assessment.
+
+### Next suggested step
+
+Use a documented seed set for the final thesis assessment, or recover the
+original settings before retaining the original seed-dependent figures.
+
+
+## 2026-10-27 16:37 — Restore original seeds in sample-size assessment
+
+### User request
+
+Update the assessment with original additional seeds 123, 2026, 31415 and
+27182 at 100,000 and 200,000 realizations, alongside seed 42.
+
+### Files changed
+
+- `tests/sample_size_seed_assessment.py` — restore original seed defaults and
+  limit the additional seeds to the two large sample sizes.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Default seed set is now `(42, 123, 2026, 31415, 27182)`.
+- Seed 42 covers the sample-size sweep; additional seeds cover 100k and 200k.
+- Report seed-42 convergence separately from the five-seed comparisons.
+- Remove the obsolete unknown-seed warning; retain the note that intermediate
+  sample sizes can be adjusted if their original settings differ.
+
+### Verification
+
+- Ran `.venv/bin/python tests/sample_size_seed_assessment.py` successfully.
+- Both table columns exactly reproduce the thesis values after rounding:
+  deterministic–MC 0.16, 0.03, 0.43, 0.77, 4.54; sample-size changes
+  0.26, 0.78, 1.13, 3.20, 7.27 in the respective sector units.
+- Maximum first-place and top-three probability changes reproduce 0.40 and
+  0.38 pp; maximum seed ranges at 100k reproduce 0.55 and 0.53 pp.
+- Leading routes by mean LPM and first-place probability remain unchanged
+  across all five seeds at both large sample sizes in every sector.
+
+### Reproducibility notes
+
+- Run `.venv/bin/python tests/sample_size_seed_assessment.py` from the root.
+- The original seed-dependent claims are now verified with the supplied seeds,
+  superseding the earlier limitation recorded above. Intermediate sample sizes
+  remain the documented script settings rather than recovered original values.
+- No scientific assumptions or existing numerical outputs were changed.
+
+### Next suggested step
+
+Record the five seeds in the supplementary methodology for reproducibility.
