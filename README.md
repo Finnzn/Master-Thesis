@@ -80,6 +80,9 @@ MasterThesis/
 │   └── sensitivity_deep_dive.py
 │                               Standardized sensitivity tables and heatmaps
 ├── notebooks/                 Interactive sector and technology analyses
+├── tests/
+│   └── sample_size_seed_assessment.py
+│                               Sample-size and seed assessment for LPM results
 ├── figures/                   Tracked reference figures and quick-run plots
 ├── data/
 │   ├── raw/                   Generated Monte Carlo input samples
@@ -540,6 +543,24 @@ named result run so old and new assumptions remain distinguishable.
 The generated data and result directories can become very large and are
 ignored by Git. Do not place hand-edited assumptions or irreplaceable work only
 inside an ignored directory.
+
+## Sample-size and Seed Assessment
+
+`tests/sample_size_seed_assessment.py` assesses mean LPM and ranking
+probabilities across all five sectors. It uses seed 42 for sample sizes from
+1,000 to 200,000 realizations, with additional seeds 123, 2026, 31415 and 27182
+at 100,000 and 200,000 realizations.
+
+Run it from the repository root after installing the dependencies:
+
+```bash
+.venv/bin/python tests/sample_size_seed_assessment.py
+```
+
+The script prints deterministic–MC differences, sample-size comparisons,
+first-place and top-three probability changes, ranges across seeds, and
+leading-route stability. It writes no result files. To use a different set of
+five seeds, append `--seeds` followed by five distinct nonnegative integers.
 
 ## Basic Validation
 

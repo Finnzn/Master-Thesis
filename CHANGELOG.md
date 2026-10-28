@@ -12158,3 +12158,36 @@ Update the assessment with original additional seeds 123, 2026, 31415 and
 ### Next suggested step
 
 Record the five seeds in the supplementary methodology for reproducibility.
+
+
+## 2026-10-28 14:24 — Document sample-size and seed assessment in README
+
+### User request
+
+Add the assessment script to the README tree and a short usage section,
+leaving all other README content unchanged.
+
+### Files changed
+
+- `README.md` — add the script's tree entry, purpose, settings and run command.
+- `CHANGELOG.md` — append this required record.
+
+### What was implemented
+
+- Document seed-42 sample-size coverage and the four additional seeds at
+  100,000 and 200,000 realizations.
+- Explain printed outputs and the optional five-seed override.
+
+### Verification
+
+- The documented command resolves successfully with `--help`.
+- Removing the two additions restores the original README exactly.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- No source code, assumptions or generated results changed.
+
+### Next suggested step
+
+Use the documented command to reproduce the assessment when needed.
