@@ -12191,3 +12191,64 @@ leaving all other README content unchanged.
 ### Next suggested step
 
 Use the documented command to reproduce the assessment when needed.
+
+
+## 2026-10-28 14:39 — Refresh submission outputs and retain only Final Run
+
+### User request
+
+Keep Run_Final_2.0 as Final Run, delete the other runs and temporary outputs,
+replace previous generated data and figures, and rerun every project notebook
+with saved outputs for hand-in.
+
+### Files changed
+
+- `notebooks/**/*.ipynb` — refresh saved execution counts, metadata, tables
+  and plots in all 100 notebooks; preserve every code and markdown cell source.
+- `figures/2026-10-01-*.png` — remove the 68 previous reference figures.
+- `figures/2026-10-28-*.png` — generate 68 current reference figures.
+- `CHANGELOG.md` — append this record.
+
+### What was implemented
+
+- Rename results/runs/Run_Final_2.0 to results/runs/Final Run and update its
+  manifest name and location, retaining the original command history.
+- Delete Run_3_CEPCI, Run_4_DACC, Run_final and results/temporary as requested.
+- Replace generated data/raw, data/processed and figures contents by running
+  all 15 sector/metric summaries, eight deterministic/simulated abatement
+  comparisons and three sensitivity-heatmap workflows.
+- Execute all 100 source notebooks using the project virtual environment,
+  saving their fresh outputs in place after successful execution.
+- Retain the existing scientific settings: 100,000 Monte Carlo realizations,
+  seed 42, sampled retrofit BAU inputs and 20% sensitivity variation.
+
+### Verification
+
+- All 26 output-generation commands completed successfully.
+- All 100 notebooks executed with no error or stderr outputs; all nonempty
+  code cells have execution counts. Notebook source cells match Git HEAD.
+- Verified the integrity of 165 embedded PNG images and all 68 generated figures.
+- The 45 raw and 56 processed CSVs are byte-for-byte identical to their
+  corresponding retained final-run results. Every generated data and figure
+  filename now carries the 2026-10-28 date.
+- All 498 pre-existing retained-run artifacts remain unchanged; only the
+  run manifest was updated and refresh provenance/logs were added.
+- The sample-size and seed assessment again reproduced all quoted table
+  values, probability changes, seed ranges and leading-route stability.
+- `git diff --check` passed.
+
+### Reproducibility notes
+
+- The sole retained run is results/runs/Final Run. Its SUBMISSION_REFRESH.json
+  records commands, notebook execution results and the CSV comparisons;
+  submission_refresh_logs contains all 26 output-generation command logs.
+- The retained run's original financial results, figures and verification
+  notebooks remain historical snapshots. Current hand-in notebooks are under
+  notebooks/ and current standalone outputs are under data/ and figures/.
+- No scientific source code, parameters, assumptions or README text changed.
+- Changes have not been committed or pushed.
+
+### Next suggested step
+
+Review and commit the refreshed notebooks and replacement reference figures
+before publishing the hand-in repository.
